@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Verify OTP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 500px;
+      margin: 100px auto;
+      padding: 20px;
+    }
+    h2 {
+      font-weight: 600;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    input[type="text"] {
+      width: 60%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-right: 10px;
+    }
+    .btn {
+      padding: 10px 20px;
+      font-weight: bold;
+      border: none;
+      background-color: #000;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .timer {
+      color: red;
+      font-weight: 500;
+      margin-top: 5px;
+    }
+    .link {
+      margin-top: 20px;
+      display: inline-block;
+      color: black;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    @media (max-width: 600px) {
+      input[type="text"] {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Enter the OTP</h2>
+    <p>The OTP has been sent to your registered <%= verificationMethod === 'email' ? 'email' : 'phone' %>.</p>
+
+    <form action="/otp-verification" method="POST">
+      <input type="hidden" name="email" value="<%= email %>">
+      <input type="hidden" name="phone" value="<%= phone %>">
+
+      <div class="form-group">
+        <input type="text" name="otp" id="otp" placeholder="Enter the OTP" required />
+        <button type="button" class="btn" id="resendBtn" disabled>Resend OTP</button>
+        <div class="timer" id="timer"></div>
+      </div>
+
+      <button type="submit" class="btn">Verify</button>
+    </form>
+
+    <div class="link" onclick="window.location.href='/register'">Back to Register</div>
+  </div>
+
+  <script>
+    const timerDisplay = document.getElementById("timer");
+    const resendBtn = document.getElementById("resendBtn");
+
+    const EXPIRY_KEY = "otp_expiry";
+
+    function startTimer(duration) {
+      let endTime = Date.now() + duration;
+      localStorage.setItem(EXPIRY_KEY, endTime);
+
+      const interval = setInterval(() => {
+        const timeLeft = Math.floor((endTime - Date.now()) / 1000);
+
+        if (timeLeft > 0) {
+          timerDisplay.textContent = `0 : ${timeLeft < 10 ? '0' + timeLeft : timeLeft} seconds remaining`;
+          resendBtn.disabled = true;
+        } else {
+          clearInterval(interval);
+          timerDisplay.textContent = "";
+          resendBtn.disabled = false;
+          localStorage.removeItem(EXPIRY_KEY);
+        }
+      }, 1000);
+    }
+
+    // On page load, resume timer
+    const savedExpiry = localStorage.getItem(EXPIRY_KEY);
+    if (savedExpiry && Date.now() < savedExpiry) {
+      const remaining = savedExpiry - Date.now();
+      startTimer(remaining);
+    } else {
+      startTimer(30000); // 30 seconds
+    }
+
+    
+    resendBtn.addEventListener("click", () => {
+      fetch('/resend-otp', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          email: "<%= email %>",
+          phone: "<%= phone %>",
+          verificationMethod: "<%= verificationMethod %>"
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.message || "OTP resent!");
+        startTimer(30000); // restart 30s timer
+      })
+      .catch(err => {
+        alert("Error resending OTP.");
+      });
+    });
+  </script>
+</body>
+</html>

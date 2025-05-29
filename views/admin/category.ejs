@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Category Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    :root {
+      --primary: #4CAF50;
+      --primary-dark: #388E3C;
+      --error: #f44336;
+      --text: #333;
+      --light-gray: #f5f5f5;
+      --border: #e0e0e0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      display: flex;
+      min-height: 100vh;
+      background-color: #f9f9f9;
+      color: var(--text);
+    }
+
+    /* Sidebar Styles */
+    .sidebar {
+      width: 220px;
+      background-color: white;
+      border-right: 1px solid var(--border);
+      padding: 20px 0;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+    }
+
+    .sidebar ul {
+      list-style: none;
+    }
+
+    .sidebar li {
+      padding: 12px 20px;
+      cursor: pointer;
+      transition: all 0.3s;
+      border-left: 3px solid transparent;
+    }
+
+    .sidebar li:hover, .sidebar li.active {
+      background-color: var(--light-gray);
+      border-left: 3px solid var(--primary);
+    }
+
+    .sidebar a {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .logout-btn {
+      background-color: black;
+      color: white;
+      padding: 12px;
+      margin: 20px;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 4px;
+      position: relative;
+    }
+
+    .logout-btn.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Main Content Styles */
+    .content {
+      flex: 1;
+      padding: 30px;
+    }
+
+    h1 {
+      color: var(--primary);
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+
+    /* Form Styles */
+    .form-container {
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      margin-bottom: 30px;
+    }
+
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-bottom: 15px;
+      align-items: center;
+    }
+
+    .form-group {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px 15px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 16px;
+      transition: border 0.3s;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+      position: relative;
+    }
+
+    button:hover {
+      background-color: var(--primary-dark);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Table Styles */
+    .table-container {
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 15px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background-color: var(--primary);
+      color: white;
+      font-weight: 500;
+    }
+
+    tr:hover {
+      background-color: var(--light-gray);
+    }
+
+    .status-toggle {
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+      background: #ccc;
+      border-radius: 12px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .status-toggle.active {
+      background: var(--primary);
+    }
+
+    .status-toggle::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.3s;
+    }
+
+    .status-toggle.active::after {
+      transform: translateX(26px);
+    }
+
+    .status-toggle.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .action-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      color: var(--text);
+      transition: color 0.3s;
+    }
+
+    .action-btn:hover {
+      color: var(--primary);
+    }
+
+    /* Messages */
+    .alert {
+      padding: 12px 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+
+    .alert-success {
+      background-color: #e8f5e9;
+      color: var(--primary-dark);
+      border: 1px solid #c8e6c9;
+    }
+
+    .alert-error {
+      background-color: #ffebee;
+      color: var(--error);
+      border: 1px solid #ffcdd2;
+    }
+
+    /* Pagination Styles */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 20px;
+      gap: 10px;
+    }
+
+    .pagination-btn {
+      background-color: var(--light-gray);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 14px;
+    }
+
+    .pagination-btn:hover:not(.disabled) {
+      background-color: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .pagination-btn.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .pagination-btn.active {
+      background-color: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+      }
+
+      .sidebar ul {
+        display: flex;
+        overflow-x: auto;
+      }
+
+      .sidebar li {
+        white-space: nowrap;
+      }
+
+      .content {
+        padding: 20px;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+
+      .pagination {
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+
+      .pagination-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <ul>
+      <li><a href="/admin/dashboard">Dashboard</a></li>
+      <li><a href="/admin/products">Products</a></li>
+      <li><a href="/admin/orders">Order Lists</a></li>
+      <li><a href="/admin/users">Users</a></li>
+      <li><a href="/admin/sales">Sales</a></li>
+      <li><a href="/admin/coupons">Coupons</a></li>
+      <li class="active"><a href="/admin/category">Category</a></li>
+      <li><a href="/admin/banner">Banner</a></li>
+      <li><a href="/admin/offer">Offer</a></li>
+    </ul>
+    <div class="logout-btn" onclick="handleLogout()">Logout</div>
+  </div>
+
+  <div class="content">
+    <h1>Category Management</h1>
+
+    <!-- Messages are now handled by SweetAlert in JavaScript -->
+
+    <div class="form-container">
+      <h2>Add New Category</h2>
+      <form id="categoryForm" action="/admin/addCategory" method="POST" onsubmit="handleAddCategory(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name">Category Name</label>
+            <input type="text" id="name" name="name" required
+                   placeholder="Enter category name" maxlength="30">
+          </div>
+          <div class="form-group">
+            <label for="description">Category Description</label>
+            <input type="text" id="description" name="description"
+                   placeholder="Enter description (optional)" maxlength="100">
+          </div>
+        </div>
+        <button type="submit" id="addCategoryBtn">Add Category</button>
+      </form>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Category Name</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="categoryTableBody">
+          <% if (categories.length === 0) { %>
+            <tr>
+              <td colspan="4" style="text-align: center;">No categories found</td>
+            </tr>
+          <% } else { %>
+            <% categories.forEach(category => { %>
+              <tr>
+                <td><%= category.name %></td>
+                <td><%= category.description || 'N/A' %></td>
+                <td>
+                  <div class="status-toggle <%= category.isListed ? 'active' : '' %>"
+                       id="toggle-<%= category._id %>"
+                       onclick="toggleCategoryStatus(this, '<%= category._id %>')">
+                  </div>
+                  <span><%= category.isListed ? 'Listed' : 'Unlisted' %></span>
+                </td>
+                <td>
+                  <form action="/admin/editCategory" method="GET" style="display:inline;">
+                    <input type="hidden" name="id" value="<%= category._id %>">
+                    <button class="action-btn" title="Edit">✏️</button>
+                  </form>
+                  <form action="/admin/deleteCategory" method="POST" style="display:inline;" onsubmit="return confirmDelete(event, '<%= category._id %>')">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <input type="hidden" name="id" value="<%= category._id %>">
+                    <button class="action-btn" title="Delete">🗑️</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+<% if (totalPages > 1 && typeof currentPage !== 'undefined') { %>
+  <div class="pagination" id="paginationControls">
+
+    <% const prevPage = currentPage > 1 ? currentPage - 1 : 1; %>
+    <button class="pagination-btn <%= currentPage === 1 ? 'disabled' : '' %>"
+            onclick="loadPage(<%= prevPage %>)"
+            <% if (currentPage === 1) { %> disabled <% } %>>
+      Previous
+    </button>
+
+
+    <% for (let i = 1; i <= totalPages; i++) { %>
+      <button class="pagination-btn <%= currentPage === i ? 'active' : '' %>"
+              onclick="loadPage(<%= i %>)">
+        <%= i %>
+      </button>
+    <% } %>
+
+
+    <% const nextPage = currentPage < totalPages ? currentPage + 1 : totalPages; %>
+    <button class="pagination-btn <%= currentPage === totalPages ? 'disabled' : '' %>"
+            onclick="loadPage(<%= nextPage %>)"
+            <% if (currentPage === totalPages) { %> disabled <% } %>>
+      Next
+    </button>
+  </div>
+<% } else if (typeof currentPage === 'undefined') { %>
+  <div class="alert alert-error">Error: Unable to load pagination. Please try again.</div>
+<% } %>
+  <script>
+    // Check for success/error messages on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const message = urlParams.get('message');
+      const error = urlParams.get('error');
+
+      if (message) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: decodeURIComponent(message.replace(/\+/g, ' '))
+        }).then(() => {
+          // Clean URL by removing query parameters
+          const url = new URL(window.location);
+          url.searchParams.delete('message');
+          url.searchParams.delete('error');
+          window.history.replaceState({}, document.title, url.pathname + url.search);
+        });
+      } else if (error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: decodeURIComponent(error.replace(/\+/g, ' '))
+        }).then(() => {
+          // Clean URL by removing query parameters
+          const url = new URL(window.location);
+          url.searchParams.delete('message');
+          url.searchParams.delete('error');
+          window.history.replaceState({}, document.title, url.pathname + url.search);
+        });
+      }
+    });
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+
+    async function handleAddCategory(event) {
+      const form = document.getElementById('categoryForm');
+      const nameInput = document.getElementById('name');
+      const descriptionInput = document.getElementById('description');
+      const nameValue = nameInput.value.trim();
+      const descriptionValue = descriptionInput.value.trim();
+      const addBtn = document.getElementById('addCategoryBtn');
+
+      // Client-side validation
+      if (!nameValue) {
+        event.preventDefault();
+        Swal.fire({
+          icon: 'error',
+          title: 'Validation Error',
+          text: 'Category name is required'
+        });
+        nameInput.focus();
+        return false;
+      }
+
+      if (nameValue.length < 2) {
+        event.preventDefault();
+        Swal.fire({
+          icon: 'error',
+          title: 'Validation Error',
+          text: 'Category name must be at least 2 characters'
+        });
+        nameInput.focus();
+        return false;
+      }
+
+      if (nameValue.length > 30) {
+        event.preventDefault();
+        Swal.fire({
+          icon: 'error',
+          title: 'Validation Error',
+          text: 'Category name must be less than 30 characters'
+        });
+        nameInput.focus();
+        return false;
+      }
+
+      if (descriptionValue.length > 100) {
+        event.preventDefault();
+        Swal.fire({
+          icon: 'error',
+          title: 'Validation Error',
+          text: 'Description must be less than 100 characters'
+        });
+        descriptionInput.focus();
+        return false;
+      }
+
+      // If validation passes, show loading and allow form submission
+      addBtn.disabled = true;
+      addBtn.textContent = 'Adding...';
+
+      Swal.fire({
+        title: 'Adding Category...',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      // Let the form submit normally
+      return true;
+    }
+
+    // Toggle category status
+    async function toggleCategoryStatus(element, categoryId) {
+      try {
+        // Show loading state
+        element.classList.add('disabled');
+        element.style.opacity = '0.5';
+
+        const response = await fetch(`/admin/category/toggle/${categoryId}`, {
+          method: 'PATCH',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        // Reset loading state
+        element.classList.remove('disabled');
+        element.style.opacity = '1';
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to update category status');
+        }
+
+        const data = await response.json();
+        const newStatus = data.newStatus;
+        const statusText = element.nextElementSibling;
+
+        if (newStatus) {
+          element.classList.add('active');
+          statusText.textContent = 'Listed';
+        } else {
+          element.classList.remove('active');
+          statusText.textContent = 'Unlisted';
+        }
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: 'Category status updated successfully',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      } catch (error) {
+        // Reset UI state on error
+        element.classList.remove('disabled');
+        element.style.opacity = '1';
+        console.error('Error toggling category status:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: error.message || 'An error occurred while updating the category status'
+        });
+      }
+    }
+
+    // Load new page via AJAX
+    async function loadPage(page) {
+      try {
+        // Disable pagination buttons during load
+        const paginationButtons = document.querySelectorAll('.pagination-btn');
+        paginationButtons.forEach(btn => {
+          btn.classList.add('disabled');
+          btn.disabled = true;
+        });
+
+        const response = await fetch(`/admin/category?page=${page}`, {
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        // Re-enable pagination buttons
+        paginationButtons.forEach(btn => {
+          btn.classList.remove('disabled');
+          btn.disabled = false;
+        });
+
+        if (!response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to fetch categories');
+          } else {
+            throw new Error('Unexpected response from server');
+          }
+        }
+
+        const data = await response.json();
+
+        // Update table body using DOM manipulation to prevent XSS
+        const tbody = document.getElementById('categoryTableBody');
+        tbody.innerHTML = '';
+
+        if (data.categories.length === 0) {
+          const row = document.createElement('tr');
+          const cell = document.createElement('td');
+          cell.colSpan = 4;
+          cell.style.textAlign = 'center';
+          cell.textContent = 'No categories found';
+          row.appendChild(cell);
+          tbody.appendChild(row);
+        } else {
+          data.categories.forEach(category => {
+            const row = document.createElement('tr');
+
+            // Category Name
+            const nameCell = document.createElement('td');
+            nameCell.textContent = category.name;
+            row.appendChild(nameCell);
+
+            // Description
+            const descCell = document.createElement('td');
+            descCell.textContent = category.description || 'N/A';
+            row.appendChild(descCell);
+
+            // Status
+            const statusCell = document.createElement('td');
+            const toggleDiv = document.createElement('div');
+            toggleDiv.className = `status-toggle ${category.isListed ? 'active' : ''}`;
+            toggleDiv.id = `toggle-${category._id}`;
+            toggleDiv.onclick = () => toggleCategoryStatus(toggleDiv, category._id);
+            statusCell.appendChild(toggleDiv);
+
+            const statusSpan = document.createElement('span');
+            statusSpan.textContent = category.isListed ? 'Listed' : 'Unlisted';
+            statusCell.appendChild(statusSpan);
+            row.appendChild(statusCell);
+
+            // Actions
+            const actionCell = document.createElement('td');
+
+            // Edit Form
+            const editForm = document.createElement('form');
+            editForm.action = '/admin/editCategory';
+            editForm.method = 'GET';
+            editForm.style.display = 'inline';
+            const editInput = document.createElement('input');
+            editInput.type = 'hidden';
+            editInput.name = 'id';
+            editInput.value = category._id;
+            editForm.appendChild(editInput);
+            const editBtn = document.createElement('button');
+            editBtn.className = 'action-btn';
+            editBtn.title = 'Edit';
+            editBtn.textContent = '✏️';
+            editForm.appendChild(editBtn);
+            actionCell.appendChild(editForm);
+
+            // Delete Form
+            const deleteForm = document.createElement('form');
+            deleteForm.action = '/admin/deleteCategory';
+            deleteForm.method = 'POST';
+            deleteForm.style.display = 'inline';
+            deleteForm.onsubmit = () => confirm('Are you sure you want to delete this category?');
+            const methodInput = document.createElement('input');
+            methodInput.type = 'hidden';
+            methodInput.name = '_method';
+            methodInput.value = 'DELETE';
+            deleteForm.appendChild(methodInput);
+            const deleteInput = document.createElement('input');
+            deleteInput.type = 'hidden';
+            deleteInput.name = 'id';
+            deleteInput.value = category._id;
+            deleteForm.appendChild(deleteInput);
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'action-btn';
+            deleteBtn.title = 'Delete';
+            deleteBtn.textContent = '🗑️';
+            deleteForm.appendChild(deleteBtn);
+            actionCell.appendChild(deleteForm);
+
+            row.appendChild(actionCell);
+            tbody.appendChild(row);
+          });
+        }
+
+        // Update pagination controls
+        const pagination = document.getElementById('paginationControls');
+        if (!pagination) return; // Exit if pagination controls are not present
+
+        pagination.innerHTML = '';
+
+        // Previous Button
+        const prevBtn = document.createElement('button');
+        prevBtn.className = `pagination-btn ${data.currentPage === 1 ? 'disabled' : ''}`;
+        prevBtn.disabled = data.currentPage === 1;
+        prevBtn.onclick = () => loadPage(data.currentPage - 1);
+        prevBtn.textContent = 'Previous';
+        pagination.appendChild(prevBtn);
+
+        // Page Numbers
+        for (let i = 1; i <= data.totalPages; i++) {
+          const pageBtn = document.createElement('button');
+          pageBtn.className = `pagination-btn ${data.currentPage === i ? 'active' : ''}`;
+          pageBtn.onclick = () => loadPage(i);
+          pageBtn.textContent = i;
+          pagination.appendChild(pageBtn);
+        }
+
+        // Next Button
+        const nextBtn = document.createElement('button');
+        nextBtn.className = `pagination-btn ${data.currentPage === data.totalPages ? 'disabled' : ''}`;
+        nextBtn.disabled = data.currentPage === data.totalPages;
+        nextBtn.onclick = () => loadPage(data.currentPage + 1);
+        nextBtn.textContent = 'Next';
+        pagination.appendChild(nextBtn);
+      } catch (error) {
+        // Re-enable pagination buttons on error
+        const paginationButtons = document.querySelectorAll('.pagination-btn');
+        paginationButtons.forEach(btn => {
+          btn.classList.remove('disabled');
+          btn.disabled = false;
+        });
+        console.error('Error loading page:', error);
+        alert(error.message || 'Failed to load categories. Please try again.');
+      }
+    }
+
+    // Confirm delete with SweetAlert
+    function confirmDelete(event, categoryId) {
+      event.preventDefault();
+
+      Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Submit the form
+          event.target.submit();
+        }
+      });
+
+      return false;
+    }
+
+    // Handle logout
+    async function handleLogout() {
+      Swal.fire({
+        title: 'Are you sure?',
+        text: 'Do you want to log out?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, log out!'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'Logging out...',
+            allowOutsideClick: false,
+            didOpen: () => {
+              Swal.showLoading();
+            }
+          });
+
+          // Redirect to logout
+          window.location.href = '/admin/logout';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

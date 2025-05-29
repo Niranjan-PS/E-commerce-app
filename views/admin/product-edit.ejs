@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Product</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .preview-image {
+            max-width: 100px;
+            max-height: 100px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
+        }
+        .image-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875em;
+        }
+        .existing-image {
+            position: relative;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .remove-image {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4>Edit Product</h4>
+            </div>
+            <div class="card-body">
+                <% if (error) { %>
+                    <div class="alert alert-danger"><%= error %></div>
+                <% } %>
+                
+                <form id="editProductForm" action="/admin/edit-product/<%= product._id %>" method="POST" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="productName" class="form-label">Product Name</label>
+                                <input type="text" class="form-control" id="productName" name="productName" value="<%= product.productName %>" required>
+                                <div class="error-message" id="productNameError"></div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="3" required><%= product.description %></textarea>
+                                <div class="error-message" id="descriptionError"></div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="category" class="form-label">Category</label>
+                                <select class="form-select" id="category" name="category" required>
+                                    <option value="">Select Category</option>
+                                    <% categories.forEach(cat => { %>
+                                        <option value="<%= cat.name %>" <%= product.category.name === cat.name ? 'selected' : '' %>><%= cat.name %></option>
+                                    <% }); %>
+                                </select>
+                                <div class="error-message" id="categoryError"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="price" class="form-label">Price</label>
+                                <input type="number" class="form-control" id="price" name="price" min="0" step="0.01" value="<%= product.price %>" required>
+                                <div class="error-message" id="priceError"></div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="quantity" class="form-label">Quantity</label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" min="0" value="<%= product.quantity %>" required>
+                                <div class="error-message" id="quantityError"></div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Product Images (Minimum 3 required)</label>
+                                <div class="image-preview-container mb-3" id="existingImages">
+                                    <% product.productImage.forEach((img, index) => { %>
+                                        <div class="existing-image">
+                                            <img src="/uploads/product-images/<%= img %>" class="preview-image">
+                                            <input type="hidden" name="existingImages[]" value="<%= img %>">
+                                            <span class="remove-image" onclick="removeImage(this)">×</span>
+                                        </div>
+                                    <% }); %>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <label for="image1" class="form-label">Image 1</label>
+                                    <input type="file" class="form-control" id="image1" name="image1" accept="image/*">
+                                </div>
+                                <div class="mb-2">
+                                    <label for="image2" class="form-label">Image 2</label>
+                                    <input type="file" class="form-control" id="image2" name="image2" accept="image/*">
+                                </div>
+                                <div class="mb-2">
+                                    <label for="image3" class="form-label">Image 3</label>
+                                    <input type="file" class="form-control" id="image3" name="image3" accept="image/*">
+                                </div>
+                                <div class="mb-2">
+                                    <label for="image4" class="form-label">Image 4</label>
+                                    <input type="file" class="form-control" id="image4" name="image4" accept="image/*">
+                                </div>
+                                <div class="error-message" id="imagesError"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Update Product</button>
+                    <a href="/admin/products" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Function to remove existing image
+        function removeImage(element) {
+            const container = element.parentElement;
+            container.remove();
+            validateImageCount();
+        }
+
+        // Function to validate image count
+        function validateImageCount() {
+            const existingImages = document.querySelectorAll('#existingImages .existing-image');
+            const newImage1 = document.getElementById('image1').files.length;
+            const newImage2 = document.getElementById('image2').files.length;
+            const newImage3 = document.getElementById('image3').files.length;
+            const newImage4 = document.getElementById('image4').files.length;
+            
+            const totalImages = existingImages.length + newImage1 + newImage2 + newImage3 + newImage4;
+            
+            if (totalImages < 3) {
+                document.getElementById('imagesError').textContent = 'Product must have at least 3 images';
+                return false;
+            } else {
+                document.getElementById('imagesError').textContent = '';
+                return true;
+            }
+        }
+
+        // Add change event listeners to file inputs
+        ['image1', 'image2', 'image3', 'image4'].forEach(id => {
+            document.getElementById(id).addEventListener('change', validateImageCount);
+        });
+
+        // Form validation
+        document.getElementById('editProductForm').addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            // Validate product name
+            const productName = document.getElementById('productName');
+            if (!productName.value.trim()) {
+                document.getElementById('productNameError').textContent = 'Product name is required';
+                isValid = false;
+            } else {
+                document.getElementById('productNameError').textContent = '';
+            }
+            
+            // Validate description
+            const description = document.getElementById('description');
+            if (!description.value.trim()) {
+                document.getElementById('descriptionError').textContent = 'Description is required';
+                isValid = false;
+            } else {
+                document.getElementById('descriptionError').textContent = '';
+            }
+            
+            // Validate category
+            const category = document.getElementById('category');
+            if (!category.value) {
+                document.getElementById('categoryError').textContent = 'Category is required';
+                isValid = false;
+            } else {
+                document.getElementById('categoryError').textContent = '';
+            }
+            
+            // Validate price
+            const price = document.getElementById('price');
+            if (!price.value || parseFloat(price.value) <= 0) {
+                document.getElementById('priceError').textContent = 'Valid price is required';
+                isValid = false;
+            } else {
+                document.getElementById('priceError').textContent = '';
+            }
+            
+            // Validate quantity
+            const quantity = document.getElementById('quantity');
+            if (!quantity.value || parseInt(quantity.value) < 0) {
+                document.getElementById('quantityError').textContent = 'Valid quantity is required';
+                isValid = false;
+            } else {
+                document.getElementById('quantityError').textContent = '';
+            }
+            
+            // Validate images
+            if (!validateImageCount()) {
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>

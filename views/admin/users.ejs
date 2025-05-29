@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Users</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      min-height: 100vh;
+      background-color: #f5f5f5;
+    }
+
+    .sidebar {
+      width: 220px;
+      background-color: #fff;
+      border-right: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .sidebar li {
+      padding: 15px 20px;
+      cursor: pointer;
+      border-left: 4px solid transparent;
+      transition: background 0.3s;
+    }
+
+    .sidebar li.active,
+    .sidebar li:hover {
+      background-color: #e2f0e2;
+      border-left: 4px solid #4CAF50;
+      font-weight: bold;
+    }
+
+    .logout-btn {
+      background-color: black;
+      color: white;
+      padding: 12px;
+      margin: 20px;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .content {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .search-bar {
+      max-width: 400px;
+      margin: 20px auto 30px auto;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      border-radius: 30px;
+      background-color: #fff;
+      padding: 8px 20px;
+    }
+
+    #searchInput {
+      width: 100%;
+      padding: 10px 15px;
+      border: none;
+      outline: none;
+      font-size: 16px;
+      border-radius: 30px;
+      box-sizing: border-box;
+      transition: box-shadow 0.3s ease;
+    }
+
+    #searchInput:focus {
+      box-shadow: 0 0 8px 2px #4CAF50;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+
+    table th, table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    table th {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    table tr:hover {
+      background-color: #f5f5f5;
+    }
+
+    .block-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+
+    .block-btn.block {
+      background-color: #d9534f;
+    }
+
+    .block-btn.unblock {
+      background-color: #5cb85c;
+    }
+
+    .block-btn:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin-top: 30px;
+      flex-wrap: wrap;
+    }
+
+    .pagination a {
+      margin: 0 5px;
+      padding: 8px 16px;
+      border: 1px solid #4CAF50;
+      color: #4CAF50;
+      background-color: #fff;
+      border-radius: 4px;
+      transition: all 0.3s;
+    }
+
+    .pagination a.active {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .pagination a:hover:not(.active) {
+      background-color: #f0f0f0;
+    }
+
+    .no-users {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+      font-style: italic;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+      }
+      .sidebar {
+        width: 100%;
+        height: auto;
+      }
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <ul class="menu">
+      <li><a href="/admin/dashboard">Dashboard</a></li>
+      <li><a href="/admin/products" class="adminS">Products</a></li>
+      <li><a href="/admin/orders">Order Lists</a></li>
+      <li class="active"><a href="/admin/users">Users</a></li>
+      <li><a href="/admin/sales">Sales</a></li>
+      <li><a href="/admin/coupons">Coupons</a></li>
+      <li><a href="/admin/category">Category</a></li>
+      <li><a href="/admin/banner">Banner</a></li>
+      <li><a href="/admin/offer">Offer</a></li>
+    </ul>
+    <div class="logout-btn">Logout</div>
+  </div>
+
+  <div class="content">
+    <div class="search-bar">
+      <form action="/admin/users" method="get">
+        <input 
+          type="text" 
+          id="searchInput" 
+          name="search"
+          value="<%= search %>"
+          placeholder="Search by name or email..." 
+          autocomplete="off"
+        >
+      </form>
+    </div>
+
+    <h2>Users Management</h2>
+    
+    <% if (message) { %>
+      <div class="no-users"><%= message %></div>
+    <% } else { %>
+      <table id="userTable">
+        <thead>
+          <tr>
+          
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% user.forEach(user => { %>
+            <tr>
+              
+              <td><%= user.name %></td>
+              <td><%= user.email %></td>
+              <td><%= user.phone || 'N/A' %></td>
+              <td><%= user.isBlocked ? 'Blocked' : 'Active' %></td>
+              <td>
+                <button 
+                  class="block-btn <%= user.isBlocked ? 'unblock' : 'block' %>" 
+                  data-user-id="<%= user._id %>"
+                  onclick="toggleBlock(this)"
+                >
+                  <%= user.isBlocked ? 'Unblock' : 'Block' %>
+                </button>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+
+      <% if (totalPages > 1) { %>
+        <div class="pagination">
+          <% if (currentPage > 1) { %>
+            <a href="/admin/users?page=<%= currentPage-1 %><% if (search) { %>&search=<%= search %><% } %>">Previous</a>
+          <% } %>
+
+          <% for (let i = 1; i <= totalPages; i++) { %>
+            <a 
+              href="/admin/users?page=<%= i %><% if (search) { %>&search=<%= search %><% } %>" 
+              class="<%= i === currentPage ? 'active' : '' %>"
+            >
+              <%= i %>
+            </a>
+          <% } %>
+
+          <% if (currentPage < totalPages) { %>
+            <a href="/admin/users?page=<%= currentPage+1 %><% if (search) { %>&search=<%= search %><% } %>">Next</a>
+          <% } %>
+        </div>
+      <% } %>
+    <% } %>
+  </div>
+
+  <script>
+    async function toggleBlock(button) {
+      const userId = button.getAttribute('data-user-id');
+      const isBlocked = button.classList.contains('block');
+      
+      try {
+        const response = await fetch(`/admin/${isBlocked ? 'blockUser' : 'unblockUser'}?id=${userId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (response.ok) {
+          location.reload(); // Refresh to see changes
+        } else {
+          const error = await response.json();
+          alert(error.message || 'Failed to update user status');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred while processing the request.');
+      }
+    }
+
+    // Submit search form when user stops typing
+    const searchInput = document.getElementById('searchInput');
+    let searchTimer;
+    
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        searchInput.form.submit();
+      }, 800);
+    });
+  </script>
+</body>
+</html>

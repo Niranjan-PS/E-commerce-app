@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Product Listing</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <!-- SweetAlert2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <style>
+    .product-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+    .pagination a.active {
+      font-weight: bold;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container py-4">
+    <h2 class="mb-4">All Products</h2>
+
+    
+    <form id="filterForm" class="row mb-4" method="GET" action="/user-products">
+      <div class="col-md-4">
+        <input type="text" class="form-control" id="searchInput" name="search" placeholder="Search product..." value="<%= searchQuery %>">
+      </div>
+      <div class="col-md-4">
+        <select class="form-select" id="categorySelect" name="category">
+          <option value="">All Categories</option>
+          <% categories.forEach(cat => { %>
+            <option value="<%= cat.name.replace(/^:/, '') %>" <%= categoryFilter === cat.name ? 'selected' : '' %>><%= cat.name %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <button type="button" onclick="submitFilterForm()" class="btn btn-primary w-100">Filter</button>
+      </div>
+    </form>
+
+    <!-- Product Grid -->
+    <div class="row row-cols-1 row-cols-md-4 g-4" id="productGrid">
+      <% if (products.length === 0) { %>
+        <!-- Show "No products found" with SweetAlert2 -->
+        <script>
+          document.addEventListener('DOMContentLoaded', () => {
+            Swal.fire({
+              icon: 'info',
+              title: 'No Products',
+              text: 'No products found.',
+              confirmButtonColor: '#6200ea'
+            });
+          });
+        </script>
+      <% } %>
+
+      <% products.forEach(product => { %>
+        <div class="col">
+          <div class="card h-100 product-card">
+            <img src="<%= product.productImage && product.productImage[0] ? ('/uploads/product-images/' + product.productImage[0]) : '/uploads/product-images/default.jpg' %>" class="card-img-top" alt="<%= product.productName %>">
+            <div class="card-body">
+              <h5 class="card-title"><%= product.productName %></h5>
+              <p class="card-text"><%= product.description %></p>
+            </div>
+            <div class="card-footer">
+              <a href="/products/<%= product._id %>" class="btn btn-sm btn-outline-primary w-100">View Details</a>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+
+    <!-- Pagination -->
+    <nav class="mt-4">
+      <ul class="pagination justify-content-center">
+        <% for (let i = 1; i <= totalPages; i++) { %>
+          <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+            <a class="page-link" href="/user-products?page=<%= i %>&search=<%= encodeURIComponent(searchQuery) %>&category=<%= encodeURIComponent(categoryFilter) %>"><%= i %></a>
+          </li>
+        <% } %>
+      </ul>
+    </nav>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- SweetAlert2 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    // Handle filter form submission with SweetAlert2
+    function submitFilterForm() {
+      const form = document.getElementById('filterForm');
+      const searchInput = document.getElementById('searchInput');
+      const categorySelect = document.getElementById('categorySelect');
+
+      // Manually construct query parameters
+      const params = new URLSearchParams();
+      const searchValue = searchInput.value.trim();
+      const categoryValue = categorySelect.value.trim();
+
+      if (searchValue) {
+        params.append('search', searchValue);
+      }
+      if (categoryValue) {
+        params.append('category', categoryValue);
+      }
+
+      const url = form.action + (params.toString() ? '?' + params.toString() : '');
+
+      console.log('Constructed URL:', url);
+      console.log('Search Value:', searchValue);
+      console.log('Category Value:', categoryValue);
+
+      // Show loading state
+      Swal.fire({
+        title: 'Filtering products...',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      fetch(url, {
+        method: 'GET',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        }
+      })
+        .then(response => {
+          console.log('Response Status:', response.status);
+          console.log('Response Headers:', response.headers.get('Content-Type'));
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          if (!response.headers.get('Content-Type')?.includes('application/json')) {
+            return response.text().then(text => {
+              console.log('Response Body:', text);
+              throw new Error('Response is not JSON');
+            });
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log('Response Data:', data);
+          if (data.success) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Success!',
+              text: 'Products filtered successfully.',
+              confirmButtonColor: '#6200ea',
+              timer: 1500,
+              timerProgressBar: true
+            }).then(() => {
+              form.submit(); // Proceed with the default form submission to refresh the page
+            });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: data.message || 'Failed to filter products.',
+              confirmButtonColor: '#6200ea'
+            });
+          }
+        })
+        .catch(error => {
+          console.error('Fetch Error:', error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An unexpected error occurred. Please try again.',
+            confirmButtonColor: '#6200ea'
+          });
+        });
+    }
+
+    // Automatically load products on page load if search is empty
+    window.addEventListener('load', () => {
+      const searchInput = document.getElementById('searchInput');
+      if (!searchInput.value.trim()) {
+        submitFilterForm();
+      }
+    });
+  </script>
+</body>
+</html>

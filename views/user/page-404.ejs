@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Page Not Found - Perfume Store</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .error-container {
+            text-align: center;
+            background-color: white;
+            padding: 3rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .error-code {
+            font-size: 8rem;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 1rem;
+        }
+        .btn-back {
+            background-color: black;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-back:hover {
+            background-color: #333;
+            transform: scale(1.05);
+        }
+        .perfume-illustration {
+            max-width: 300px;
+            margin: 0 auto 2rem;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="error-container">
+                    <img src="/api/placeholder/300/300" alt="Perfume Illustration" class="img-fluid perfume-illustration">
+                    
+                    <div class="error-code">404</div>
+                    
+                    <h2>Oops! Page Not Found</h2>
+                    
+                    <p class="lead text-muted mb-4">
+                        The page you are looking for seems to have wandered off 
+                        like a rare, elusive fragrance.
+                    </p>
+                    
+                    <div class="d-flex justify-content-center">
+                        <a href="/" class="btn btn-back btn-lg">
+                            Return to Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle (includes Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

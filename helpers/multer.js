@@ -1,0 +1,97 @@
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import sharp from "sharp";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const ensureDirectoryExists = (dirPath) => {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+};
+
+// Define fixed dimensions for images
+const FIXED_WIDTH = 300;
+const FIXED_HEIGHT = 300;
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(__dirname, "../public/uploads/product-images");
+    ensureDirectoryExists(uploadPath);
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, uniqueSuffix + ext);
+  }
+});
+
+function checkFileType(file, cb) {
+  const filetypes = /jpeg|jpg|png|webp/;
+  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = filetypes.test(file.mimetype);
+
+  if (extname && mimetype) {
+    return cb(null, true);
+  } else {
+    cb(new Error("Only images (JPEG, JPG, PNG, WEBP) are allowed"));
+  }
+}
+
+// Create the Multer instance without pre-configuring .array()
+export const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    checkFileType(file, cb);
+  }
+});
+
+// Middleware to resize and crop images after upload
+const resizeAndCropImage = async (req, file, cb) => {
+  try {
+    const tempPath = file.path;
+    const outputPath = tempPath; // Overwrite the original file
+
+    await sharp(tempPath)
+      .resize({
+        width: FIXED_WIDTH,
+        height: FIXED_HEIGHT,
+        fit: sharp.fit.cover,
+        position: sharp.strategy.entropy
+      })
+      .toFile(outputPath);
+
+    cb(null);
+  } catch (error) {
+    console.error("Error resizing image:", error);
+    cb(new Error("Failed to process image"));
+  }
+};
+
+// Middleware to process images after Multer uploads them
+export const processProductImages = (req, res, next) => {
+  if (!req.files || req.files.length === 0) {
+    return next();
+  }
+
+  const resizePromises = req.files.map(file =>
+    new Promise((resolve, reject) => {
+      resizeAndCropImage(req, file, (err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    })
+  );
+
+  Promise.all(resizePromises)
+    .then(() => next())
+    .catch(err => next(err));
+};
+
+// Export the Multer instance

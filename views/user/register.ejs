@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign Up | Essence Perfume</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      :root {
+        --dark-bg: #121212;
+        --form-bg: rgba(26, 26, 26, 0.95);
+        --input-bg: #242424;
+        --input-focus: #8b7f7f;
+        --text-primary: #eddcdc;
+        --text-secondary: #909090;
+        --accent: #d4af37;
+        --accent-hover: #c4a030;
+        --error: #dc3545;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background: url('https://i.pinimg.com/736x/86/7d/cc/867dccfbeb484d59989fa755f68b6c10.jpg') no-repeat center center fixed;
+        background-size: cover;
+        color: var(--text-primary);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .form-container {
+        width: 100%;
+        max-width: 450px;
+        background-color: var(--form-bg);
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        margin: 1rem;
+        position: fixed;
+      }
+
+      .form-header {
+        margin-bottom: 1.5rem;
+        text-align: center;
+      }
+
+      .form-title {
+        font-weight: 300;
+        font-size: 1.75rem;
+        color: var(--accent);
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.5px;
+      }
+
+      .form-subtitle {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+      }
+
+      .input-group {
+        position: relative;
+        margin-bottom: 1rem;
+      }
+
+      .form-control {
+        width: 100%;
+        background-color: var(--input-bg);
+        border: none;
+        border-radius: 6px;
+        padding: 0.75rem 1rem;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        transition: all 0.25s ease;
+      }
+
+      .form-control:focus {
+        background-color: var(--input-focus);
+        outline: none;
+        box-shadow: none;
+        border-left: 2px solid var(--accent);
+      }
+
+      .form-control.is-invalid {
+        border-left: 2px solid var(--error);
+      }
+
+      .form-control::placeholder {
+        color: var(--text-secondary);
+        opacity: 0.7;
+      }
+
+      .error-message {
+        color: var(--error);
+        font-size: 0.7rem;
+        margin-top: 0.25rem;
+        display: block;
+      }
+
+      .verification-options {
+        margin-bottom: 1.5rem;
+      }
+
+      .verification-title {
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-secondary);
+      }
+
+      .form-check {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.35rem;
+      }
+
+      .form-check-input {
+        margin-right: 0.5rem;
+        cursor: pointer;
+      }
+
+      .form-check-input:checked {
+        background-color: var(--accent);
+        border-color: var(--accent);
+      }
+
+      .form-check-label {
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+
+      .btn {
+        padding: 0.75rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.25s ease;
+      }
+
+      .btn-primary {
+        background-color: var(--accent);
+        color: #000;
+      }
+
+      .btn-primary:hover {
+        background-color: var(--accent-hover);
+        transform: translateY(-2px);
+      }
+
+      .btn-outline {
+        width: 100%;
+        background-color: transparent;
+        border: 1px solid var(--text-secondary);
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0.75rem 0;
+      }
+
+      .btn-outline:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        transform: translateY(-2px);
+      }
+
+      .btn-outline img {
+        margin-right: 0.5rem;
+        width: 20px;
+        height: 20px;
+      }
+
+      .login-text {
+        text-align: center;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+      }
+
+      .login-link {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      .login-link:hover {
+        text-decoration: underline;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .btn-half {
+        flex: 1;
+        width: auto;
+      }
+
+      .btn-secondary {
+        background-color: transparent;
+        border: 1px solid var(--accent);
+        color: var(--accent);
+      }
+
+      .btn-secondary:hover {
+        background-color: var(--accent);
+        color: #000;
+        transform: translateY(-2px);
+      }
+
+      @media (max-width: 576px) {
+        .form-container {
+          padding: 1.5rem;
+          margin: 0.5rem;
+        }
+
+        .form-title {
+          font-size: 1.5rem;
+        }
+
+        .button-group {
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .btn-half {
+          width: 100%;
+        }
+      }
+    </style>
+   <!-- <img src="/public/images/vecteezy_cool-cat-wearing-sunglasses-against-blue-background_47023082.jpeg" alt="Cool cat with sunglasses" /> -->
+  </head>
+  <body>
+    <div class="form-container">
+      <div class="form-header">
+        <h3 class="form-title">Create an account</h3>
+        <p class="form-subtitle">Enter your details below</p>
+      </div>
+
+      <form action="/register" method="POST">
+        <div class="input-group">
+          <input type="text" name="userName" class="form-control" placeholder="User Name" required />
+          <span class="error-message"></span>
+        </div>
+
+        <div class="input-group">
+          <input type="tel" name="phone" class="form-control" placeholder="Mobile" required />
+          <span class="error-message"></span>
+        </div>
+
+        <div class="input-group">
+          <input type="email" name="email" class="form-control" placeholder="Email" required />
+          <span class="error-message"></span>
+        </div>
+
+        <div class="input-group">
+          <input type="password" name="password" class="form-control" placeholder="Password" minlength="8" maxlength="32" required />
+          <span class="error-message"></span>
+        </div>
+
+        <div class="input-group">
+          <input type="password" name="confirmPassword" class="form-control" placeholder="Confirm Password" required />
+          <span class="error-message"></span>
+        </div>
+
+        <div class="verification-options">
+          <p class="verification-title">Verification Method</p>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="verificationMethod" id="emailVerification" value="email" checked>
+            <label class="form-check-label" for="emailVerification">
+              Email Verification
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="verificationMethod" id="phoneVerification" value="phone">
+            <label class="form-check-label" for="phoneVerification">
+              Phone Verification
+            </label>
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button type="submit" class="btn btn-primary btn-half">Create Account</button>
+          <a href="/login" class="btn btn-secondary btn-half">Log In</a>
+        </div>
+
+        <a href="/google" class="btn btn-outline">
+          <img src="https://img.icons8.com/color/20/000000/google-logo.png" alt="Google" />
+          Sign up with Google
+        </a>
+      </form>
+
+      <p class="login-text">Already have an account? <a href="/login" class="login-link">Log in</a></p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.querySelector('form');
+    const userName = form.userName;
+    const phone = form.phone;
+    const email = form.email;
+    const password = form.password;
+    const confirmPassword = form.confirmPassword;
+
+    // Helper to show error
+    function showError(input, message) {
+      input.classList.add('is-invalid');
+      const errorElement = input.nextElementSibling;
+      if (errorElement && errorElement.classList.contains('error-message')) {
+        errorElement.textContent = message;
+      }
+    }
+
+    // Helper to clear error
+    function clearError(input) {
+      input.classList.remove('is-invalid');
+      const errorElement = input.nextElementSibling;
+      if (errorElement && errorElement.classList.contains('error-message')) {
+        errorElement.textContent = '';
+      }
+    }
+
+    // Username validation (only letters and spaces)
+    userName.addEventListener('blur', () => {
+      const nameRegex = /^[A-Za-z ]+$/;
+      if (!nameRegex.test(userName.value.trim())) {
+        showError(userName, 'Username must contain only letters.');
+      } else {
+        clearError(userName);
+      }
+    });
+
+    // Phone validation (10 digits)
+    phone.addEventListener('blur', () => {
+      const phoneRegex = /^\+91\d{10}$/;
+      if (!phoneRegex.test(phone.value.trim())) {
+        showError(phone, 'Enter a valid 10-digit phone number.');
+      } else {
+        clearError(phone);
+      }
+    });
+
+    // Email validation
+    email.addEventListener('blur', () => {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.value.trim())) {
+        showError(email, 'Enter a valid email address.');
+      } else {
+        clearError(email);
+      }
+    });
+
+    // Password validation (8–32 characters)
+    password.addEventListener('blur', () => {
+      if (password.value.length < 8 || password.value.length > 32) {
+        showError(password, 'Password must be between 8 to 32 characters.');
+      } else {
+        clearError(password);
+      }
+    });
+
+    // Confirm password match
+    confirmPassword.addEventListener('blur', () => {
+      if (confirmPassword.value !== password.value) {
+        showError(confirmPassword, 'Passwords do not match.');
+      } else {
+        clearError(confirmPassword);
+      }
+    });
+
+    // Final check on form submit
+    form.addEventListener('submit', (e) => {
+      const inputs = [userName, phone, email, password, confirmPassword];
+      inputs.forEach(input => input.dispatchEvent(new Event('blur')));
+      const errors = form.querySelectorAll('.is-invalid');
+      if (errors.length > 0) {
+        e.preventDefault();
+      }
+    });
+  });
+</script>
+  </body>
+</html>
