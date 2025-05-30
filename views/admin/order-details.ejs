@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Details - Admin Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body {
+      background-color: #f8f9fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .admin-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2rem 0;
+      margin-bottom: 2rem;
+    }
+
+    .detail-card {
+      background: white;
+      border-radius: 15px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .info-label {
+      font-weight: 600;
+      color: #6c757d;
+    }
+
+    .info-value {
+      font-weight: 500;
+      color: #212529;
+    }
+
+    .status-badge {
+      padding: 0.5rem 1rem;
+      border-radius: 25px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+    }
+
+    .status-pending { background-color: #fff3cd; color: #856404; }
+    .status-confirmed { background-color: #cce5ff; color: #004085; }
+    .status-processing { background-color: #e2e3e5; color: #383d41; }
+    .status-shipped { background-color: #d4edda; color: #155724; }
+    .status-delivered { background-color: #d1ecf1; color: #0c5460; }
+    .status-cancelled { background-color: #f8d7da; color: #721c24; }
+    .status-returned { background-color: #ffeaa7; color: #6c5ce7; }
+
+    .return-badge {
+      padding: 0.3rem 0.8rem;
+      border-radius: 15px;
+      font-weight: 600;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      margin-left: 0.5rem;
+    }
+
+    .return-requested { background-color: #fff3cd; color: #856404; }
+    .return-approved { background-color: #d4edda; color: #155724; }
+    .return-rejected { background-color: #f8d7da; color: #721c24; }
+    .return-completed { background-color: #d1ecf1; color: #0c5460; }
+
+    .product-item {
+      display: flex;
+      align-items: center;
+      padding: 1rem;
+      border: 1px solid #eee;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+    }
+
+    .product-image {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-right: 1rem;
+    }
+
+    .action-btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+      margin: 0.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .btn-back { background: #6c757d; color: white; }
+    .btn-back:hover { background: #5a6268; color: white; }
+
+    .btn-status { background: #28a745; color: white; }
+    .btn-status:hover { background: #218838; color: white; }
+
+    .btn-return { background: #ffc107; color: #212529; }
+    .btn-return:hover { background: #e0a800; color: #212529; }
+
+    .timeline {
+      position: relative;
+      padding-left: 2rem;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 0.5rem;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #dee2e6;
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -0.75rem;
+      top: 0.5rem;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #28a745;
+      border: 2px solid white;
+      box-shadow: 0 0 0 2px #28a745;
+    }
+
+    .timeline-content {
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <!-- Include Admin Sidebar -->
+  <%- include('../partials/admin/sidebar', { page: 'orders' }) %>
+
+  <div class="main-content">
+    <!-- Admin Header -->
+    <div class="admin-header">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-md-6">
+            <h1><i class="fas fa-file-invoice me-3"></i>Order Details</h1>
+            <p class="mb-0">Order #<%= order.orderNumber %></p>
+          </div>
+          <div class="col-md-6 text-end">
+            <a href="/admin/orders" class="action-btn btn-back">
+              <i class="fas fa-arrow-left me-2"></i>Back to Orders
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+    <!-- Order Information -->
+    <div class="detail-card">
+      <h4 class="mb-4"><i class="fas fa-info-circle me-2"></i>Order Information</h4>
+      <div class="info-grid">
+        <div>
+          <div class="info-item">
+            <span class="info-label">Order Number:</span>
+            <span class="info-value">#<%= order.orderNumber %></span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Order Date:</span>
+            <span class="info-value"><%= new Date(order.orderDate).toLocaleDateString('en-IN') %></span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Order Status:</span>
+            <span class="info-value">
+              <span class="status-badge status-<%= order.orderStatus.toLowerCase() %>">
+                <%= order.orderStatus %>
+              </span>
+              <% if (order.returnStatus && order.returnStatus !== 'None') { %>
+                <span class="return-badge return-<%= order.returnStatus.toLowerCase() %>">
+                  Return <%= order.returnStatus %>
+                </span>
+              <% } %>
+            </span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Payment Status:</span>
+            <span class="info-value"><%= order.paymentStatus %></span>
+          </div>
+        </div>
+        <div>
+          <div class="info-item">
+            <span class="info-label">Total Amount:</span>
+            <span class="info-value fw-bold">₹<%= order.totalAmount.toFixed(2) %></span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Payment Method:</span>
+            <span class="info-value"><%= order.paymentMethod %></span>
+          </div>
+          <% if (order.deliveredAt) { %>
+            <div class="info-item">
+              <span class="info-label">Delivered At:</span>
+              <span class="info-value"><%= new Date(order.deliveredAt).toLocaleDateString('en-IN') %></span>
+            </div>
+          <% } %>
+          <% if (order.cancelledAt) { %>
+            <div class="info-item">
+              <span class="info-label">Cancelled At:</span>
+              <span class="info-value"><%= new Date(order.cancelledAt).toLocaleDateString('en-IN') %></span>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Return Information -->
+      <% if (order.returnStatus && order.returnStatus !== 'None') { %>
+        <h5 class="mt-4 mb-3"><i class="fas fa-undo me-2"></i>Return Information</h5>
+        <div class="info-grid">
+          <div>
+            <% if (order.returnReason) { %>
+              <div class="info-item">
+                <span class="info-label">Return Reason:</span>
+                <span class="info-value"><%= order.returnReason %></span>
+              </div>
+            <% } %>
+            <% if (order.returnRequestedAt) { %>
+              <div class="info-item">
+                <span class="info-label">Requested At:</span>
+                <span class="info-value"><%= new Date(order.returnRequestedAt).toLocaleDateString('en-IN') %></span>
+              </div>
+            <% } %>
+          </div>
+          <div>
+            <% if (order.returnApprovedAt) { %>
+              <div class="info-item">
+                <span class="info-label">Approved At:</span>
+                <span class="info-value"><%= new Date(order.returnApprovedAt).toLocaleDateString('en-IN') %></span>
+              </div>
+            <% } %>
+            <% if (order.returnRejectedAt) { %>
+              <div class="info-item">
+                <span class="info-label">Rejected At:</span>
+                <span class="info-value"><%= new Date(order.returnRejectedAt).toLocaleDateString('en-IN') %></span>
+              </div>
+            <% } %>
+            <% if (order.adminReturnNotes) { %>
+              <div class="info-item">
+                <span class="info-label">Admin Notes:</span>
+                <span class="info-value"><%= order.adminReturnNotes %></span>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Customer Information -->
+    <div class="detail-card">
+      <h4 class="mb-4"><i class="fas fa-user me-2"></i>Customer Information</h4>
+      <div class="info-grid">
+        <div>
+          <div class="info-item">
+            <span class="info-label">Name:</span>
+            <span class="info-value"><%= order.user.name %></span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Email:</span>
+            <span class="info-value"><%= order.user.email %></span>
+          </div>
+          <% if (order.user.phone) { %>
+            <div class="info-item">
+              <span class="info-label">Phone:</span>
+              <span class="info-value"><%= order.user.phone %></span>
+            </div>
+          <% } %>
+        </div>
+        <div>
+          <% if (order.shippingAddress) { %>
+            <div class="info-item">
+              <span class="info-label">Shipping Address:</span>
+              <span class="info-value">
+                <%= order.shippingAddress.street %><br>
+                <%= order.shippingAddress.city %>, <%= order.shippingAddress.state %><br>
+                <%= order.shippingAddress.zipCode %>, <%= order.shippingAddress.country %>
+              </span>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Items -->
+    <div class="detail-card">
+      <h4 class="mb-4"><i class="fas fa-shopping-cart me-2"></i>Order Items</h4>
+      <% order.items.forEach(item => { %>
+        <div class="product-item">
+          <% if (item.product && item.product.productImage && item.product.productImage.length > 0) { %>
+            <img src="/uploads/product-images/<%= item.product.productImage[0] %>" alt="<%= item.productName %>" class="product-image">
+          <% } else { %>
+            <div class="product-image bg-light d-flex align-items-center justify-content-center">
+              <i class="fas fa-image text-muted"></i>
+            </div>
+          <% } %>
+          <div class="flex-grow-1">
+            <h6 class="mb-1"><%= item.productName %></h6>
+            <p class="text-muted mb-1">
+              <% if (item.product && item.product.category) { %>
+                Category: <%= item.product.category %>
+              <% } %>
+            </p>
+            <div class="row">
+              <div class="col-md-3">
+                <small class="text-muted">Quantity:</small>
+                <div class="fw-bold"><%= item.quantity %></div>
+              </div>
+              <div class="col-md-3">
+                <small class="text-muted">Unit Price:</small>
+                <div class="fw-bold">₹<%= (item.salePrice || item.price).toFixed(2) %></div>
+              </div>
+              <div class="col-md-3">
+                <small class="text-muted">Total:</small>
+                <div class="fw-bold">₹<%= ((item.salePrice || item.price) * item.quantity).toFixed(2) %></div>
+              </div>
+              <div class="col-md-3">
+                <small class="text-muted">Status:</small>
+                <div class="fw-bold text-<%= item.itemStatus === 'Active' ? 'success' :
+                                           item.itemStatus === 'Cancelled' ? 'danger' :
+                                           item.itemStatus === 'Returned' ? 'warning' : 'info' %>">
+                  <%= item.itemStatus || 'Active' %>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="detail-card text-center">
+      <% if (['Pending', 'Confirmed', 'Processing', 'Shipped'].includes(order.orderStatus)) { %>
+        <button class="action-btn btn-status" onclick="showStatusModal('<%= order._id %>', '<%= order.orderNumber %>', '<%= order.orderStatus %>')">
+          <i class="fas fa-edit me-2"></i>Update Order Status
+        </button>
+      <% } %>
+
+      <% if (order.returnStatus === 'Requested') { %>
+        <button class="action-btn btn-return" onclick="showReturnModal('<%= order._id %>', '<%= order.orderNumber %>')">
+          <i class="fas fa-undo me-2"></i>Handle Return Request
+        </button>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Status Update Modal -->
+  <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="statusModalLabel">Update Order Status</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Update status for order <strong id="statusOrderNumber"></strong>?</p>
+          <div class="mb-3">
+            <label for="newStatus" class="form-label">New Status:</label>
+            <select class="form-select" id="newStatus">
+              <option value="Pending">Pending</option>
+              <option value="Confirmed">Confirmed</option>
+              <option value="Processing">Processing</option>
+              <option value="Shipped">Shipped</option>
+              <option value="Delivered">Delivered</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="confirmStatusUpdate">Update Status</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Return Request Modal -->
+  <div class="modal fade" id="returnModal" tabindex="-1" aria-labelledby="returnModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="returnModalLabel">Handle Return Request</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Handle return request for order <strong id="returnOrderNumber"></strong>?</p>
+          <div class="mb-3">
+            <label for="returnAction" class="form-label">Action:</label>
+            <select class="form-select" id="returnAction">
+              <option value="approve">Approve Return</option>
+              <option value="reject">Reject Return</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="adminNotes" class="form-label">Admin Notes (optional):</label>
+            <textarea class="form-control" id="adminNotes" rows="3" placeholder="Add notes for the customer..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-warning" id="confirmReturnAction">Process Return</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let currentOrderId = '<%= order._id %>';
+
+    // Show status update modal
+    function showStatusModal(orderId, orderNumber, currentStatus) {
+      document.getElementById('statusOrderNumber').textContent = orderNumber;
+      document.getElementById('newStatus').value = currentStatus;
+      new bootstrap.Modal(document.getElementById('statusModal')).show();
+    }
+
+    // Show return request modal
+    function showReturnModal(orderId, orderNumber) {
+      document.getElementById('returnOrderNumber').textContent = orderNumber;
+      document.getElementById('returnAction').value = 'approve';
+      document.getElementById('adminNotes').value = '';
+      new bootstrap.Modal(document.getElementById('returnModal')).show();
+    }
+
+    // Confirm status update
+    document.getElementById('confirmStatusUpdate').addEventListener('click', async function() {
+      const newStatus = document.getElementById('newStatus').value;
+
+      try {
+        const response = await fetch(`/admin/orders/${currentOrderId}/status`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: newStatus })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Status Updated',
+            text: result.message,
+            confirmButtonColor: '#28a745'
+          }).then(() => {
+            location.reload();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Update Failed',
+            text: result.message,
+            confirmButtonColor: '#dc3545'
+          });
+        }
+      } catch (error) {
+        console.error('Error updating status:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to update order status. Please try again.',
+          confirmButtonColor: '#dc3545'
+        });
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
+    });
+
+    // Confirm return action
+    document.getElementById('confirmReturnAction').addEventListener('click', async function() {
+      const action = document.getElementById('returnAction').value;
+      const adminNotes = document.getElementById('adminNotes').value.trim();
+
+      try {
+        const response = await fetch(`/admin/orders/${currentOrderId}/return`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: action,
+            adminNotes: adminNotes
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          let message = result.message;
+          if (action === 'approve' && result.refundAmount) {
+            message += ` Refund amount: ₹${result.refundAmount.toFixed(2)}`;
+          }
+
+          Swal.fire({
+            icon: 'success',
+            title: action === 'approve' ? 'Return Approved' : 'Return Rejected',
+            text: message,
+            confirmButtonColor: '#28a745'
+          }).then(() => {
+            location.reload();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Action Failed',
+            text: result.message,
+            confirmButtonColor: '#dc3545'
+          });
+        }
+      } catch (error) {
+        console.error('Error processing return:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to process return request. Please try again.',
+          confirmButtonColor: '#dc3545'
+        });
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('returnModal')).hide();
+    });
+  </script>
+    </div> <!-- End container -->
+  </div> <!-- End main-content -->
+</body>
+</html>

@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Category Management</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/admin.css">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
@@ -16,72 +18,7 @@
       --border: #e0e0e0;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    body {
-      display: flex;
-      min-height: 100vh;
-      background-color: #f9f9f9;
-      color: var(--text);
-    }
-
-    /* Sidebar Styles */
-    .sidebar {
-      width: 220px;
-      background-color: white;
-      border-right: 1px solid var(--border);
-      padding: 20px 0;
-      height: 100vh;
-      position: sticky;
-      top: 0;
-    }
-
-    .sidebar ul {
-      list-style: none;
-    }
-
-    .sidebar li {
-      padding: 12px 20px;
-      cursor: pointer;
-      transition: all 0.3s;
-      border-left: 3px solid transparent;
-    }
-
-    .sidebar li:hover, .sidebar li.active {
-      background-color: var(--light-gray);
-      border-left: 3px solid var(--primary);
-    }
-
-    .sidebar a {
-      text-decoration: none;
-      color: inherit;
-      display: block;
-    }
-
-    .logout-btn {
-      background-color: black;
-      color: white;
-      padding: 12px;
-      margin: 20px;
-      text-align: center;
-      cursor: pointer;
-      border-radius: 4px;
-      position: relative;
-    }
-
-    .logout-btn.disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    /* Main Content Styles */
     .content {
-      flex: 1;
       padding: 30px;
     }
 
@@ -290,25 +227,6 @@
 
     /* Responsive Styles */
     @media (max-width: 768px) {
-      body {
-        flex-direction: column;
-      }
-
-      .sidebar {
-        width: 100%;
-        height: auto;
-        position: relative;
-      }
-
-      .sidebar ul {
-        display: flex;
-        overflow-x: auto;
-      }
-
-      .sidebar li {
-        white-space: nowrap;
-      }
-
       .content {
         padding: 20px;
       }
@@ -331,22 +249,11 @@
   </style>
 </head>
 <body>
-  <div class="sidebar">
-    <ul>
-      <li><a href="/admin/dashboard">Dashboard</a></li>
-      <li><a href="/admin/products">Products</a></li>
-      <li><a href="/admin/orders">Order Lists</a></li>
-      <li><a href="/admin/users">Users</a></li>
-      <li><a href="/admin/sales">Sales</a></li>
-      <li><a href="/admin/coupons">Coupons</a></li>
-      <li class="active"><a href="/admin/category">Category</a></li>
-      <li><a href="/admin/banner">Banner</a></li>
-      <li><a href="/admin/offer">Offer</a></li>
-    </ul>
-    <div class="logout-btn" onclick="handleLogout()">Logout</div>
-  </div>
+  <!-- Include Admin Sidebar -->
+  <%- include('partials/sidebar', { page: 'category' }) %>
 
-  <div class="content">
+  <div class="main-content">
+    <div class="content">
     <h1>Category Management</h1>
 
     <!-- Messages are now handled by SweetAlert in JavaScript -->
@@ -444,6 +351,8 @@
 <% } else if (typeof currentPage === 'undefined') { %>
   <div class="alert alert-error">Error: Unable to load pagination. Please try again.</div>
 <% } %>
+    </div>
+  </div>
   <script>
     // Check for success/error messages on page load
     document.addEventListener('DOMContentLoaded', function() {

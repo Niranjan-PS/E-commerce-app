@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Management - Admin Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body {
+      background-color: #f8f9fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .admin-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2rem 0;
+      margin-bottom: 2rem;
+    }
+
+    .stats-card {
+      background: white;
+      border-radius: 15px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1rem;
+      transition: transform 0.3s ease;
+    }
+
+    .stats-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .stats-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: white;
+    }
+
+    .search-filter-section {
+      background: white;
+      border-radius: 15px;
+      padding: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin-bottom: 2rem;
+    }
+
+    .order-card {
+      background: white;
+      border-radius: 15px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+    }
+
+    .order-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .status-badge {
+      padding: 0.5rem 1rem;
+      border-radius: 25px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+    }
+
+    .status-pending { background-color: #fff3cd; color: #856404; }
+    .status-confirmed { background-color: #cce5ff; color: #004085; }
+    .status-processing { background-color: #e2e3e5; color: #383d41; }
+    .status-shipped { background-color: #d4edda; color: #155724; }
+    .status-delivered { background-color: #d1ecf1; color: #0c5460; }
+    .status-cancelled { background-color: #f8d7da; color: #721c24; }
+    .status-returned { background-color: #ffeaa7; color: #6c5ce7; }
+
+    .return-badge {
+      padding: 0.3rem 0.8rem;
+      border-radius: 15px;
+      font-weight: 600;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      margin-left: 0.5rem;
+    }
+
+    .return-requested { background-color: #fff3cd; color: #856404; }
+    .return-approved { background-color: #d4edda; color: #155724; }
+    .return-rejected { background-color: #f8d7da; color: #721c24; }
+    .return-completed { background-color: #d1ecf1; color: #0c5460; }
+
+    .action-btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+      margin: 0.2rem;
+      transition: all 0.3s ease;
+    }
+
+    .btn-view { background: #17a2b8; color: white; }
+    .btn-view:hover { background: #138496; color: white; }
+
+    .btn-status { background: #28a745; color: white; }
+    .btn-status:hover { background: #218838; color: white; }
+
+    .btn-return { background: #ffc107; color: #212529; }
+    .btn-return:hover { background: #e0a800; color: #212529; }
+
+    .pagination-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+
+    .clear-btn {
+      background: #6c757d;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      margin-left: 0.5rem;
+    }
+
+    .clear-btn:hover {
+      background: #5a6268;
+    }
+  </style>
+</head>
+<body>
+  <!-- Include Admin Sidebar -->
+  <%- include('../partials/admin/sidebar', { page: 'orders' }) %>
+
+  <div class="main-content">
+    <!-- Admin Header -->
+    <div class="admin-header">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-md-6">
+            <h1><i class="fas fa-shopping-cart me-3"></i>Order Management</h1>
+            <p class="mb-0">Manage all customer orders and return requests</p>
+          </div>
+          <div class="col-md-6 text-end">
+            <a href="/admin/return-requests" class="btn btn-light">
+              <i class="fas fa-undo me-2"></i>Return Requests
+              <% if (returnRequests > 0) { %>
+                <span class="badge bg-danger ms-2"><%= returnRequests %></span>
+              <% } %>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+    <!-- Order Statistics -->
+    <div class="row mb-4">
+      <% if (orderStats && orderStats.length > 0) { %>
+        <% orderStats.forEach(stat => { %>
+          <div class="col-md-2 col-sm-4 col-6">
+            <div class="stats-card text-center">
+              <div class="stats-icon mx-auto mb-2" style="background:
+                <%= stat._id === 'Pending' ? '#ffc107' :
+                    stat._id === 'Confirmed' ? '#007bff' :
+                    stat._id === 'Processing' ? '#6c757d' :
+                    stat._id === 'Shipped' ? '#28a745' :
+                    stat._id === 'Delivered' ? '#17a2b8' :
+                    stat._id === 'Cancelled' ? '#dc3545' : '#6f42c1' %>;">
+                <i class="fas fa-<%= stat._id === 'Pending' ? 'clock' :
+                                   stat._id === 'Confirmed' ? 'check' :
+                                   stat._id === 'Processing' ? 'cog' :
+                                   stat._id === 'Shipped' ? 'truck' :
+                                   stat._id === 'Delivered' ? 'box' :
+                                   stat._id === 'Cancelled' ? 'times' : 'undo' %>"></i>
+              </div>
+              <h4><%= stat.count %></h4>
+              <p class="mb-0"><%= stat._id %></p>
+              <small class="text-muted">₹<%= stat.totalAmount.toFixed(2) %></small>
+            </div>
+          </div>
+        <% }); %>
+      <% } %>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="search-filter-section">
+      <form method="GET" action="/admin/orders" class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Search Orders</label>
+          <input type="text" class="form-control" name="search" value="<%= search %>"
+                 placeholder="Order number or product name...">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Status</label>
+          <select class="form-select" name="status">
+            <option value="">All Status</option>
+            <option value="Pending" <%= status === 'Pending' ? 'selected' : '' %>>Pending</option>
+            <option value="Confirmed" <%= status === 'Confirmed' ? 'selected' : '' %>>Confirmed</option>
+            <option value="Processing" <%= status === 'Processing' ? 'selected' : '' %>>Processing</option>
+            <option value="Shipped" <%= status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
+            <option value="Delivered" <%= status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+            <option value="Cancelled" <%= status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
+            <option value="Returned" <%= status === 'Returned' ? 'selected' : '' %>>Returned</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Return Status</label>
+          <select class="form-select" name="returnStatus">
+            <option value="">All Returns</option>
+            <option value="None" <%= returnStatus === 'None' ? 'selected' : '' %>>No Return</option>
+            <option value="Requested" <%= returnStatus === 'Requested' ? 'selected' : '' %>>Requested</option>
+            <option value="Approved" <%= returnStatus === 'Approved' ? 'selected' : '' %>>Approved</option>
+            <option value="Rejected" <%= returnStatus === 'Rejected' ? 'selected' : '' %>>Rejected</option>
+            <option value="Completed" <%= returnStatus === 'Completed' ? 'selected' : '' %>>Completed</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Sort By</label>
+          <select class="form-select" name="sortBy">
+            <option value="orderDate" <%= sortBy === 'orderDate' ? 'selected' : '' %>>Order Date</option>
+            <option value="totalAmount" <%= sortBy === 'totalAmount' ? 'selected' : '' %>>Amount</option>
+            <option value="orderStatus" <%= sortBy === 'orderStatus' ? 'selected' : '' %>>Status</option>
+          </select>
+        </div>
+        <div class="col-md-1">
+          <label class="form-label">Order</label>
+          <select class="form-select" name="sortOrder">
+            <option value="desc" <%= sortOrder === 'desc' ? 'selected' : '' %>>Desc</option>
+            <option value="asc" <%= sortOrder === 'asc' ? 'selected' : '' %>>Asc</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">&nbsp;</label>
+          <div class="d-flex">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-search me-1"></i>Search
+            </button>
+            <a href="/admin/orders" class="clear-btn">
+              <i class="fas fa-times me-1"></i>Clear
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Orders List -->
+    <% if (orders && orders.length > 0) { %>
+      <% orders.forEach(order => { %>
+        <div class="order-card">
+          <div class="row align-items-center">
+            <div class="col-md-2">
+              <h6 class="mb-1">Order #<%= order.orderNumber %></h6>
+              <small class="text-muted">
+                <%= new Date(order.orderDate).toLocaleDateString('en-IN', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                }) %>
+              </small>
+            </div>
+            <div class="col-md-2">
+              <h6 class="mb-1">Customer</h6>
+              <p class="mb-0"><%= order.user.name %></p>
+              <small class="text-muted"><%= order.user.email %></small>
+            </div>
+            <div class="col-md-2">
+              <h6 class="mb-1">Amount</h6>
+              <p class="mb-0 fw-bold">₹<%= order.totalAmount.toFixed(2) %></p>
+              <small class="text-muted"><%= order.items.length %> item(s)</small>
+            </div>
+            <div class="col-md-2">
+              <div class="d-flex align-items-center">
+                <span class="status-badge status-<%= order.orderStatus.toLowerCase() %>">
+                  <%= order.orderStatus %>
+                </span>
+                <% if (order.returnStatus && order.returnStatus !== 'None') { %>
+                  <span class="return-badge return-<%= order.returnStatus.toLowerCase() %>">
+                    <%= order.returnStatus %>
+                  </span>
+                <% } %>
+              </div>
+            </div>
+            <div class="col-md-4 text-end">
+              <a href="/admin/orders/<%= order._id %>" class="action-btn btn-view">
+                <i class="fas fa-eye me-1"></i>View Details
+              </a>
+              <% if (['Pending', 'Confirmed', 'Processing', 'Shipped'].includes(order.orderStatus)) { %>
+                <button class="action-btn btn-status" onclick="showStatusModal('<%= order._id %>', '<%= order.orderNumber %>', '<%= order.orderStatus %>')">
+                  <i class="fas fa-edit me-1"></i>Update Status
+                </button>
+              <% } %>
+              <% if (order.returnStatus === 'Requested') { %>
+                <button class="action-btn btn-return" onclick="showReturnModal('<%= order._id %>', '<%= order.orderNumber %>')">
+                  <i class="fas fa-undo me-1"></i>Handle Return
+                </button>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+
+      <!-- Pagination -->
+      <% if (totalPages > 1) { %>
+        <div class="pagination-container">
+          <nav aria-label="Orders pagination">
+            <ul class="pagination">
+              <% if (currentPage > 1) { %>
+                <li class="page-item">
+                  <a class="page-link" href="?page=<%= currentPage - 1 %><%= search ? '&search=' + search : '' %><%= status ? '&status=' + status : '' %><%= returnStatus ? '&returnStatus=' + returnStatus : '' %><%= sortBy ? '&sortBy=' + sortBy : '' %><%= sortOrder ? '&sortOrder=' + sortOrder : '' %>">
+                    <i class="fas fa-chevron-left"></i>
+                  </a>
+                </li>
+              <% } %>
+
+              <% for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) { %>
+                <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                  <a class="page-link" href="?page=<%= i %><%= search ? '&search=' + search : '' %><%= status ? '&status=' + status : '' %><%= returnStatus ? '&returnStatus=' + returnStatus : '' %><%= sortBy ? '&sortBy=' + sortBy : '' %><%= sortOrder ? '&sortOrder=' + sortOrder : '' %>">
+                    <%= i %>
+                  </a>
+                </li>
+              <% } %>
+
+              <% if (currentPage < totalPages) { %>
+                <li class="page-item">
+                  <a class="page-link" href="?page=<%= currentPage + 1 %><%= search ? '&search=' + search : '' %><%= status ? '&status=' + status : '' %><%= returnStatus ? '&returnStatus=' + returnStatus : '' %><%= sortBy ? '&sortBy=' + sortBy : '' %><%= sortOrder ? '&sortOrder=' + sortOrder : '' %>">
+                    <i class="fas fa-chevron-right"></i>
+                  </a>
+                </li>
+              <% } %>
+            </ul>
+          </nav>
+        </div>
+      <% } %>
+
+    <% } else { %>
+      <!-- Empty State -->
+      <div class="order-card text-center">
+        <div class="py-5">
+          <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+          <h3>No Orders Found</h3>
+          <p class="text-muted">
+            <% if (search || status || returnStatus) { %>
+              No orders match your search criteria. Try adjusting your filters.
+            <% } else { %>
+              No orders have been placed yet.
+            <% } %>
+          </p>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Status Update Modal -->
+  <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="statusModalLabel">Update Order Status</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Update status for order <strong id="statusOrderNumber"></strong>?</p>
+          <div class="mb-3">
+            <label for="newStatus" class="form-label">New Status:</label>
+            <select class="form-select" id="newStatus">
+              <option value="Pending">Pending</option>
+              <option value="Confirmed">Confirmed</option>
+              <option value="Processing">Processing</option>
+              <option value="Shipped">Shipped</option>
+              <option value="Delivered">Delivered</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="confirmStatusUpdate">Update Status</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Return Request Modal -->
+  <div class="modal fade" id="returnModal" tabindex="-1" aria-labelledby="returnModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="returnModalLabel">Handle Return Request</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Handle return request for order <strong id="returnOrderNumber"></strong>?</p>
+          <div class="mb-3">
+            <label for="returnAction" class="form-label">Action:</label>
+            <select class="form-select" id="returnAction">
+              <option value="approve">Approve Return</option>
+              <option value="reject">Reject Return</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="adminNotes" class="form-label">Admin Notes (optional):</label>
+            <textarea class="form-control" id="adminNotes" rows="3" placeholder="Add notes for the customer..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-warning" id="confirmReturnAction">Process Return</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let currentOrderId = null;
+
+    // Show status update modal
+    function showStatusModal(orderId, orderNumber, currentStatus) {
+      currentOrderId = orderId;
+      document.getElementById('statusOrderNumber').textContent = orderNumber;
+      document.getElementById('newStatus').value = currentStatus;
+      new bootstrap.Modal(document.getElementById('statusModal')).show();
+    }
+
+    // Show return request modal
+    function showReturnModal(orderId, orderNumber) {
+      currentOrderId = orderId;
+      document.getElementById('returnOrderNumber').textContent = orderNumber;
+      document.getElementById('returnAction').value = 'approve';
+      document.getElementById('adminNotes').value = '';
+      new bootstrap.Modal(document.getElementById('returnModal')).show();
+    }
+
+    // Confirm status update
+    document.getElementById('confirmStatusUpdate').addEventListener('click', async function() {
+      if (!currentOrderId) return;
+
+      const newStatus = document.getElementById('newStatus').value;
+
+      try {
+        const response = await fetch(`/admin/orders/${currentOrderId}/status`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: newStatus })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Status Updated',
+            text: result.message,
+            confirmButtonColor: '#28a745'
+          }).then(() => {
+            location.reload();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Update Failed',
+            text: result.message,
+            confirmButtonColor: '#dc3545'
+          });
+        }
+      } catch (error) {
+        console.error('Error updating status:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to update order status. Please try again.',
+          confirmButtonColor: '#dc3545'
+        });
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
+    });
+
+    // Confirm return action
+    document.getElementById('confirmReturnAction').addEventListener('click', async function() {
+      if (!currentOrderId) return;
+
+      const action = document.getElementById('returnAction').value;
+      const adminNotes = document.getElementById('adminNotes').value.trim();
+
+      try {
+        const response = await fetch(`/admin/orders/${currentOrderId}/return`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: action,
+            adminNotes: adminNotes
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          let message = result.message;
+          if (action === 'approve' && result.refundAmount) {
+            message += ` Refund amount: ₹${result.refundAmount.toFixed(2)}`;
+          }
+
+          Swal.fire({
+            icon: 'success',
+            title: action === 'approve' ? 'Return Approved' : 'Return Rejected',
+            text: message,
+            confirmButtonColor: '#28a745'
+          }).then(() => {
+            location.reload();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Action Failed',
+            text: result.message,
+            confirmButtonColor: '#dc3545'
+          });
+        }
+      } catch (error) {
+        console.error('Error processing return:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to process return request. Please try again.',
+          confirmButtonColor: '#dc3545'
+        });
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('returnModal')).hide();
+    });
+  </script>
+    </div> <!-- End container -->
+  </div> <!-- End main-content -->
+</body>
+</html>

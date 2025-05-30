@@ -2,10 +2,10 @@ import express from 'express'
 const router = express.Router()
 import { User } from '../model/userModel.js'
 import { Category } from '../model/categoryModel.js';
-import { customerInfo } from "../controllers/customerController.js"
-import {categoryInfo,addCategory, getEditCategory,EditCategory,deleteCategory} from "../controllers/categoryController.js"
-import {loadLogin,adminLogin,loadAdminDashboard} from "../controllers/adminController.js"
-import { toggleCategoryStatus } from '../controllers/categoryController.js'
+import { customerInfo } from "../controllers/admin/customerController.js"
+import {categoryInfo,addCategory, getEditCategory,EditCategory,deleteCategory} from "../controllers/admin/categoryController.js"
+import {loadLogin,adminLogin,loadAdminDashboard} from "../controllers/admin/adminController.js"
+import { toggleCategoryStatus } from '../controllers/admin/categoryController.js'
 import {upload} from '../helpers/multer.js'
 import { isAdminAuthenticated } from '../middlewares/auth.js'
 
@@ -17,7 +17,23 @@ import {
   toggleBlockProduct,
   getEditProductPage,
   editProduct,
-} from "../controllers/productController.js";
+} from "../controllers/admin/productController.js";
+
+import {
+  getAdminOrders,
+  getAdminOrderDetails,
+  updateOrderStatus,
+  handleReturnRequest,
+  getReturnRequests
+} from "../controllers/admin/adminOrderController.js";
+
+import {
+  getInventoryDashboard,
+  updateStock,
+  bulkUpdateStock,
+  getLowStockAlerts,
+  getStockMovements
+} from "../controllers/admin/inventoryController.js";
 
 
 
@@ -107,6 +123,20 @@ router.post(
   ]),
   editProduct
 );
+
+// Order management routes
+router.get('/orders', isAdminAuthenticated, getAdminOrders);
+router.get('/orders/:orderId', isAdminAuthenticated, getAdminOrderDetails);
+router.post('/orders/:orderId/status', isAdminAuthenticated, updateOrderStatus);
+router.post('/orders/:orderId/return', isAdminAuthenticated, handleReturnRequest);
+router.get('/return-requests', isAdminAuthenticated, getReturnRequests);
+
+// Inventory management routes
+router.get('/inventory', isAdminAuthenticated, getInventoryDashboard);
+router.post('/inventory/:productId/stock', isAdminAuthenticated, updateStock);
+router.post('/inventory/bulk-update', isAdminAuthenticated, bulkUpdateStock);
+router.get('/inventory/alerts', isAdminAuthenticated, getLowStockAlerts);
+router.get('/inventory/movements', isAdminAuthenticated, getStockMovements);
 
 export default router;
 

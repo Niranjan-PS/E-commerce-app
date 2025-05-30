@@ -1,0 +1,282 @@
+<style>
+  .admin-sidebar {
+    width: 250px;
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px;
+    min-height: 100vh;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+  }
+
+  .admin-sidebar .logo {
+    font-size: 1.8em;
+    font-weight: bold;
+    margin-bottom: 30px;
+    text-align: center;
+    color: #ecf0f1;
+    border-bottom: 2px solid #34495e;
+    padding-bottom: 15px;
+  }
+
+  .admin-sidebar .menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1;
+    overflow-y: auto;
+  }
+
+  .admin-sidebar .menu li {
+    margin: 5px 0;
+  }
+
+  .admin-sidebar .menu li a {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    color: #bdc3c7;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 0.95em;
+  }
+
+  .admin-sidebar .menu li a i {
+    margin-right: 12px;
+    width: 20px;
+    text-align: center;
+    font-size: 1.1em;
+  }
+
+  .admin-sidebar .menu li a:hover {
+    background: rgba(52, 73, 94, 0.8);
+    color: #ecf0f1;
+    transform: translateX(5px);
+  }
+
+  .admin-sidebar .menu li.active a {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+  }
+
+  .admin-sidebar .menu li.active a:hover {
+    transform: none;
+  }
+
+  .submenu {
+    margin-left: 20px;
+    margin-top: 5px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+
+  .submenu.show {
+    max-height: 200px;
+  }
+
+  .submenu li a {
+    padding: 8px 15px;
+    font-size: 0.85em;
+    color: #95a5a6;
+  }
+
+  .submenu li a:hover {
+    color: #ecf0f1;
+    background: rgba(52, 73, 94, 0.6);
+  }
+
+  .admin-logout {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    cursor: pointer;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-align: center;
+    margin-top: 20px;
+    width: 100%;
+  }
+
+  .admin-logout:hover {
+    background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+  }
+
+  .main-content {
+    margin-left: 250px;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+  }
+
+  @media (max-width: 768px) {
+    .admin-sidebar {
+      width: 100%;
+      min-height: auto;
+      position: relative;
+      flex-direction: row;
+      overflow-x: auto;
+      padding: 10px;
+    }
+
+    .admin-sidebar .menu {
+      display: flex;
+      gap: 10px;
+      flex-wrap: nowrap;
+    }
+
+    .admin-sidebar .menu li {
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .submenu {
+      display: none;
+    }
+
+    .main-content {
+      margin-left: 0;
+    }
+  }
+</style>
+
+<aside class="admin-sidebar">
+  <div>
+    <div class="logo">
+      <i class="fas fa-cog"></i> Admin Panel
+    </div>
+    <ul class="menu">
+      <li class="<%= typeof page !== 'undefined' && page === 'dashboard' ? 'active' : '' %>">
+        <a href="/admin/dashboard">
+          <i class="fas fa-tachometer-alt"></i>
+          Dashboard
+        </a>
+      </li>
+      <li class="<%= typeof page !== 'undefined' && page === 'products' ? 'active' : '' %>">
+        <a href="/admin/products">
+          <i class="fas fa-box"></i>
+          Products
+        </a>
+      </li>
+      <li class="<%= typeof page !== 'undefined' && (page === 'inventory' || page === 'stock-alerts' || page === 'stock-movements') ? 'active' : '' %>">
+        <a href="/admin/inventory" onclick="toggleSubmenu('inventory-submenu')">
+          <i class="fas fa-boxes"></i>
+          Inventory
+          <i class="fas fa-chevron-down" style="margin-left: auto; font-size: 0.8em;"></i>
+        </a>
+        <ul class="submenu <% if (typeof page !== 'undefined' && (page === 'inventory' || page === 'stock-alerts' || page === 'stock-movements')) { %>show<% } %>" id="inventory-submenu">
+          <li><a href="/admin/inventory"><i class="fas fa-list"></i> All Products</a></li>
+          <li><a href="/admin/inventory/alerts"><i class="fas fa-exclamation-triangle"></i> Stock Alerts</a></li>
+          <li><a href="/admin/inventory/movements"><i class="fas fa-history"></i> Stock Movements</a></li>
+        </ul>
+      </li>
+      <li class="<%= typeof page !== 'undefined' && (page === 'orders' || page === 'return-requests') ? 'active' : '' %>">
+        <a href="/admin/orders" onclick="toggleSubmenu('orders-submenu')">
+          <i class="fas fa-shopping-cart"></i>
+          Orders
+          <i class="fas fa-chevron-down" style="margin-left: auto; font-size: 0.8em;"></i>
+        </a>
+        <ul class="submenu <% if (typeof page !== 'undefined' && (page === 'orders' || page === 'return-requests')) { %>show<% } %>" id="orders-submenu">
+          <li><a href="/admin/orders"><i class="fas fa-list"></i> All Orders</a></li>
+          <li><a href="/admin/return-requests"><i class="fas fa-undo"></i> Return Requests</a></li>
+        </ul>
+      </li>
+      <li class="<%= typeof page !== 'undefined' && page === 'users' ? 'active' : '' %>">
+        <a href="/admin/users">
+          <i class="fas fa-users"></i>
+          Users
+        </a>
+      </li>
+      <li class="<%= typeof page !== 'undefined' && page === 'category' ? 'active' : '' %>">
+        <a href="/admin/category">
+          <i class="fas fa-tags"></i>
+          Categories
+        </a>
+      </li>
+      <li class="<%= typeof page !== 'undefined' && page === 'sales' ? 'active' : '' %>">
+        <a href="/admin/sales">
+          <i class="fas fa-chart-line"></i>
+          Sales
+        </a>
+      </li>
+      <li class="<%= typeof page !== 'undefined' && page === 'coupons' ? 'active' : '' %>">
+        <a href="/admin/coupons">
+          <i class="fas fa-ticket-alt"></i>
+          Coupons
+        </a>
+      </li>
+      <li class="<%= typeof page !== 'undefined' && page === 'banner' ? 'active' : '' %>">
+        <a href="/admin/banner">
+          <i class="fas fa-image"></i>
+          Banners
+        </a>
+      </li>
+      <li class="<%= typeof page !== 'undefined' && page === 'offer' ? 'active' : '' %>">
+        <a href="/admin/offer">
+          <i class="fas fa-percent"></i>
+          Offers
+        </a>
+      </li>
+    </ul>
+  </div>
+  <button class="admin-logout" onclick="adminLogout()">
+    <i class="fas fa-sign-out-alt"></i> Logout
+  </button>
+</aside>
+
+<script>
+  function adminLogout() {
+    if (confirm('Are you sure you want to logout?')) {
+      window.location.href = '/admin/logout';
+    }
+  }
+
+  function toggleSubmenu(submenuId) {
+    event.preventDefault();
+    const submenu = document.getElementById(submenuId);
+    if (submenu) {
+      submenu.classList.toggle('show');
+    }
+  }
+
+  // Highlight current page and expand relevant submenus
+  document.addEventListener('DOMContentLoaded', function() {
+    const currentPath = window.location.pathname;
+    const menuItems = document.querySelectorAll('.admin-sidebar .menu li a');
+
+    menuItems.forEach(item => {
+      if (item.getAttribute('href') === currentPath) {
+        item.parentElement.classList.add('active');
+
+        // If this is a submenu item, also expand the parent submenu
+        const parentSubmenu = item.closest('.submenu');
+        if (parentSubmenu) {
+          parentSubmenu.classList.add('show');
+        }
+      }
+    });
+
+    // Auto-expand submenus based on current page
+    if (currentPath.includes('/inventory')) {
+      const inventorySubmenu = document.getElementById('inventory-submenu');
+      if (inventorySubmenu) inventorySubmenu.classList.add('show');
+    }
+
+    if (currentPath.includes('/orders') || currentPath.includes('/return-requests')) {
+      const ordersSubmenu = document.getElementById('orders-submenu');
+      if (ordersSubmenu) ordersSubmenu.classList.add('show');
+    }
+  });
+</script>

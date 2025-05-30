@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Return Requests - Admin Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body {
+      background-color: #f8f9fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .admin-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2rem 0;
+      margin-bottom: 2rem;
+    }
+
+    .request-card {
+      background: white;
+      border-radius: 15px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+      border-left: 4px solid #ffc107;
+    }
+
+    .request-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .urgent-request {
+      border-left-color: #dc3545;
+    }
+
+    .status-badge {
+      padding: 0.5rem 1rem;
+      border-radius: 25px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      background-color: #fff3cd;
+      color: #856404;
+    }
+
+    .action-btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+      margin: 0.2rem;
+      transition: all 0.3s ease;
+    }
+
+    .btn-view { background: #17a2b8; color: white; }
+    .btn-view:hover { background: #138496; color: white; }
+
+    .btn-approve { background: #28a745; color: white; }
+    .btn-approve:hover { background: #218838; color: white; }
+
+    .btn-reject { background: #dc3545; color: white; }
+    .btn-reject:hover { background: #c82333; color: white; }
+
+    .btn-back { background: #6c757d; color: white; }
+    .btn-back:hover { background: #5a6268; color: white; }
+
+    .return-reason {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+      border-left: 3px solid #ffc107;
+    }
+
+    .customer-info {
+      background: #e9ecef;
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .pagination-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+
+    .stats-summary {
+      background: white;
+      border-radius: 15px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 1rem;
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #ffc107;
+    }
+
+    .stat-label {
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Include Admin Sidebar -->
+  <%- include('../partials/admin/sidebar', { page: 'return-requests' }) %>
+
+  <div class="main-content">
+    <!-- Admin Header -->
+    <div class="admin-header">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-md-6">
+            <h1><i class="fas fa-undo me-3"></i>Return Requests</h1>
+            <p class="mb-0">Manage customer return requests</p>
+          </div>
+          <div class="col-md-6 text-end">
+            <a href="/admin/orders" class="action-btn btn-back">
+              <i class="fas fa-arrow-left me-2"></i>Back to Orders
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+    <!-- Statistics Summary -->
+    <div class="stats-summary">
+      <div class="row">
+        <div class="col-md-4">
+          <div class="stat-item">
+            <div class="stat-number"><%= totalRequests %></div>
+            <div class="stat-label">Pending Requests</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="stat-item">
+            <div class="stat-number">
+              <%
+                let urgentCount = 0;
+                if (returnRequests) {
+                  urgentCount = returnRequests.filter(req => {
+                    const daysSinceRequest = Math.floor((Date.now() - new Date(req.returnRequestedAt).getTime()) / (1000 * 60 * 60 * 24));
+                    return daysSinceRequest >= 3;
+                  }).length;
+                }
+              %>
+              <%= urgentCount %>
+            </div>
+            <div class="stat-label">Urgent (3+ days)</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="stat-item">
+            <div class="stat-number">
+              <%
+                let totalAmount = 0;
+                if (returnRequests) {
+                  totalAmount = returnRequests.reduce((sum, req) => sum + req.totalAmount, 0);
+                }
+              %>
+              ₹<%= totalAmount.toFixed(0) %>
+            </div>
+            <div class="stat-label">Total Value</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Return Requests List -->
+    <% if (returnRequests && returnRequests.length > 0) { %>
+      <% returnRequests.forEach(request => { %>
+        <%
+          const daysSinceRequest = Math.floor((Date.now() - new Date(request.returnRequestedAt).getTime()) / (1000 * 60 * 60 * 24));
+          const isUrgent = daysSinceRequest >= 3;
+        %>
+        <div class="request-card <%= isUrgent ? 'urgent-request' : '' %>">
+          <div class="row align-items-center">
+            <div class="col-md-2">
+              <h6 class="mb-1">Order #<%= request.orderNumber %></h6>
+              <small class="text-muted">
+                <%= new Date(request.orderDate).toLocaleDateString('en-IN', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                }) %>
+              </small>
+              <% if (isUrgent) { %>
+                <div class="mt-1">
+                  <span class="badge bg-danger">Urgent</span>
+                </div>
+              <% } %>
+            </div>
+
+            <div class="col-md-2">
+              <div class="customer-info">
+                <h6 class="mb-1"><%= request.user.name %></h6>
+                <small class="text-muted"><%= request.user.email %></small>
+                <% if (request.user.phone) { %>
+                  <br><small class="text-muted"><%= request.user.phone %></small>
+                <% } %>
+              </div>
+            </div>
+
+            <div class="col-md-2">
+              <h6 class="mb-1">Amount</h6>
+              <p class="mb-0 fw-bold">₹<%= request.totalAmount.toFixed(2) %></p>
+              <small class="text-muted"><%= request.items.length %> item(s)</small>
+            </div>
+
+            <div class="col-md-2">
+              <h6 class="mb-1">Requested</h6>
+              <p class="mb-0">
+                <%= new Date(request.returnRequestedAt).toLocaleDateString('en-IN', {
+                  month: 'short',
+                  day: 'numeric'
+                }) %>
+              </p>
+              <small class="text-muted"><%= daysSinceRequest %> day(s) ago</small>
+            </div>
+
+            <div class="col-md-1">
+              <span class="status-badge">Pending</span>
+            </div>
+
+            <div class="col-md-3 text-end">
+              <a href="/admin/orders/<%= request._id %>" class="action-btn btn-view">
+                <i class="fas fa-eye me-1"></i>View
+              </a>
+              <button class="action-btn btn-approve" onclick="handleReturn('<%= request._id %>', '<%= request.orderNumber %>', 'approve')">
+                <i class="fas fa-check me-1"></i>Approve
+              </button>
+              <button class="action-btn btn-reject" onclick="handleReturn('<%= request._id %>', '<%= request.orderNumber %>', 'reject')">
+                <i class="fas fa-times me-1"></i>Reject
+              </button>
+            </div>
+          </div>
+
+          <!-- Return Reason -->
+          <% if (request.returnReason) { %>
+            <div class="return-reason">
+              <h6 class="mb-2"><i class="fas fa-comment me-2"></i>Return Reason:</h6>
+              <p class="mb-0"><%= request.returnReason %></p>
+            </div>
+          <% } %>
+        </div>
+      <% }); %>
+
+      <!-- Pagination -->
+      <% if (totalPages > 1) { %>
+        <div class="pagination-container">
+          <nav aria-label="Return requests pagination">
+            <ul class="pagination">
+              <% if (currentPage > 1) { %>
+                <li class="page-item">
+                  <a class="page-link" href="?page=<%= currentPage - 1 %>">
+                    <i class="fas fa-chevron-left"></i>
+                  </a>
+                </li>
+              <% } %>
+
+              <% for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) { %>
+                <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                  <a class="page-link" href="?page=<%= i %>">
+                    <%= i %>
+                  </a>
+                </li>
+              <% } %>
+
+              <% if (currentPage < totalPages) { %>
+                <li class="page-item">
+                  <a class="page-link" href="?page=<%= currentPage + 1 %>">
+                    <i class="fas fa-chevron-right"></i>
+                  </a>
+                </li>
+              <% } %>
+            </ul>
+          </nav>
+        </div>
+      <% } %>
+
+    <% } else { %>
+      <!-- Empty State -->
+      <div class="request-card text-center">
+        <div class="py-5">
+          <i class="fas fa-undo fa-3x text-muted mb-3"></i>
+          <h3>No Pending Return Requests</h3>
+          <p class="text-muted">All return requests have been processed.</p>
+          <a href="/admin/orders" class="action-btn btn-view">
+            <i class="fas fa-shopping-cart me-2"></i>View All Orders
+          </a>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Return Action Modal -->
+  <div class="modal fade" id="returnActionModal" tabindex="-1" aria-labelledby="returnActionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="returnActionModalLabel">Process Return Request</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p><span id="actionText">Approve</span> return request for order <strong id="modalOrderNumber"></strong>?</p>
+          <div class="mb-3">
+            <label for="adminNotes" class="form-label">Admin Notes (optional):</label>
+            <textarea class="form-control" id="adminNotes" rows="3" placeholder="Add notes for the customer..."></textarea>
+          </div>
+          <div id="approveWarning" class="alert alert-info" style="display: none;">
+            <i class="fas fa-info-circle me-2"></i>
+            Approving this return will automatically refund the amount to the customer's wallet and restore product stock.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn" id="confirmActionBtn">Process</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let currentOrderId = null;
+    let currentAction = null;
+
+    // Handle return request
+    function handleReturn(orderId, orderNumber, action) {
+      currentOrderId = orderId;
+      currentAction = action;
+
+      document.getElementById('modalOrderNumber').textContent = orderNumber;
+      document.getElementById('actionText').textContent = action === 'approve' ? 'Approve' : 'Reject';
+      document.getElementById('adminNotes').value = '';
+
+      const confirmBtn = document.getElementById('confirmActionBtn');
+      const approveWarning = document.getElementById('approveWarning');
+
+      if (action === 'approve') {
+        confirmBtn.className = 'btn btn-success';
+        confirmBtn.textContent = 'Approve Return';
+        approveWarning.style.display = 'block';
+      } else {
+        confirmBtn.className = 'btn btn-danger';
+        confirmBtn.textContent = 'Reject Return';
+        approveWarning.style.display = 'none';
+      }
+
+      new bootstrap.Modal(document.getElementById('returnActionModal')).show();
+    }
+
+    // Confirm return action
+    document.getElementById('confirmActionBtn').addEventListener('click', async function() {
+      if (!currentOrderId || !currentAction) return;
+
+      const adminNotes = document.getElementById('adminNotes').value.trim();
+
+      try {
+        const response = await fetch(`/admin/orders/${currentOrderId}/return`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: currentAction,
+            adminNotes: adminNotes
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          let message = result.message;
+          if (currentAction === 'approve' && result.refundAmount) {
+            message += ` Refund amount: ₹${result.refundAmount.toFixed(2)}`;
+          }
+
+          Swal.fire({
+            icon: 'success',
+            title: currentAction === 'approve' ? 'Return Approved' : 'Return Rejected',
+            text: message,
+            confirmButtonColor: '#28a745'
+          }).then(() => {
+            location.reload();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Action Failed',
+            text: result.message,
+            confirmButtonColor: '#dc3545'
+          });
+        }
+      } catch (error) {
+        console.error('Error processing return:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to process return request. Please try again.',
+          confirmButtonColor: '#dc3545'
+        });
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('returnActionModal')).hide();
+    });
+  </script>
+    </div> <!-- End container -->
+  </div> <!-- End main-content -->
+</body>
+</html>

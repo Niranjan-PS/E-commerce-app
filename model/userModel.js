@@ -43,6 +43,49 @@ const userSchema= new mongoose.Schema({
     googleId: {
       type: String,
       default: null
+    },
+    profileImage: {
+      type: String,
+      default: null
+    },
+    address: {
+      street: {
+        type: String,
+        default: null
+      },
+      city: {
+        type: String,
+        default: null
+      },
+      state: {
+        type: String,
+        default: null
+      },
+      zipCode: {
+        type: String,
+        default: null
+      },
+      country: {
+        type: String,
+        default: null
+      }
+    },
+    emailVerificationToken: {
+      type: String,
+      default: null
+    },
+    emailVerificationExpire: {
+      type: Date,
+      default: null
+    },
+    pendingEmail: {
+      type: String,
+      default: null
+    },
+    wallet: {
+      type: Number,
+      default: 0,
+      min: 0
     }
 
 
@@ -102,6 +145,17 @@ userSchema.methods.generateResetPasswordToken= function (){
 
     this.resetPasswordExpire=Date.now()+15*60*1000
      return resetToken
+}
+
+userSchema.methods.generateEmailVerificationToken = function() {
+    const verificationToken = crypto.randomBytes(20).toString("hex")
+
+    this.emailVerificationToken = crypto.createHash("sha256")
+        .update(verificationToken)
+        .digest("hex")
+
+    this.emailVerificationExpire = Date.now() + 15*60*1000 // 15 minutes
+    return verificationToken
 }
 
 export const User = mongoose.model("User",userSchema)

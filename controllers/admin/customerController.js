@@ -1,5 +1,5 @@
-import {User} from '../model/userModel.js'
-import { catchAsyncError } from "../middlewares/catchAsync.js";
+import {User} from '../../model/userModel.js'
+import { catchAsyncError } from "../../middlewares/catchAsync.js";
 
 export const customerInfo = catchAsyncError(async (req, res, next) => {
   try {
@@ -26,7 +26,7 @@ export const customerInfo = catchAsyncError(async (req, res, next) => {
     ]);
 
     const totalPages = Math.ceil(total / limit);
-    const currentPage = Math.min(Math.max(page, 1), totalPages); 
+    const currentPage = Math.min(Math.max(page, 1), totalPages);
 
     res.render('users', {
       user: userData,
@@ -37,6 +37,6 @@ export const customerInfo = catchAsyncError(async (req, res, next) => {
     });
 
   } catch (error) {
-    next(error); 
+    next(error);
   }
 });

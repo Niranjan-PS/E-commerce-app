@@ -94,4 +94,55 @@ export const processProductImages = (req, res, next) => {
     .catch(err => next(err));
 };
 
+// Profile image storage configuration
+const profileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(__dirname, "../public/uploads/profile-images");
+    ensureDirectoryExists(uploadPath);
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, "profile-" + uniqueSuffix + ext);
+  }
+});
+
+// Profile image upload configuration
+export const profileUpload = multer({
+  storage: profileStorage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit for profile images
+  fileFilter: (req, file, cb) => {
+    checkFileType(file, cb);
+  }
+});
+
+// Middleware to resize profile images
+export const processProfileImage = (req, res, next) => {
+  if (!req.file) {
+    return next();
+  }
+
+  const tempPath = req.file.path;
+  const outputPath = tempPath;
+
+  sharp(tempPath)
+    .resize({
+      width: 200,
+      height: 200,
+      fit: sharp.fit.cover,
+      position: sharp.strategy.entropy
+    })
+    .toFile(outputPath + '_temp')
+    .then(() => {
+      // Replace original with resized image
+      fs.renameSync(outputPath + '_temp', outputPath);
+      next();
+    })
+    .catch(err => {
+      console.error("Error resizing profile image:", err);
+      next(new Error("Failed to process profile image"));
+    });
+};
+
 // Export the Multer instance

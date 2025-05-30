@@ -1,7 +1,7 @@
-import { Review } from "../model/reviewModel.js";
-import { Product } from "../model/productModel.js";
-import { catchAsyncError } from "../middlewares/catchAsync.js";
-import ErrorHandler from "../middlewares/error.js";
+import { Review } from "../../model/reviewModel.js";
+import { Product } from "../../model/productModel.js";
+import { catchAsyncError } from "../../middlewares/catchAsync.js";
+import ErrorHandler from "../../middlewares/error.js";
 
 // Add a review
 export const addReview = catchAsyncError(async (req, res, next) => {

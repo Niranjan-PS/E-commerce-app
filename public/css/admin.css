@@ -1,0 +1,244 @@
+/* Admin Layout Styles */
+body {
+  background-color: #f8f9fa;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Admin Sidebar Styles */
+.admin-sidebar {
+  width: 250px;
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+  min-height: 100vh;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+}
+
+.admin-sidebar .sidebar-content {
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.admin-sidebar .logo {
+  font-size: 1.8em;
+  font-weight: bold;
+  margin-bottom: 30px;
+  text-align: center;
+  color: #ecf0f1;
+  border-bottom: 2px solid #34495e;
+  padding-bottom: 15px;
+}
+
+.admin-sidebar .menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.admin-sidebar .menu li {
+  margin: 5px 0;
+}
+
+.admin-sidebar .menu li a {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  color: #bdc3c7;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  font-size: 0.95em;
+  position: relative;
+}
+
+.admin-sidebar .menu li a i {
+  margin-right: 12px;
+  width: 20px;
+  text-align: center;
+  font-size: 1.1em;
+}
+
+.admin-sidebar .menu li a:hover {
+  background: rgba(52, 73, 94, 0.8);
+  color: #ecf0f1;
+  transform: translateX(5px);
+}
+
+.admin-sidebar .menu li.active a {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+}
+
+.admin-sidebar .menu li.active a:hover {
+  transform: none;
+}
+
+.submenu-arrow {
+  margin-left: auto !important;
+  font-size: 0.8em !important;
+  transition: transform 0.3s ease;
+  width: auto !important;
+}
+
+.submenu {
+  margin-left: 20px;
+  margin-top: 5px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  list-style: none;
+  padding: 0;
+}
+
+.submenu.show {
+  max-height: 200px;
+}
+
+.submenu li {
+  margin: 2px 0;
+}
+
+.submenu li a {
+  padding: 8px 15px;
+  font-size: 0.85em;
+  color: #95a5a6;
+}
+
+.submenu li a:hover {
+  color: #ecf0f1;
+  background: rgba(52, 73, 94, 0.6);
+  transform: translateX(3px);
+}
+
+.admin-logout {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  cursor: pointer;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  text-align: center;
+  margin-top: 20px;
+  width: 100%;
+}
+
+.admin-logout:hover {
+  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+}
+
+/* Main Content Layout */
+.main-content {
+  margin-left: 250px;
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+/* Admin Container for pages without sidebar */
+.admin-container {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .admin-sidebar {
+    width: 100%;
+    min-height: auto;
+    position: relative;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 10px;
+  }
+
+  .admin-sidebar .sidebar-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    overflow-x: auto;
+  }
+
+  .admin-sidebar .logo {
+    margin-bottom: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+    font-size: 1.2em;
+    white-space: nowrap;
+  }
+
+  .admin-sidebar .menu {
+    display: flex;
+    gap: 10px;
+    flex-wrap: nowrap;
+  }
+
+  .admin-sidebar .menu li {
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  .admin-sidebar .menu li a {
+    padding: 8px 12px;
+    font-size: 0.9em;
+  }
+
+  .submenu {
+    display: none;
+  }
+
+  .submenu-arrow {
+    display: none;
+  }
+
+  .admin-logout {
+    margin-top: 0;
+    margin-left: 20px;
+    padding: 8px 15px;
+    font-size: 0.9em;
+    white-space: nowrap;
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .admin-container {
+    flex-direction: column;
+  }
+}
+
+/* Additional responsive breakpoints */
+@media (max-width: 480px) {
+  .admin-sidebar {
+    padding: 5px;
+  }
+
+  .admin-sidebar .logo {
+    font-size: 1em;
+  }
+
+  .admin-sidebar .menu li a {
+    padding: 6px 8px;
+    font-size: 0.8em;
+  }
+
+  .admin-logout {
+    padding: 6px 10px;
+    font-size: 0.8em;
+  }
+}

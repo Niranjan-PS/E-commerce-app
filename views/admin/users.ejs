@@ -4,55 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Users</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/admin.css">
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      display: flex;
-      min-height: 100vh;
-      background-color: #f5f5f5;
-    }
-
-    .sidebar {
-      width: 220px;
-      background-color: #fff;
-      border-right: 1px solid #ddd;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .sidebar ul {
-      list-style: none;
-      padding: 0;
-    }
-
-    .sidebar li {
-      padding: 15px 20px;
-      cursor: pointer;
-      border-left: 4px solid transparent;
-      transition: background 0.3s;
-    }
-
-    .sidebar li.active,
-    .sidebar li:hover {
-      background-color: #e2f0e2;
-      border-left: 4px solid #4CAF50;
-      font-weight: bold;
-    }
-
-    .logout-btn {
-      background-color: black;
-      color: white;
-      padding: 12px;
-      margin: 20px;
-      text-align: center;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-
     .content {
-      flex: 1;
       padding: 20px;
       overflow-y: auto;
     }
@@ -173,13 +128,6 @@
     }
 
     @media (max-width: 768px) {
-      body {
-        flex-direction: column;
-      }
-      .sidebar {
-        width: 100%;
-        height: auto;
-      }
       table {
         display: block;
         overflow-x: auto;
@@ -188,45 +136,33 @@
   </style>
 </head>
 <body>
+  <!-- Include Admin Sidebar -->
+  <%- include('partials/sidebar', { page: 'users' }) %>
 
-  <div class="sidebar">
-    <ul class="menu">
-      <li><a href="/admin/dashboard">Dashboard</a></li>
-      <li><a href="/admin/products" class="adminS">Products</a></li>
-      <li><a href="/admin/orders">Order Lists</a></li>
-      <li class="active"><a href="/admin/users">Users</a></li>
-      <li><a href="/admin/sales">Sales</a></li>
-      <li><a href="/admin/coupons">Coupons</a></li>
-      <li><a href="/admin/category">Category</a></li>
-      <li><a href="/admin/banner">Banner</a></li>
-      <li><a href="/admin/offer">Offer</a></li>
-    </ul>
-    <div class="logout-btn">Logout</div>
-  </div>
-
-  <div class="content">
+  <div class="main-content">
+    <div class="content">
     <div class="search-bar">
       <form action="/admin/users" method="get">
-        <input 
-          type="text" 
-          id="searchInput" 
+        <input
+          type="text"
+          id="searchInput"
           name="search"
           value="<%= search %>"
-          placeholder="Search by name or email..." 
+          placeholder="Search by name or email..."
           autocomplete="off"
         >
       </form>
     </div>
 
     <h2>Users Management</h2>
-    
+
     <% if (message) { %>
       <div class="no-users"><%= message %></div>
     <% } else { %>
       <table id="userTable">
         <thead>
           <tr>
-          
+
             <th>Name</th>
             <th>Email</th>
             <th>Phone</th>
@@ -237,14 +173,14 @@
         <tbody>
           <% user.forEach(user => { %>
             <tr>
-              
+
               <td><%= user.name %></td>
               <td><%= user.email %></td>
               <td><%= user.phone || 'N/A' %></td>
               <td><%= user.isBlocked ? 'Blocked' : 'Active' %></td>
               <td>
-                <button 
-                  class="block-btn <%= user.isBlocked ? 'unblock' : 'block' %>" 
+                <button
+                  class="block-btn <%= user.isBlocked ? 'unblock' : 'block' %>"
                   data-user-id="<%= user._id %>"
                   onclick="toggleBlock(this)"
                 >
@@ -263,8 +199,8 @@
           <% } %>
 
           <% for (let i = 1; i <= totalPages; i++) { %>
-            <a 
-              href="/admin/users?page=<%= i %><% if (search) { %>&search=<%= search %><% } %>" 
+            <a
+              href="/admin/users?page=<%= i %><% if (search) { %>&search=<%= search %><% } %>"
               class="<%= i === currentPage ? 'active' : '' %>"
             >
               <%= i %>
@@ -277,13 +213,14 @@
         </div>
       <% } %>
     <% } %>
+    </div>
   </div>
 
   <script>
     async function toggleBlock(button) {
       const userId = button.getAttribute('data-user-id');
       const isBlocked = button.classList.contains('block');
-      
+
       try {
         const response = await fetch(`/admin/${isBlocked ? 'blockUser' : 'unblockUser'}?id=${userId}`, {
           method: 'PATCH',
@@ -307,7 +244,7 @@
     // Submit search form when user stops typing
     const searchInput = document.getElementById('searchInput');
     let searchTimer;
-    
+
     searchInput.addEventListener('input', () => {
       clearTimeout(searchTimer);
       searchTimer = setTimeout(() => {

@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Orders - Luxe Scents</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    :root {
+      --primary-color: #6200ea;
+      --secondary-color: #f8f9fa;
+      --success-color: #28a745;
+      --danger-color: #dc3545;
+      --warning-color: #ffc107;
+      --info-color: #17a2b8;
+      --dark-color: #343a40;
+      --light-color: #f8f9fa;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f8f9fa;
+      color: var(--dark-color);
+    }
+
+    .navbar {
+      background-color: rgba(0, 0, 0, 0.9);
+      padding: 1rem 2rem;
+      border-bottom: 1px solid #090909;
+      backdrop-filter: blur(10px);
+    }
+    .navbar-brand {
+      font-weight: 700;
+      font-size: 1.8rem;
+      color: #ffffff !important;
+      letter-spacing: 1px;
+    }
+    .navbar-brand:hover {
+      color: #bb86fc !important;
+    }
+    .nav-link {
+      color: #e0e0e0 !important;
+      font-weight: 500;
+      margin: 0 1rem;
+      transition: color 0.3s;
+    }
+    .nav-link:hover {
+      color: #bb86fc !important;
+    }
+    .navbar-icons {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .navbar-icons a {
+      color: #e0e0e0;
+      font-size: 1.2rem;
+      position: relative;
+      transition: color 0.3s;
+    }
+    .navbar-icons a:hover {
+      color: #bb86fc;
+    }
+    .badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background-color: #6200ea;
+      color: #ffffff;
+      font-size: 0.7rem;
+      border-radius: 50%;
+      padding: 2px 6px;
+    }
+    .dropdown-menu {
+      background-color: #2a2a2a;
+      border: 1px solid #444;
+    }
+    .dropdown-item {
+      color: #e0e0e0 !important;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .dropdown-item:hover {
+      background-color: #6200ea;
+      color: #ffffff !important;
+    }
+
+    .orders-container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .page-header {
+      background: white;
+      border-radius: 15px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .page-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      margin-bottom: 1rem;
+    }
+
+    .search-filters {
+      background: white;
+      border-radius: 15px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .search-box {
+      position: relative;
+    }
+
+    .search-input {
+      border: 2px solid #e9ecef;
+      border-radius: 50px;
+      padding: 0.75rem 1rem 0.75rem 3rem;
+      font-size: 1rem;
+      transition: border-color 0.3s;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 0.2rem rgba(98, 0, 234, 0.25);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6c757d;
+    }
+
+    .filter-select {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 0.75rem;
+      transition: border-color 0.3s;
+    }
+
+    .filter-select:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 0.2rem rgba(98, 0, 234, 0.25);
+    }
+
+    .order-card {
+      background: white;
+      border-radius: 15px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .order-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e9ecef;
+    }
+
+    .order-number {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--primary-color);
+    }
+
+    .order-date {
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
+
+    .status-badge {
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+    }
+
+    .status-pending {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+
+    .status-confirmed {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    .status-processing {
+      background-color: #cce7ff;
+      color: #004085;
+    }
+
+    .status-shipped {
+      background-color: #e2e3e5;
+      color: #383d41;
+    }
+
+    .status-delivered {
+      background-color: #d1ecf1;
+      color: #0c5460;
+    }
+
+    .status-cancelled {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    .status-returned {
+      background-color: #ffeaa7;
+      color: #6c5ce7;
+    }
+
+    .return-status-badge {
+      padding: 0.3rem 0.8rem;
+      border-radius: 15px;
+      font-weight: 600;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      margin-left: 0.5rem;
+    }
+
+    .return-requested {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+
+    .return-approved {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    .return-rejected {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    .return-completed {
+      background-color: #d1ecf1;
+      color: #0c5460;
+    }
+
+    .order-items {
+      margin: 1rem 0;
+    }
+
+    .order-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.5rem 0;
+    }
+
+    .item-image {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .item-info {
+      flex: 1;
+    }
+
+    .item-name {
+      font-weight: 600;
+      color: var(--dark-color);
+      font-size: 0.9rem;
+    }
+
+    .item-quantity {
+      color: #6c757d;
+      font-size: 0.8rem;
+    }
+
+    .order-total {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--success-color);
+    }
+
+    .order-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .btn-action {
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-primary-custom {
+      background: linear-gradient(135deg, var(--primary-color), #7c4dff);
+      color: white;
+    }
+
+    .btn-primary-custom:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(98, 0, 234, 0.3);
+      color: white;
+    }
+
+    .btn-success-custom {
+      background: linear-gradient(135deg, var(--success-color), #20c997);
+      color: white;
+    }
+
+    .btn-success-custom:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+      color: white;
+    }
+
+    .btn-danger-custom {
+      background: linear-gradient(135deg, var(--danger-color), #e74c3c);
+      color: white;
+    }
+
+    .btn-danger-custom:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+      color: white;
+    }
+
+    .btn-warning-custom {
+      background: linear-gradient(135deg, var(--warning-color), #f39c12);
+      color: #212529;
+    }
+
+    .btn-warning-custom:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+      color: #212529;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #6c757d;
+    }
+
+    .empty-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .pagination-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+
+    .pagination .page-link {
+      color: var(--primary-color);
+      border-color: #e9ecef;
+    }
+
+    .pagination .page-item.active .page-link {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .orders-container {
+        margin: 1rem;
+        padding: 0;
+      }
+
+      .page-header,
+      .search-filters,
+      .order-card {
+        margin: 1rem;
+        padding: 1rem;
+      }
+
+      .page-title {
+        font-size: 2rem;
+      }
+
+      .order-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+
+      .order-actions {
+        justify-content: center;
+      }
+
+      .search-filters .row {
+        gap: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+      <a class="navbar-brand" href="/">LUXE SCENTS</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/shop">Shop</a>
+          </li>
+        </ul>
+        <div class="navbar-icons">
+          <a href="/wishlist" class="text-white me-3">
+            <i class="fas fa-heart"></i>
+            <span class="badge bg-danger" id="wishlistCount">0</span>
+          </a>
+          <a href="/cart" class="text-white me-3">
+            <i class="fas fa-shopping-cart"></i>
+            <span class="badge bg-danger" id="cartCount">0</span>
+          </a>
+          <div class="dropdown">
+            <a href="#" class="dropdown-toggle text-white" role="button" data-bs-toggle="dropdown">
+              <i class="fas fa-user-circle"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="/profile">My Profile</a></li>
+              <li><a class="dropdown-item" href="/addresses">My Addresses</a></li>
+              <li><a class="dropdown-item" href="/orders">My Orders</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/logout">Logout</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="orders-container">
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1 class="page-title">My Orders</h1>
+      <p class="text-muted">Track and manage your orders</p>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="search-filters">
+      <form method="GET" action="/orders">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="search-box">
+              <i class="fas fa-search search-icon"></i>
+              <input type="text" class="form-control search-input" name="search"
+                     placeholder="Search by order number or product name..."
+                     value="<%= search || '' %>">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <select class="form-select filter-select" name="status">
+              <option value="">All Orders</option>
+              <option value="Pending" <%= status === 'Pending' ? 'selected' : '' %>>Pending</option>
+              <option value="Confirmed" <%= status === 'Confirmed' ? 'selected' : '' %>>Confirmed</option>
+              <option value="Processing" <%= status === 'Processing' ? 'selected' : '' %>>Processing</option>
+              <option value="Shipped" <%= status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
+              <option value="Delivered" <%= status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+              <option value="Cancelled" <%= status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
+              <option value="Returned" <%= status === 'Returned' ? 'selected' : '' %>>Returned</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-primary-custom w-100">
+              <i class="fas fa-filter me-1"></i>Filter
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Orders List -->
+    <% if (orders && orders.length > 0) { %>
+      <% orders.forEach(order => { %>
+        <div class="order-card">
+          <div class="order-header">
+            <div>
+              <div class="order-number">Order #<%= order.orderNumber %></div>
+              <div class="order-date">Placed on <%= new Date(order.orderDate).toLocaleDateString('en-IN', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              }) %></div>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+              <div class="d-flex align-items-center">
+                <span class="status-badge status-<%= order.orderStatus.toLowerCase() %>">
+                  <%= order.orderStatus %>
+                </span>
+                <% if (order.returnStatus && order.returnStatus !== 'None') { %>
+                  <span class="return-status-badge return-<%= order.returnStatus.toLowerCase() %>">
+                    Return <%= order.returnStatus %>
+                  </span>
+                <% } %>
+              </div>
+              <div class="order-total">₹<%= order.totalAmount.toFixed(2) %></div>
+            </div>
+          </div>
+
+          <!-- Order Items -->
+          <div class="order-items">
+            <% order.items.slice(0, 3).forEach(item => { %>
+              <div class="order-item">
+                <img src="/uploads/product-images/<%= item.productImage %>" alt="<%= item.productName %>" class="item-image">
+                <div class="item-info">
+                  <div class="item-name"><%= item.productName %></div>
+                  <div class="item-quantity">Qty: <%= item.quantity %></div>
+                </div>
+              </div>
+            <% }); %>
+            <% if (order.items.length > 3) { %>
+              <div class="text-muted small">+ <%= order.items.length - 3 %> more items</div>
+            <% } %>
+          </div>
+
+          <!-- Order Actions -->
+          <div class="order-actions">
+            <a href="/orders/<%= order._id %>" class="btn-action btn-primary-custom">
+              <i class="fas fa-eye me-1"></i>View Details
+            </a>
+
+            <a href="/orders/<%= order._id %>/invoice" class="btn-action btn-success-custom">
+              <i class="fas fa-download me-1"></i>Download Invoice
+            </a>
+
+            <% if (order.canBeCancelled) { %>
+              <button class="btn-action btn-danger-custom" onclick="showCancelModal('<%= order._id %>', '<%= order.orderNumber %>')">
+                <i class="fas fa-times me-1"></i>Cancel Order
+              </button>
+            <% } %>
+
+            <% if (order.canRequestReturn) { %>
+              <% if (order.returnStatus === 'None' || order.returnStatus === 'Rejected') { %>
+                <button class="btn-action btn-warning-custom" onclick="showReturnModal('<%= order._id %>', '<%= order.orderNumber %>')">
+                  <i class="fas fa-undo me-1"></i>Request Return
+                </button>
+              <% } %>
+            <% } %>
+
+            <% if (order.returnStatus === 'Requested') { %>
+              <span class="btn-action" style="background: #6c757d; color: white; cursor: default;">
+                <i class="fas fa-clock me-1"></i>Return Pending
+              </span>
+            <% } %>
+
+            <% if (order.returnStatus === 'Approved') { %>
+              <span class="btn-action" style="background: #28a745; color: white; cursor: default;">
+                <i class="fas fa-check me-1"></i>Return Approved
+              </span>
+            <% } %>
+
+            <% if (order.returnStatus === 'Rejected') { %>
+              <span class="btn-action" style="background: #dc3545; color: white; cursor: default;">
+                <i class="fas fa-times me-1"></i>Return Rejected
+              </span>
+            <% } %>
+
+            <!-- Test Button: Mark as Delivered (for testing return functionality) -->
+            <% if (order.orderStatus === 'Pending' || order.orderStatus === 'Confirmed' || order.orderStatus === 'Processing' || order.orderStatus === 'Shipped') { %>
+              <button class="btn-action" style="background: #17a2b8; color: white;" onclick="markAsDelivered('<%= order._id %>')">
+                <i class="fas fa-truck me-1"></i>Mark Delivered (Test)
+              </button>
+            <% } %>
+          </div>
+        </div>
+      <% }); %>
+
+      <!-- Pagination -->
+      <% if (totalPages > 1) { %>
+        <div class="pagination-container">
+          <nav aria-label="Orders pagination">
+            <ul class="pagination">
+              <% if (currentPage > 1) { %>
+                <li class="page-item">
+                  <a class="page-link" href="?page=<%= currentPage - 1 %><%= search ? '&search=' + search : '' %><%= status ? '&status=' + status : '' %>">
+                    <i class="fas fa-chevron-left"></i>
+                  </a>
+                </li>
+              <% } %>
+
+              <% for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) { %>
+                <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                  <a class="page-link" href="?page=<%= i %><%= search ? '&search=' + search : '' %><%= status ? '&status=' + status : '' %>">
+                    <%= i %>
+                  </a>
+                </li>
+              <% } %>
+
+              <% if (currentPage < totalPages) { %>
+                <li class="page-item">
+                  <a class="page-link" href="?page=<%= currentPage + 1 %><%= search ? '&search=' + search : '' %><%= status ? '&status=' + status : '' %>">
+                    <i class="fas fa-chevron-right"></i>
+                  </a>
+                </li>
+              <% } %>
+            </ul>
+          </nav>
+        </div>
+      <% } %>
+
+    <% } else { %>
+      <!-- Empty State -->
+      <div class="order-card">
+        <div class="empty-state">
+          <div class="empty-icon">
+            <i class="fas fa-shopping-bag"></i>
+          </div>
+          <h3>No Orders Found</h3>
+          <p>
+            <% if (search || status) { %>
+              No orders match your search criteria. Try adjusting your filters.
+            <% } else { %>
+              You haven't placed any orders yet. Start shopping to see your orders here!
+            <% } %>
+          </p>
+          <a href="/shop" class="btn-action btn-primary-custom">
+            <i class="fas fa-shopping-cart me-1"></i>Start Shopping
+          </a>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Cancel Order Modal -->
+  <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="cancelModalLabel">Cancel Order</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to cancel order <strong id="cancelOrderNumber"></strong>?</p>
+          <div class="mb-3">
+            <label for="cancelReason" class="form-label">Reason for cancellation (optional):</label>
+            <textarea class="form-control" id="cancelReason" rows="3" placeholder="Please provide a reason for cancellation..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep Order</button>
+          <button type="button" class="btn btn-danger" id="confirmCancel">Cancel Order</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Return Order Modal -->
+  <div class="modal fade" id="returnModal" tabindex="-1" aria-labelledby="returnModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="returnModalLabel">Request Return</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Submit return request for order <strong id="returnOrderNumber"></strong>?</p>
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            Your return request will be reviewed by our admin team. You will be notified once the request is approved or rejected.
+          </div>
+          <div class="mb-3">
+            <label for="returnReason" class="form-label">Reason for return <span class="text-danger">*</span>:</label>
+            <textarea class="form-control" id="returnReason" rows="3" placeholder="Please provide a detailed reason for return..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-warning" id="confirmReturn">Submit Return Request</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let currentOrderId = null;
+
+    // Show cancel modal
+    function showCancelModal(orderId, orderNumber) {
+      currentOrderId = orderId;
+      document.getElementById('cancelOrderNumber').textContent = orderNumber;
+      document.getElementById('cancelReason').value = '';
+      new bootstrap.Modal(document.getElementById('cancelModal')).show();
+    }
+
+    // Show return modal
+    function showReturnModal(orderId, orderNumber) {
+      currentOrderId = orderId;
+      document.getElementById('returnOrderNumber').textContent = orderNumber;
+      document.getElementById('returnReason').value = '';
+      new bootstrap.Modal(document.getElementById('returnModal')).show();
+    }
+
+    // Confirm cancel order
+    document.getElementById('confirmCancel').addEventListener('click', async function() {
+      if (!currentOrderId) return;
+
+      const reason = document.getElementById('cancelReason').value.trim();
+
+      try {
+        const response = await fetch(`/orders/${currentOrderId}/cancel`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            reason: reason,
+            items: [] // Full cancellation - will be handled by backend
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Order Cancelled',
+            text: result.message,
+            confirmButtonColor: '#6200ea'
+          }).then(() => {
+            location.reload();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Cancellation Failed',
+            text: result.message,
+            confirmButtonColor: '#6200ea'
+          });
+        }
+      } catch (error) {
+        console.error('Error cancelling order:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to cancel order. Please try again.',
+          confirmButtonColor: '#6200ea'
+        });
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('cancelModal')).hide();
+    });
+
+    // Confirm return order
+    document.getElementById('confirmReturn').addEventListener('click', async function() {
+      if (!currentOrderId) return;
+
+      const reason = document.getElementById('returnReason').value.trim();
+
+      if (!reason) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Return Reason Required',
+          text: 'Please provide a reason for return.',
+          confirmButtonColor: '#6200ea'
+        });
+        return;
+      }
+
+      try {
+        const response = await fetch(`/orders/${currentOrderId}/return`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            reason: reason,
+            items: [] // Full return - will be handled by backend
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Return Request Submitted',
+            html: `
+              <div class="text-center">
+                <p>${result.message}</p>
+                <div class="mt-3">
+                  <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    You will receive a notification once the admin reviews your request.
+                  </small>
+                </div>
+              </div>
+            `,
+            confirmButtonColor: '#6200ea'
+          }).then(() => {
+            location.reload();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Return Request Failed',
+            text: result.message,
+            confirmButtonColor: '#6200ea'
+          });
+        }
+      } catch (error) {
+        console.error('Error processing return:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to process return request. Please try again.',
+          confirmButtonColor: '#6200ea'
+        });
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('returnModal')).hide();
+    });
+
+    // Update cart and wishlist counts
+    function updateCounts() {
+      fetch('/api/cart/count')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const cartBadge = document.getElementById('cartCount');
+            if (cartBadge) {
+              cartBadge.textContent = data.cartCount;
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Error updating cart count:', error);
+        });
+
+      fetch('/api/wishlist/count')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const wishlistBadge = document.getElementById('wishlistCount');
+            if (wishlistBadge) {
+              wishlistBadge.textContent = data.wishlistCount;
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Error updating wishlist count:', error);
+        });
+    }
+
+    // Test function to mark order as delivered
+    async function markAsDelivered(orderId) {
+      try {
+        const response = await fetch(`/orders/${orderId}/mark-delivered`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Order Marked as Delivered',
+            text: result.message,
+            confirmButtonColor: '#6200ea'
+          }).then(() => {
+            location.reload();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Failed to Mark as Delivered',
+            text: result.message,
+            confirmButtonColor: '#6200ea'
+          });
+        }
+      } catch (error) {
+        console.error('Error marking order as delivered:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to mark order as delivered. Please try again.',
+          confirmButtonColor: '#6200ea'
+        });
+      }
+    }
+
+    // Initialize counts on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      updateCounts();
+    });
+  </script>
+</body>
+</html>

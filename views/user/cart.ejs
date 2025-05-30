@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Cart | Luxe Scents</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body {
+      background-color: #f8f9fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .navbar {
+      background-color: #000000;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid #090909;
+    }
+    .navbar-brand {
+      font-weight: 700;
+      font-size: 1.8rem;
+      color: #ffffff !important;
+      letter-spacing: 1px;
+    }
+    .nav-link {
+      color: #e0e0e0 !important;
+      font-weight: 500;
+      margin: 0 1rem;
+      transition: color 0.3s;
+    }
+    .nav-link:hover {
+      color: #bb86fc !important;
+    }
+    .cart-container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    .page-header {
+      background: linear-gradient(135deg, #6200ea, #bb86fc);
+      color: white;
+      padding: 2rem;
+      border-radius: 15px;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    .cart-item {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .cart-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    .cart-item-content {
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .product-image {
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+    .product-info {
+      flex-grow: 1;
+    }
+    .product-name {
+      font-weight: 600;
+      font-size: 1.2rem;
+      color: #333;
+      margin-bottom: 0.5rem;
+    }
+    .product-category {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+    .price-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .sale-price {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #28a745;
+    }
+    .original-price {
+      text-decoration: line-through;
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
+    .savings {
+      background-color: #28a745;
+      color: white;
+      padding: 0.2rem 0.5rem;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .quantity-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .quantity-btn {
+      background-color: #6200ea;
+      color: white;
+      border: none;
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .quantity-btn:hover {
+      background-color: #5300d1;
+      transform: scale(1.1);
+    }
+    .quantity-btn:disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .quantity-input {
+      width: 60px;
+      text-align: center;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      padding: 0.5rem;
+      font-weight: 600;
+    }
+    .stock-info {
+      font-size: 0.8rem;
+      color: #dc3545;
+      margin-top: 0.5rem;
+    }
+    .stock-available {
+      color: #28a745;
+    }
+    .item-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 1rem;
+    }
+    .item-total {
+      font-weight: 600;
+      font-size: 1.2rem;
+      color: #333;
+    }
+    .remove-btn {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .remove-btn:hover {
+      background-color: #c82333;
+      transform: translateY(-1px);
+    }
+    .cart-summary {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      padding: 2rem;
+      position: sticky;
+      top: 2rem;
+    }
+    .summary-title {
+      font-weight: 600;
+      font-size: 1.3rem;
+      color: #333;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid #eee;
+    }
+    .summary-row:last-child {
+      border-bottom: none;
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #333;
+    }
+    .checkout-btn {
+      background: linear-gradient(135deg, #6200ea, #bb86fc);
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 25px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      width: 100%;
+      margin-top: 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .checkout-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(98, 0, 234, 0.3);
+    }
+    .checkout-btn:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .empty-cart {
+      text-align: center;
+      padding: 3rem;
+      color: #666;
+    }
+    .empty-cart i {
+      font-size: 4rem;
+      color: #6200ea;
+      margin-bottom: 1rem;
+    }
+    .continue-shopping {
+      background-color: #6200ea;
+      color: white;
+      padding: 0.75rem 2rem;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    .continue-shopping:hover {
+      background-color: #5300d1;
+      color: white;
+      transform: translateY(-2px);
+    }
+    .out-of-stock {
+      opacity: 0.6;
+      background-color: #f8f9fa;
+    }
+    .out-of-stock-badge {
+      background-color: #dc3545;
+      color: white;
+      padding: 0.3rem 0.8rem;
+      border-radius: 15px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    /* Footer Styles */
+    footer {
+      background-color: #000000;
+      color: #e0e0e0;
+      padding: 2rem;
+      margin-top: 3rem;
+      border-top: 1px solid #333;
+    }
+    footer .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 2rem;
+    }
+    footer h5 {
+      color: #ffffff;
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+    }
+    footer ul {
+      list-style: none;
+      padding: 0;
+    }
+    footer ul li {
+      margin-bottom: 0.5rem;
+    }
+    footer ul li a {
+      color: #b0b0b0;
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+    footer ul li a:hover {
+      color: #bb86fc;
+    }
+    footer .social-icons a {
+      color: #e0e0e0;
+      font-size: 1.3rem;
+      margin-right: 1rem;
+      transition: color 0.3s;
+    }
+    footer .social-icons a:hover {
+      color: #bb86fc;
+    }
+    footer .footer-bottom {
+      text-align: center;
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid #333;
+      color: #b0b0b0;
+      font-size: 0.9rem;
+    }
+    .footer-section {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    @media (max-width: 768px) {
+      .cart-container {
+        margin: 1rem auto;
+        padding: 0 0.5rem;
+      }
+      .cart-item-content {
+        flex-direction: column;
+        text-align: center;
+      }
+      .product-image {
+        width: 100px;
+        height: 100px;
+      }
+      .item-actions {
+        align-items: center;
+        width: 100%;
+      }
+      footer .container {
+        flex-direction: column;
+        text-align: center;
+      }
+      footer .social-icons {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+      <a class="navbar-brand" href="/">LUXE SCENTS</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/shop">Shop</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="/cart">Cart</a>
+          </li>
+        </ul>
+        <div class="navbar-icons">
+          <a href="/cart" class="text-white me-3">
+            <i class="fas fa-shopping-cart"></i>
+            <span class="badge bg-danger" id="cartCount"><%= cart.totalItems || 0 %></span>
+          </a>
+          <div class="dropdown">
+            <a href="#" class="dropdown-toggle text-white" role="button" data-bs-toggle="dropdown">
+              <i class="fas fa-user-circle"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="/profile">My Profile</a></li>
+              <li><a class="dropdown-item" href="/addresses">My Addresses</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/logout">Logout</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Cart Container -->
+  <div class="cart-container">
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1><i class="fas fa-shopping-cart me-2"></i>Shopping Cart</h1>
+      <p class="mb-0">Review your items before checkout</p>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <% if (message) { %>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i><%= message %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    <% } %>
+    <% if (error) { %>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i><%= error %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    <% } %>
+
+    <% if (cart.items && cart.items.length > 0) { %>
+      <div class="row">
+        <!-- Cart Items -->
+        <div class="col-lg-8">
+          <% cart.items.forEach(item => { %>
+            <%
+              const product = item.product;
+              const isOutOfStock = !product || product.quantity <= 0 || product.status !== 'Available' || product.isBlocked || !product.category.isListed;
+              const currentPrice = product.salePrice || product.price;
+              const originalPrice = product.price;
+              const savings = originalPrice - currentPrice;
+              const itemTotal = currentPrice * item.quantity;
+            %>
+            <div class="cart-item <%= isOutOfStock ? 'out-of-stock' : '' %>" data-product-id="<%= product._id %>">
+              <div class="cart-item-content">
+                <img src="/uploads/product-images/<%= product.productImage[0] %>" alt="<%= product.productName %>" class="product-image">
+
+                <div class="product-info">
+                  <div class="product-name">
+                    <%= product.productName %>
+                    <% if (isOutOfStock) { %>
+                      <span class="out-of-stock-badge">Out of Stock</span>
+                    <% } %>
+                  </div>
+                  <div class="product-category">Category: <%= product.category.name %></div>
+
+                  <div class="price-info">
+                    <span class="sale-price">₹<%= currentPrice.toLocaleString() %></span>
+                    <% if (savings > 0) { %>
+                      <span class="original-price">₹<%= originalPrice.toLocaleString() %></span>
+                      <span class="savings">Save ₹<%= savings.toLocaleString() %></span>
+                    <% } %>
+                  </div>
+
+                  <% if (!isOutOfStock) { %>
+                    <div class="quantity-controls">
+                      <button class="quantity-btn" onclick="updateQuantity('<%= product._id %>', <%= item.quantity - 1 %>)" <%= item.quantity <= 1 ? 'disabled' : '' %>>
+                        <i class="fas fa-minus"></i>
+                      </button>
+                      <input type="number" class="quantity-input" value="<%= item.quantity %>" min="1" max="<%= Math.min(product.quantity, cartLimits.MAX_QUANTITY_PER_PRODUCT) %>" onchange="updateQuantity('<%= product._id %>', this.value)">
+                      <button class="quantity-btn" onclick="updateQuantity('<%= product._id %>', <%= item.quantity + 1 %>)" <%= item.quantity >= Math.min(product.quantity, cartLimits.MAX_QUANTITY_PER_PRODUCT) ? 'disabled' : '' %>>
+                        <i class="fas fa-plus"></i>
+                      </button>
+                    </div>
+
+                    <div class="stock-info <%= product.quantity > 5 ? 'stock-available' : '' %>">
+                      <% if (product.quantity <= 5) { %>
+                        Only <%= product.quantity %> left in stock
+                      <% } else { %>
+                        In Stock
+                      <% } %>
+                    </div>
+                  <% } %>
+                </div>
+
+                <div class="item-actions">
+                  <div class="item-total">₹<%= itemTotal.toLocaleString() %></div>
+                  <button class="remove-btn" onclick="removeFromCart('<%= product._id %>')">
+                    <i class="fas fa-trash me-1"></i>Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+
+        <!-- Cart Summary -->
+        <div class="col-lg-4">
+          <div class="cart-summary">
+            <div class="summary-title">Order Summary</div>
+
+            <div class="summary-row">
+              <span>Items (<%= cart.totalItems %>)</span>
+              <span>₹<%= cart.totalPrice.toLocaleString() %></span>
+            </div>
+
+            <% if (cart.totalSavings > 0) { %>
+              <div class="summary-row">
+                <span>Discount</span>
+                <span class="text-success">-₹<%= cart.totalSavings.toLocaleString() %></span>
+              </div>
+            <% } %>
+
+            <div class="summary-row">
+              <span>Total</span>
+              <span>₹<%= cart.totalSalePrice.toLocaleString() %></span>
+            </div>
+
+            <%
+              const hasOutOfStockItems = cart.items.some(item => {
+                const product = item.product;
+                return !product || product.quantity <= 0 || product.status !== 'Available' || product.isBlocked || !product.category.isListed;
+              });
+            %>
+
+            <button class="checkout-btn" <%= hasOutOfStockItems ? 'disabled' : '' %> onclick="proceedToCheckout()">
+              <% if (hasOutOfStockItems) { %>
+                <i class="fas fa-exclamation-triangle me-2"></i>Remove Unavailable Items
+              <% } else { %>
+                <i class="fas fa-credit-card me-2"></i>Proceed to Checkout
+              <% } %>
+            </button>
+
+            <div class="text-center mt-3">
+              <a href="/shop" class="continue-shopping">
+                <i class="fas fa-arrow-left me-2"></i>Continue Shopping
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="empty-cart">
+        <i class="fas fa-shopping-cart"></i>
+        <h3>Your Cart is Empty</h3>
+        <p>Looks like you haven't added any items to your cart yet.</p>
+        <a href="/shop" class="continue-shopping">
+          <i class="fas fa-shopping-bag me-2"></i>Start Shopping
+        </a>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-section">
+        <h5>About Luxe Scents</h5>
+        <p style="color: #b0b0b0; max-width: 300px;">
+          Discover the finest luxury fragrances crafted for every occasion. Elevate your senses with Luxe Scents.
+        </p>
+      </div>
+      <div class="footer-section">
+        <h5>Quick Links</h5>
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/shop">Shop</a></li>
+          <li><a href="/cart">Cart</a></li>
+          <li><a href="/wishlist">Wishlist</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h5>Follow Us</h5>
+        <div class="social-icons">
+          <a href="#"><i class="fab fa-facebook-f"></i></a>
+          <a href="#"><i class="fab fa-instagram"></i></a>
+          <a href="#"><i class="fab fa-twitter"></i></a>
+          <a href="#"><i class="fab fa-pinterest"></i></a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 Luxe Scents. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function updateQuantity(productId, quantity) {
+      quantity = parseInt(quantity);
+
+      if (quantity < 1) {
+        removeFromCart(productId);
+        return;
+      }
+
+      fetch('/cart/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ productId, quantity })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          location.reload();
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: data.message,
+            confirmButtonColor: '#6200ea'
+          });
+        }
+      })
+      .catch(error => {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to update cart',
+          confirmButtonColor: '#6200ea'
+        });
+      });
+    }
+
+    function removeFromCart(productId) {
+      Swal.fire({
+        title: 'Remove Item?',
+        text: 'Are you sure you want to remove this item from your cart?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, remove it'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          fetch(`/cart/remove/${productId}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              location.reload();
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message,
+                confirmButtonColor: '#6200ea'
+              });
+            }
+          })
+          .catch(error => {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'Failed to remove item',
+              confirmButtonColor: '#6200ea'
+            });
+          });
+        }
+      });
+    }
+
+    function proceedToCheckout() {
+      // Redirect to checkout page
+      window.location.href = '/checkout';
+    }
+  </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
-import { Category } from "../model/categoryModel.js";
-import { catchAsyncError } from "../middlewares/catchAsync.js";
+import { Category } from "../../model/categoryModel.js";
+import { catchAsyncError } from "../../middlewares/catchAsync.js";
 
 export const categoryInfo = catchAsyncError(async (req, res, next) => {
     try {

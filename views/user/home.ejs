@@ -206,18 +206,22 @@
           </li>
         </ul>
         <div class="navbar-icons">
-          <a href="#" class="position-relative" onclick="showWishlist()">
+          <a href="/wishlist" class="position-relative">
             <i class="fas fa-heart"></i>
+            <span class="wishlist-count" id="wishlistCount">0</span>
           </a>
-          <a href="#" class="position-relative" onclick="showCart()">
+          <a href="/cart" class="position-relative">
             <i class="fas fa-shopping-cart"></i>
-            <span class="cart-count">2</span>
+            <span class="cart-count" id="cartCount">0</span>
           </a>
           <div class="dropdown">
             <a href="#" class="dropdown-toggle" role="button" data-bs-toggle="dropdown">
               <i class="fas fa-user-circle"></i>
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="/profile">My Profile</a></li>
+              <li><a class="dropdown-item" href="/addresses">My Addresses</a></li>
+              <li><hr class="dropdown-divider" style="border-color: #444;"></li>
               <li><a class="dropdown-item" href="#" onclick="confirmLogout(event)">Logout</a></li>
             </ul>
           </div>
@@ -265,7 +269,12 @@
         <% if (featuredProducts && featuredProducts.length > 0) { %>
           <% featuredProducts.forEach(product => { %>
             <div class="col-md-3">
-              <div class="card product-card" style="border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: transform 0.3s, box-shadow 0.3s; margin-bottom: 1.5rem;">
+              <div class="card product-card" style="border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: transform 0.3s, box-shadow 0.3s; margin-bottom: 1.5rem; position: relative;">
+                <!-- Wishlist Button -->
+                <button class="btn btn-outline-danger wishlist-btn" onclick="addToWishlist('<%= product._id %>')" style="position: absolute; top: 10px; right: 10px; z-index: 10; border-radius: 50%; width: 40px; height: 40px; padding: 0; background: rgba(255,255,255,0.9); border: 1px solid #dc3545;">
+                  <i class="fas fa-heart" style="color: #dc3545;"></i>
+                </button>
+
                 <a href="/product/<%= product._id %>" class="text-decoration-none">
                   <div class="product-thumb" style="height: 200px; overflow: hidden;">
                     <% if (product.productImage && product.productImage.length > 0) { %>
@@ -333,7 +342,12 @@
         <% if (latestProducts && latestProducts.length > 0) { %>
           <% latestProducts.forEach(product => { %>
             <div class="col-md-3">
-              <div class="card product-card" style="border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: transform 0.3s, box-shadow 0.3s; margin-bottom: 1.5rem;">
+              <div class="card product-card" style="border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: transform 0.3s, box-shadow 0.3s; margin-bottom: 1.5rem; position: relative;">
+                <!-- Wishlist Button -->
+                <button class="btn btn-outline-danger wishlist-btn" onclick="addToWishlist('<%= product._id %>')" style="position: absolute; top: 10px; right: 10px; z-index: 10; border-radius: 50%; width: 40px; height: 40px; padding: 0; background: rgba(255,255,255,0.9); border: 1px solid #dc3545;">
+                  <i class="fas fa-heart" style="color: #dc3545;"></i>
+                </button>
+
                 <a href="/product/<%= product._id %>" class="text-decoration-none">
                   <div class="product-thumb" style="height: 200px; overflow: hidden;">
                     <% if (product.productImage && product.productImage.length > 0) { %>
@@ -476,7 +490,41 @@
       // The server already renders the first page correctly with sale prices
       initializePaginationControls('featured');
       initializePaginationControls('latest');
+
+      // Update cart and wishlist counts
+      updateCounts();
     });
+
+    // Update cart and wishlist counts in header
+    function updateCounts() {
+      fetch('/api/cart/count')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const cartBadge = document.getElementById('cartCount');
+            if (cartBadge) {
+              cartBadge.textContent = data.cartCount;
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Error updating cart count:', error);
+        });
+
+      fetch('/api/wishlist/count')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const wishlistBadge = document.getElementById('wishlistCount');
+            if (wishlistBadge) {
+              wishlistBadge.textContent = data.wishlistCount;
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Error updating wishlist count:', error);
+        });
+    }
 
     // Initialize pagination controls without loading content
     function initializePaginationControls(section) {
@@ -714,22 +762,56 @@
       `;
     }
 
-    function showWishlist() {
-      Swal.fire({
-        icon: 'info',
-        title: 'Wishlist',
-        text: 'Your wishlist is currently empty.',
-        confirmButtonColor: '#6200ea'
+    // Add to wishlist function
+    function addToWishlist(productId) {
+      fetch('/wishlist/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productId: productId
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Added to Wishlist!',
+            text: data.message,
+            confirmButtonColor: '#6200ea',
+            timer: 2000,
+            timerProgressBar: true
+          });
+
+          // Update wishlist count in header
+          updateCounts();
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: data.message,
+            confirmButtonColor: '#6200ea'
+          });
+        }
+      })
+      .catch(error => {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to add item to wishlist',
+          confirmButtonColor: '#6200ea'
+        });
       });
     }
 
+    function showWishlist() {
+      window.location.href = '/wishlist';
+    }
+
     function showCart() {
-      Swal.fire({
-        icon: 'info',
-        title: 'Cart',
-        text: 'You have 2 items in your cart.',
-        confirmButtonColor: '#6200ea'
-      });
+      window.location.href = '/cart';
     }
 
     function confirmLogout(event) {

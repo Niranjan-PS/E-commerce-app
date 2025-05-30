@@ -4,71 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/admin.css">
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-    }
-
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      display: flex;
-      background-color: #f4f4f4;
-    }
-
-    .container {
-      display: flex;
-      width: 100%;
-      height: 100vh;
-      text-decoration: none;
-    }
-
-    .sidebar {
-      width: 250px;
-      background: black;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 20px;
-      text-decoration: none;
-    }
-
-    .sidebar .logo {
-      font-size: 1.5em;
-      margin-bottom: 20px;
-    }
-
-    .sidebar .menu li {
-      list-style: none;
-      margin: 10px 0;
-      padding: 8px;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-
-    .sidebar .menu li:hover,
-    .sidebar .menu li.active {
-      background: white;
-      color: black;
-      text-decoration: none;
-    }
-
-    .logout {
-      background: red;
-      color: white;
-      border: none;
-      padding: 10px;
-      cursor: pointer;
-      border-radius: 5px;
-      text-decoration: none;
-    }
-
-    .main-content {
-      flex-grow: 1;
-      padding: 20px;
-      overflow-y: auto;
     }
 
     .top-bar {
@@ -128,35 +70,14 @@
       width: 100%;
       height: 300px;
     }
-    .adminS{
-        text-decoration: none;
-    }
+
     a {
-  text-decoration: none;  
-  color: inherit;         
-  cursor: pointer;        
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+    }
 
     @media (max-width: 768px) {
-      .container {
-        flex-direction: column;
-      }
-
-      .sidebar {
-        width: 100%;
-        flex-direction: row;
-        overflow-x: auto;
-      }
-
-      .sidebar .menu {
-        display: flex;
-        gap: 10px;
-        flex-wrap: nowrap;
-      }
-
-      .main-content {
-        padding: 10px;
-      }
-
       .top-bar {
         justify-content: center;
       }
@@ -164,24 +85,10 @@
   </style>
 </head>
 <body>
-  <div class="container">
-    <aside class="sidebar">
-      <div class="logo">Admin</div>
-     <ul class="menu">
-  <li class="active"><a href="/admin/dashboard">Dashboard</a></li>
-  <li><a href="/admin/products" class="adminS">Products</a></li>
-  <li><a href="/admin/orders">Order Lists</a></li>
-  <li><a href="/admin/users">Users</a></li>
-  <li><a href="/admin/sales">Sales</a></li>
-  <li><a href="/admin/coupons">Coupons</a></li>
-  <li><a href="/admin/category">Category</a></li>
-  <li><a href="/admin/banner">Banner</a></li>
-  <li><a href="/admin/offer">Offer</a></li>
-</ul>
-      <button class="logout">Logout</button>
-    </aside>
+  <!-- Include Admin Sidebar -->
+  <%- include('partials/sidebar', { page: 'dashboard' }) %>
 
-    <main class="main-content">
+  <div class="main-content">
       <div class="top-bar">
         <input type="text" placeholder="Search" class="search-input" />
       </div>
@@ -195,6 +102,41 @@
         <div class="card">Total Pending <span>3,552</span></div>
       </div>
 
+      <!-- Quick Access Section -->
+      <div style="margin: 2rem 0;">
+        <h3 style="margin-bottom: 1rem; color: #333;">Quick Access</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+          <a href="/admin/inventory" style="text-decoration: none;">
+            <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 1.5rem; border-radius: 10px; text-align: center; transition: transform 0.3s ease; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+              <i class="fas fa-boxes" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+              <h4 style="margin: 0; font-size: 1.1rem;">Inventory Management</h4>
+              <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; opacity: 0.9;">Manage stock & products</p>
+            </div>
+          </a>
+          <a href="/admin/inventory/alerts" style="text-decoration: none;">
+            <div style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); color: white; padding: 1.5rem; border-radius: 10px; text-align: center; transition: transform 0.3s ease; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+              <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+              <h4 style="margin: 0; font-size: 1.1rem;">Stock Alerts</h4>
+              <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; opacity: 0.9;">Low & out of stock</p>
+            </div>
+          </a>
+          <a href="/admin/orders" style="text-decoration: none;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 10px; text-align: center; transition: transform 0.3s ease; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+              <i class="fas fa-shopping-cart" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+              <h4 style="margin: 0; font-size: 1.1rem;">Order Management</h4>
+              <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; opacity: 0.9;">Manage customer orders</p>
+            </div>
+          </a>
+          <a href="/admin/return-requests" style="text-decoration: none;">
+            <div style="background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%); color: white; padding: 1.5rem; border-radius: 10px; text-align: center; transition: transform 0.3s ease; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+              <i class="fas fa-undo" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+              <h4 style="margin: 0; font-size: 1.1rem;">Return Requests</h4>
+              <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; opacity: 0.9;">Handle return requests</p>
+            </div>
+          </a>
+        </div>
+      </div>
+
       <div class="sales-section">
         <div class="sales-header">
           <h3>Sales Details</h3>
@@ -206,7 +148,6 @@
         </div>
         <canvas id="salesChart"></canvas>
       </div>
-    </main>
   </div>
 
   <!-- Chart.js CDN -->
@@ -241,14 +182,6 @@
     // Dropdown event listener
     document.getElementById('monthSelect').addEventListener('change', function () {
       alert(`Loading sales data for ${this.value}`);
-    });
-
-    // Sidebar active class toggle
-    document.querySelectorAll('.menu li').forEach(item => {
-      item.addEventListener('click', () => {
-        document.querySelector('.menu li.active')?.classList.remove('active');
-        item.classList.add('active');
-      });
     });
   </script>
 </body>

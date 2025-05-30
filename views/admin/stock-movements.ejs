@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Movements - Admin Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <style>
+    body {
+      background-color: #f8f9fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .admin-header {
+      background: linear-gradient(135deg, #6f42c1 0%, #007bff 100%);
+      color: white;
+      padding: 2rem 0;
+      margin-bottom: 2rem;
+    }
+
+    .movement-card {
+      background: white;
+      border-radius: 15px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+    }
+
+    .movement-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .movement-in {
+      border-left: 4px solid #28a745;
+    }
+
+    .movement-out {
+      border-left: 4px solid #dc3545;
+    }
+
+    .movement-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      color: white;
+    }
+
+    .icon-in {
+      background: #28a745;
+    }
+
+    .icon-out {
+      background: #dc3545;
+    }
+
+    .icon-return {
+      background: #ffc107;
+      color: #212529;
+    }
+
+    .status-badge {
+      padding: 0.5rem 1rem;
+      border-radius: 25px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+    }
+
+    .status-placed { background-color: #cce5ff; color: #004085; }
+    .status-cancelled { background-color: #f8d7da; color: #721c24; }
+    .status-returned { background-color: #ffeaa7; color: #6c5ce7; }
+    .status-delivered { background-color: #d1ecf1; color: #0c5460; }
+
+    .action-btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+      margin: 0.2rem;
+      transition: all 0.3s ease;
+    }
+
+    .btn-view { background: #007bff; color: white; }
+    .btn-view:hover { background: #0056b3; color: white; }
+
+    .btn-back { background: #6c757d; color: white; }
+    .btn-back:hover { background: #5a6268; color: white; }
+
+    .pagination-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+
+    .summary-card {
+      background: white;
+      border-radius: 15px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 2rem;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 0.5rem;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #dee2e6;
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -0.75rem;
+      top: 0.5rem;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #007bff;
+      border: 2px solid white;
+      box-shadow: 0 0 0 2px #007bff;
+    }
+
+    .movement-details {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+
+    .product-list {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .product-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .product-item:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Include Admin Sidebar -->
+  <%- include('../partials/admin/sidebar', { page: 'stock-movements' }) %>
+
+  <div class="main-content">
+    <!-- Admin Header -->
+    <div class="admin-header">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-md-6">
+            <h1><i class="fas fa-history me-3"></i>Stock Movements</h1>
+            <p class="mb-0">Track inventory changes and order impacts</p>
+          </div>
+          <div class="col-md-6 text-end">
+            <a href="/admin/inventory" class="action-btn btn-back">
+              <i class="fas fa-arrow-left me-2"></i>Back to Inventory
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+    <!-- Summary -->
+    <div class="summary-card">
+      <div class="row text-center">
+        <div class="col-md-4">
+          <h4 class="text-primary"><%= totalMovements %></h4>
+          <p class="text-muted mb-0">Total Movements</p>
+        </div>
+        <div class="col-md-4">
+          <h4 class="text-success">
+            <%= stockMovements.filter(m => m.orderStatus === 'Cancelled' || m.returnStatus === 'Approved').length %>
+          </h4>
+          <p class="text-muted mb-0">Stock Restored</p>
+        </div>
+        <div class="col-md-4">
+          <h4 class="text-danger">
+            <%= stockMovements.filter(m => ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered'].includes(m.orderStatus)).length %>
+          </h4>
+          <p class="text-muted mb-0">Stock Reduced</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stock Movements List -->
+    <% if (stockMovements && stockMovements.length > 0) { %>
+      <% stockMovements.forEach(movement => { %>
+        <%
+          let movementType = 'out'; // Default: stock reduced
+          let movementIcon = 'fas fa-arrow-down';
+          let movementText = 'Stock Reduced';
+
+          if (movement.orderStatus === 'Cancelled' || movement.returnStatus === 'Approved') {
+            movementType = 'in';
+            movementIcon = 'fas fa-arrow-up';
+            movementText = movement.orderStatus === 'Cancelled' ? 'Order Cancelled' : 'Return Approved';
+          } else if (movement.returnStatus === 'Requested') {
+            movementType = 'return';
+            movementIcon = 'fas fa-undo';
+            movementText = 'Return Requested';
+          }
+        %>
+
+        <div class="movement-card movement-<%= movementType %>">
+          <div class="row align-items-center">
+            <div class="col-md-1">
+              <div class="movement-icon icon-<%= movementType %>">
+                <i class="<%= movementIcon %>"></i>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <h6 class="mb-1">Order #<%= movement.orderNumber %></h6>
+              <p class="text-muted mb-1">
+                <%= new Date(movement.orderDate).toLocaleDateString('en-IN', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                }) %>
+              </p>
+              <small class="text-muted"><%= movementText %></small>
+            </div>
+            <div class="col-md-2">
+              <h6 class="mb-1">Customer</h6>
+              <p class="mb-0"><%= movement.user.name %></p>
+              <small class="text-muted"><%= movement.user.email %></small>
+            </div>
+            <div class="col-md-2">
+              <h6 class="mb-1">Amount</h6>
+              <p class="mb-0 fw-bold">₹<%= movement.totalAmount.toFixed(2) %></p>
+              <small class="text-muted"><%= movement.items.length %> item(s)</small>
+            </div>
+            <div class="col-md-2">
+              <div class="d-flex flex-column align-items-center">
+                <span class="status-badge status-<%= movement.orderStatus.toLowerCase() %>">
+                  <%= movement.orderStatus %>
+                </span>
+                <% if (movement.returnStatus && movement.returnStatus !== 'None') { %>
+                  <small class="text-muted mt-1">Return: <%= movement.returnStatus %></small>
+                <% } %>
+              </div>
+            </div>
+            <div class="col-md-2 text-end">
+              <a href="/admin/orders/<%= movement._id %>" class="action-btn btn-view">
+                <i class="fas fa-eye me-1"></i>View Order
+              </a>
+            </div>
+          </div>
+
+          <!-- Movement Details -->
+          <div class="movement-details">
+            <h6 class="mb-3">
+              <i class="fas fa-boxes me-2"></i>Products Affected
+              <% if (movementType === 'in') { %>
+                <span class="badge bg-success ms-2">Stock Restored</span>
+              <% } else if (movementType === 'out') { %>
+                <span class="badge bg-danger ms-2">Stock Reduced</span>
+              <% } else { %>
+                <span class="badge bg-warning ms-2">Pending Return</span>
+              <% } %>
+            </h6>
+            <div class="product-list">
+              <% movement.items.forEach(item => { %>
+                <div class="product-item">
+                  <div>
+                    <strong><%= item.productName %></strong>
+                    <% if (item.product && item.product.productName) { %>
+                      <br><small class="text-muted">SKU: <%= item.product._id %></small>
+                    <% } %>
+                  </div>
+                  <div class="text-end">
+                    <div class="fw-bold">
+                      <% if (movementType === 'in') { %>
+                        <span class="text-success">+<%= item.quantity %></span>
+                      <% } else if (movementType === 'out') { %>
+                        <span class="text-danger">-<%= item.quantity %></span>
+                      <% } else { %>
+                        <span class="text-warning">~<%= item.quantity %></span>
+                      <% } %>
+                    </div>
+                    <small class="text-muted">₹<%= (item.salePrice || item.price).toFixed(2) %> each</small>
+                  </div>
+                </div>
+              <% }); %>
+            </div>
+
+            <!-- Additional Information -->
+            <div class="row mt-3">
+              <div class="col-md-6">
+                <small class="text-muted">
+                  <i class="fas fa-clock me-1"></i>
+                  <% if (movement.deliveredAt) { %>
+                    Delivered: <%= new Date(movement.deliveredAt).toLocaleDateString('en-IN') %>
+                  <% } else if (movement.cancelledAt) { %>
+                    Cancelled: <%= new Date(movement.cancelledAt).toLocaleDateString('en-IN') %>
+                  <% } else if (movement.returnRequestedAt) { %>
+                    Return Requested: <%= new Date(movement.returnRequestedAt).toLocaleDateString('en-IN') %>
+                  <% } else { %>
+                    Order Placed: <%= new Date(movement.orderDate).toLocaleDateString('en-IN') %>
+                  <% } %>
+                </small>
+              </div>
+              <div class="col-md-6 text-end">
+                <small class="text-muted">
+                  <i class="fas fa-credit-card me-1"></i>
+                  Payment: <%= movement.paymentMethod %> (<%= movement.paymentStatus %>)
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+
+      <!-- Pagination -->
+      <% if (totalPages > 1) { %>
+        <div class="pagination-container">
+          <nav aria-label="Stock movements pagination">
+            <ul class="pagination">
+              <% if (currentPage > 1) { %>
+                <li class="page-item">
+                  <a class="page-link" href="?page=<%= currentPage - 1 %>">
+                    <i class="fas fa-chevron-left"></i>
+                  </a>
+                </li>
+              <% } %>
+
+              <% for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) { %>
+                <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                  <a class="page-link" href="?page=<%= i %>">
+                    <%= i %>
+                  </a>
+                </li>
+              <% } %>
+
+              <% if (currentPage < totalPages) { %>
+                <li class="page-item">
+                  <a class="page-link" href="?page=<%= currentPage + 1 %>">
+                    <i class="fas fa-chevron-right"></i>
+                  </a>
+                </li>
+              <% } %>
+            </ul>
+          </nav>
+        </div>
+      <% } %>
+
+    <% } else { %>
+      <!-- Empty State -->
+      <div class="movement-card text-center">
+        <div class="py-5">
+          <i class="fas fa-history fa-3x text-muted mb-3"></i>
+          <h3>No Stock Movements</h3>
+          <p class="text-muted">No inventory movements have been recorded yet.</p>
+          <a href="/admin/inventory" class="btn btn-primary">
+            <i class="fas fa-boxes me-2"></i>View Inventory
+          </a>
+        </div>
+      </div>
+    <% } %>
+    </div> <!-- End container -->
+  </div> <!-- End main-content -->
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

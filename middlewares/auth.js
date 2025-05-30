@@ -17,7 +17,7 @@ export const isAuthenticated = catchAsyncError(async(req,res,next)=>{
         const userId = decoded.userId || decoded.id
         req.user =  await User.findById(userId)
 
-        // Check if user exists
+        // Check if user exists 
         if(!req.user) {
             res.clearCookie('token');
             return res.redirect('/login?error=User not found');

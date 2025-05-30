@@ -1,8 +1,8 @@
-import {User } from "../model/userModel.js"
+import {User } from "../../model/userModel.js"
 import mongoose from "mongoose"
 import bcrypt from "bcrypt"
-import { catchAsyncError } from "../middlewares/catchAsync.js";
-import { sendToken } from "../utils/sendToken.js";
+import { catchAsyncError } from "../../middlewares/catchAsync.js";
+import { sendToken } from "../../utils/sendToken.js";
 
 
 export const loadLogin=catchAsyncError(async (req, res, next) =>{
@@ -16,7 +16,7 @@ export const adminLogin = catchAsyncError(async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
-        
+
         if (!email || !password) {
             return res.status(400).send("Email and password are required");
         }
@@ -27,30 +27,30 @@ export const adminLogin = catchAsyncError(async (req, res, next) => {
         console.log("Fetched Admin:", admin);
 
         if (!admin) {
-           
+
             return res.redirect('/login');
         }
 
-       
+
         if (!admin.password) {
              return res.redirect('/login');
         }
 
         console.log("Admin Password Hash:", admin.password);
 
-        
+
         const isPasswordMatched = await bcrypt.compare(password, admin.password);
 
-        
+
         if (!isPasswordMatched) {
             console.log("Password mismatch");
             return res.redirect('/admin-login');
         }
 
-        
+
          sendToken(admin, res);
        return  res.redirect('/admin/dashboard')
-        
+
 
     } catch (error) {
         console.log("Login error:", error.message);

@@ -1,0 +1,132 @@
+<!-- Admin Sidebar -->
+<aside class="admin-sidebar">
+  <div class="sidebar-content">
+    <div class="logo">
+      <i class="fas fa-cog"></i> Admin Panel
+    </div>
+    <ul class="menu">
+      <li class="<%= typeof page !== 'undefined' && page === 'dashboard' ? 'active' : '' %>">
+        <a href="/admin/dashboard">
+          <i class="fas fa-tachometer-alt"></i>
+          Dashboard
+        </a>
+      </li>
+      <li class="<%= typeof page !== 'undefined' && page === 'products' ? 'active' : '' %>">
+        <a href="/admin/products">
+          <i class="fas fa-box"></i>
+          Products
+        </a>
+      </li>
+      <li class="<%= typeof page !== 'undefined' && (page === 'inventory' || page === 'stock-alerts' || page === 'stock-movements') ? 'active' : '' %>">
+        <a href="/admin/inventory" onclick="toggleSubmenu('inventory-submenu', event)">
+          <i class="fas fa-boxes"></i>
+          Inventory
+          <i class="fas fa-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="submenu <% if (typeof page !== 'undefined' && (page === 'inventory' || page === 'stock-alerts' || page === 'stock-movements')) { %>show<% } %>" id="inventory-submenu">
+          <li><a href="/admin/inventory"><i class="fas fa-list"></i> All Products</a></li>
+          <li><a href="/admin/inventory/alerts"><i class="fas fa-exclamation-triangle"></i> Stock Alerts</a></li>
+          <li><a href="/admin/inventory/movements"><i class="fas fa-history"></i> Stock Movements</a></li>
+        </ul>
+      </li>
+      <li class="<%= typeof page !== 'undefined' && (page === 'orders' || page === 'return-requests' || page === 'order-details') ? 'active' : '' %>">
+        <a href="/admin/orders" onclick="toggleSubmenu('orders-submenu', event)">
+          <i class="fas fa-shopping-cart"></i>
+          Orders
+          <i class="fas fa-chevron-down submenu-arrow"></i>
+        </a>
+        <ul class="submenu <% if (typeof page !== 'undefined' && (page === 'orders' || page === 'return-requests' || page === 'order-details')) { %>show<% } %>" id="orders-submenu">
+          <li><a href="/admin/orders"><i class="fas fa-list"></i> All Orders</a></li>
+          <li><a href="/admin/return-requests"><i class="fas fa-undo"></i> Return Requests</a></li>
+        </ul>
+      </li>
+      <li class="<%= typeof page !== 'undefined' && page === 'users' ? 'active' : '' %>">
+        <a href="/admin/users">
+          <i class="fas fa-users"></i>
+          Users
+        </a>
+      </li>
+      <li class="<%= typeof page !== 'undefined' && page === 'category' ? 'active' : '' %>">
+        <a href="/admin/category">
+          <i class="fas fa-tags"></i>
+          Categories
+        </a>
+      </li>
+      <li class="<%= typeof page !== 'undefined' && page === 'sales' ? 'active' : '' %>">
+        <a href="/admin/sales">
+          <i class="fas fa-chart-line"></i>
+          Sales
+        </a>
+      </li>
+      <li class="<%= typeof page !== 'undefined' && page === 'coupons' ? 'active' : '' %>">
+        <a href="/admin/coupons">
+          <i class="fas fa-ticket-alt"></i>
+          Coupons
+        </a>
+      </li>
+      <li class="<%= typeof page !== 'undefined' && page === 'offers' ? 'active' : '' %>">
+        <a href="/admin/offers">
+          <i class="fas fa-percent"></i>
+          Offers
+        </a>
+      </li>
+      <li class="<%= typeof page !== 'undefined' && page === 'banner' ? 'active' : '' %>">
+        <a href="/admin/banner">
+          <i class="fas fa-image"></i>
+          Banners
+        </a>
+      </li>
+    </ul>
+  </div>
+  <button class="admin-logout" onclick="adminLogout()">
+    <i class="fas fa-sign-out-alt"></i> Logout
+  </button>
+</aside>
+
+<script>
+  function adminLogout() {
+    if (confirm('Are you sure you want to logout?')) {
+      window.location.href = '/admin/logout';
+    }
+  }
+
+  function toggleSubmenu(submenuId, event) {
+    if (event) {
+      event.preventDefault();
+    }
+    const submenu = document.getElementById(submenuId);
+    if (submenu) {
+      submenu.classList.toggle('show');
+      
+      // Toggle arrow direction
+      const arrow = event.target.closest('a').querySelector('.submenu-arrow');
+      if (arrow) {
+        arrow.style.transform = submenu.classList.contains('show') ? 'rotate(180deg)' : 'rotate(0deg)';
+      }
+    }
+  }
+
+  // Auto-expand submenus and highlight current page
+  document.addEventListener('DOMContentLoaded', function() {
+    const currentPath = window.location.pathname;
+    
+    // Auto-expand submenus based on current page
+    if (currentPath.includes('/inventory')) {
+      const inventorySubmenu = document.getElementById('inventory-submenu');
+      if (inventorySubmenu) {
+        inventorySubmenu.classList.add('show');
+        const arrow = document.querySelector('a[onclick*="inventory-submenu"] .submenu-arrow');
+        if (arrow) arrow.style.transform = 'rotate(180deg)';
+      }
+    }
+    
+    if (currentPath.includes('/orders') || currentPath.includes('/return-requests')) {
+      const ordersSubmenu = document.getElementById('orders-submenu');
+      if (ordersSubmenu) {
+        ordersSubmenu.classList.add('show');
+        const arrow = document.querySelector('a[onclick*="orders-submenu"] .submenu-arrow');
+        if (arrow) arrow.style.transform = 'rotate(180deg)';
+      }
+    }
+  });
+</script>

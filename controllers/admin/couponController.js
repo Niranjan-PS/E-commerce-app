@@ -1,6 +1,6 @@
-import { Coupon } from "../model/couponModel.js";
-import { catchAsyncError } from "../middlewares/catchAsync.js";
-import ErrorHandler from "../middlewares/error.js";
+import { Coupon } from "../../model/couponModel.js";
+import { catchAsyncError } from "../../middlewares/catchAsync.js";
+import ErrorHandler from "../../middlewares/error.js";
 
 // Create dummy coupons for testing
 export const createDummyCoupons = catchAsyncError(async (req, res, next) => {

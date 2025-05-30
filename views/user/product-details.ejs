@@ -571,12 +571,13 @@
           </li>
         </ul>
         <div class="navbar-icons">
-          <a href="#" class="position-relative" onclick="showWishlist()">
+          <a href="/wishlist" class="position-relative">
             <i class="fas fa-heart"></i>
+            <span class="cart-count" id="wishlistCount">0</span>
           </a>
-          <a href="#" class="position-relative" onclick="showCart()">
+          <a href="/cart" class="position-relative">
             <i class="fas fa-shopping-cart"></i>
-            <span class="cart-count">2</span>
+            <span class="cart-count" id="cartCount">0</span>
           </a>
           <div class="dropdown">
             <a href="#" class="dropdown-toggle" role="button" data-bs-toggle="dropdown">
@@ -1160,15 +1161,15 @@
     }
 
 
-    // function incrementQuantity() {
-    //   const quantityInput = document.getElementById('quantity');
-    //   const maxQuantity = <%- product.quantity %>;
-    //   let currentValue = parseInt(quantityInput.value);
+    function incrementQuantity() {
+      const quantityInput = document.getElementById('quantity');
+      const maxQuantity = Math.min(<%- product.quantity %>, 10); // Max 10 per product
+      let currentValue = parseInt(quantityInput.value);
 
-    //   if (currentValue < maxQuantity) {
-    //     quantityInput.value = currentValue + 1;
-    //   }
-    // }
+      if (currentValue < maxQuantity) {
+        quantityInput.value = currentValue + 1;
+      }
+    }
 
     function decrementQuantity() {
       const quantityInput = document.getElementById('quantity');
@@ -1183,25 +1184,90 @@
     function addToCart(productId) {
       const quantity = document.getElementById('quantity').value;
 
-      Swal.fire({
-        icon: 'success',
-        title: 'Added to Cart!',
-        text: `${quantity} item(s) added to your cart.`,
-        confirmButtonColor: '#6200ea',
-        timer: 2000,
-        timerProgressBar: true
+      fetch('/cart/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productId: productId,
+          quantity: parseInt(quantity)
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Added to Cart!',
+            text: data.message,
+            confirmButtonColor: '#6200ea',
+            timer: 2000,
+            timerProgressBar: true
+          });
+
+          // Update cart and wishlist counts in header
+          updateCounts();
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: data.message,
+            confirmButtonColor: '#6200ea'
+          });
+        }
+      })
+      .catch(error => {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to add item to cart',
+          confirmButtonColor: '#6200ea'
+        });
       });
     }
 
     // Add to wishlist function
     function addToWishlist(productId) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Added to Wishlist!',
-        text: 'Product has been added to your wishlist.',
-        confirmButtonColor: '#6200ea',
-        timer: 2000,
-        timerProgressBar: true
+      fetch('/wishlist/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productId: productId
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Added to Wishlist!',
+            text: data.message,
+            confirmButtonColor: '#6200ea',
+            timer: 2000,
+            timerProgressBar: true
+          });
+
+          // Update wishlist count in header
+          updateCounts();
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: data.message,
+            confirmButtonColor: '#6200ea'
+          });
+        }
+      })
+      .catch(error => {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to add item to wishlist',
+          confirmButtonColor: '#6200ea'
+        });
       });
     }
 
@@ -1213,6 +1279,42 @@
         confirmButtonColor: '#6200ea'
       });
     }
+
+    // Update cart and wishlist counts in header
+    function updateCounts() {
+      fetch('/api/cart/count')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const cartBadge = document.getElementById('cartCount');
+            if (cartBadge) {
+              cartBadge.textContent = data.cartCount;
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Error updating cart count:', error);
+        });
+
+      fetch('/api/wishlist/count')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const wishlistBadge = document.getElementById('wishlistCount');
+            if (wishlistBadge) {
+              wishlistBadge.textContent = data.wishlistCount;
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Error updating wishlist count:', error);
+        });
+    }
+
+    // Initialize counts on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      updateCounts();
+    });
 
     function showCart() {
       Swal.fire({

@@ -1,5 +1,5 @@
-import {Product} from "../model/productModel.js"
-import {Category }from "../model/categoryModel.js";
+import {Product} from "../../model/productModel.js"
+import {Category }from "../../model/categoryModel.js";
 import mongoose from "mongoose";
 import fs from "fs";
 import path from "path";

@@ -6,27 +6,80 @@ import {
   resendOtp,
   login,
   logout,
-  forgotPassword,
-  resetPassword,
   loadHomePage,
   loadShopPage,
   getProductDetails,
   checkUserStatus,
   pagenotFound
-} from "../controllers/userController.js";
+} from "../controllers/user/userController.js";
 import {
   createDummyCoupons,
   validateCoupon,
   getActiveCoupons
-} from "../controllers/couponController.js";
+} from "../controllers/admin/couponController.js";
 import {
   addReview,
   getProductReviews,
   updateReview,
   deleteReview
-} from "../controllers/reviewController.js";
+} from "../controllers/user/reviewController.js";
+import {
+  viewProfile,
+  loadEditProfile,
+  updateProfile,
+  requestEmailChange,
+  verifyEmailChange,
+  loadChangePassword,
+  changePassword,
+  loadForgotPassword,
+  forgotPassword,
+  loadResetPassword,
+  resetPassword
+} from "../controllers/user/profileController.js";
+import {
+  getAddresses,
+  loadAddAddress,
+  addAddress,
+  loadEditAddress,
+  updateAddress,
+  deleteAddress,
+  setDefaultAddress,
+  getAddressesForCheckout
+} from "../controllers/user/addressController.js";
+import {
+  getCart,
+  addToCart,
+  updateCartQuantity,
+  removeFromCart,
+  clearCart,
+  getCartCount
+} from "../controllers/user/cartController.js";
+import {
+  getWishlist,
+  addToWishlist,
+  removeFromWishlist,
+  clearWishlist,
+  getWishlistCount,
+  moveToCart
+} from "../controllers/user/wishlistController.js";
+import {
+  getCheckout,
+  applyCoupon,
+  removeCoupon,
+  placeOrder,
+  getOrderSuccess
+} from "../controllers/user/checkoutController.js";
+import {
+  getOrderDetails,
+  getUserOrders,
+  cancelOrder,
+  returnOrder,
+  downloadInvoice,
+  markOrderDelivered
+} from "../controllers/user/orderController.js";
+import { profileUpload, processProfileImage } from "../helpers/multer.js";
 import { isAuthenticated } from "../middlewares/auth.js";
-import { getUserProductList } from "../controllers/userProductController.js";
+import { getUserProductList } from "../controllers/user/userProductController.js";
 import passport from "../passport.js";
 
 const router = express.Router();
@@ -84,18 +137,7 @@ router.get("/reviews/:productId", getProductReviews);
 router.put("/reviews/:reviewId", isAuthenticated, updateReview);
 router.delete("/reviews/:reviewId", isAuthenticated, deleteReview);
 
-router.get("/password/forgot", (req, res) => {
-  res.render("user/forgot-password");
-});
 
-router.post("/password/forgot", forgotPassword);
-
-router.get("/password/reset/:token", (req, res) => {
-  const { token } = req.params;
-  res.render("user/reset-password", { token });
-});
-
-router.post("/password/reset/:token", resetPassword);
 
 router.get('/google', (req, res, next) => {
   console.log('🔗 Google OAuth initiated');
@@ -133,6 +175,62 @@ router.get('/google/callback', (req, res, next) => {
 });
 
 router.get("/user-products", getUserProductList);
+
+// Profile routes
+router.get("/profile", isAuthenticated, viewProfile);
+router.get("/profile/edit", isAuthenticated, loadEditProfile);
+router.post("/profile/edit", isAuthenticated, profileUpload.single('profileImage'), processProfileImage, updateProfile);
+router.post("/profile/change-email", isAuthenticated, requestEmailChange);
+router.get("/profile/verify-email/:token", verifyEmailChange);
+router.get("/profile/change-password", isAuthenticated, loadChangePassword);
+router.post("/profile/change-password", isAuthenticated, changePassword);
+
+// Forgot Password routes
+router.get("/forgot-password", loadForgotPassword);
+router.post("/forgot-password", forgotPassword);
+router.get("/reset-password/:token", loadResetPassword);
+router.post("/reset-password/:token", resetPassword);
+
+// Address routes
+router.get("/addresses", isAuthenticated, getAddresses);
+router.get("/addresses/add", isAuthenticated, loadAddAddress);
+router.post("/addresses/add", isAuthenticated, addAddress);
+router.get("/addresses/edit/:id", isAuthenticated, loadEditAddress);
+router.post("/addresses/edit/:id", isAuthenticated, updateAddress);
+router.delete("/addresses/:id", isAuthenticated, deleteAddress);
+router.post("/addresses/:id/default", isAuthenticated, setDefaultAddress);
+router.get("/api/addresses", isAuthenticated, getAddressesForCheckout);
+
+// Cart routes
+router.get("/cart", isAuthenticated, getCart);
+router.post("/cart/add", isAuthenticated, addToCart);
+router.post("/cart/update", isAuthenticated, updateCartQuantity);
+router.delete("/cart/remove/:productId", isAuthenticated, removeFromCart);
+router.delete("/cart/clear", isAuthenticated, clearCart);
+router.get("/api/cart/count", isAuthenticated, getCartCount);
+
+// Wishlist routes
+router.get("/wishlist", isAuthenticated, getWishlist);
+router.post("/wishlist/add", isAuthenticated, addToWishlist);
+router.delete("/wishlist/remove/:productId", isAuthenticated, removeFromWishlist);
+router.delete("/wishlist/clear", isAuthenticated, clearWishlist);
+router.get("/api/wishlist/count", isAuthenticated, getWishlistCount);
+router.post("/wishlist/move-to-cart/:productId", isAuthenticated, moveToCart);
+
+// Checkout routes
+router.get("/checkout", isAuthenticated, getCheckout);
+router.post("/checkout/apply-coupon", isAuthenticated, applyCoupon);
+router.post("/checkout/remove-coupon", isAuthenticated, removeCoupon);
+router.post("/checkout/place-order", isAuthenticated, placeOrder);
+router.get("/order-success/:orderId", isAuthenticated, getOrderSuccess);
+
+// Order routes
+router.get("/orders", isAuthenticated, getUserOrders);
+router.get("/orders/:orderId", isAuthenticated, getOrderDetails);
+router.post("/orders/:orderId/cancel", isAuthenticated, cancelOrder);
+router.post("/orders/:orderId/return", isAuthenticated, returnOrder);
+router.get("/orders/:orderId/invoice", isAuthenticated, downloadInvoice);
+router.post("/orders/:orderId/mark-delivered", isAuthenticated, markOrderDelivered); // Test route
 
 router.get("/pageNotFound", pagenotFound);
 

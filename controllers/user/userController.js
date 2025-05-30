@@ -2,14 +2,14 @@ import dotenv from 'dotenv';
 dotenv.config();
 import crypto from "crypto"
 
-import ErrorHandler from "../middlewares/error.js";
-import { catchAsyncError } from "../middlewares/catchAsync.js";
-import { User } from "../model/userModel.js";
+import ErrorHandler from "../../middlewares/error.js";
+import { catchAsyncError } from "../../middlewares/catchAsync.js";
+import { User } from "../../model/userModel.js";
 import twilio from "twilio";
-import { Product } from '../model/productModel.js';
-import { Category } from '../model/categoryModel.js';
-import { sendEmail } from "../utils/sendEmail.js";
-import { sendToken } from '../utils/sendToken.js';
+import { Product } from '../../model/productModel.js';
+import { Category } from '../../model/categoryModel.js';
+import { sendEmail } from "../../utils/sendEmail.js";
+import { sendToken } from '../../utils/sendToken.js';
 
 const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
 
