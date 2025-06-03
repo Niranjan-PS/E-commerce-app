@@ -117,7 +117,7 @@ userSchema.methods.generateVerificationCode = function(){
     }
     const verificationCode=generateRandomFiveDigitNumber()
     this.verificationCode=verificationCode
-    this.verificationCodeExpire = new Date(Date.now() +5*60*1000)
+    this.verificationCodeExpire = new Date(Date.now() + 30*1000) // 30 seconds
 
 return verificationCode
 }

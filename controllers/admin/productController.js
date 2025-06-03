@@ -24,26 +24,69 @@ const addProducts = async (req, res) => {
   try {
     const productData = req.body;
 
-
     const productExists = await Product.findOne({ productName: productData.productName });
     if (productExists) {
       return res.redirect("/admin/add-products?error=Product+already+exists");
     }
 
-    if (!req.files || req.files.length < 3) {
-      return res.redirect("/admin/add-products?error=At+least+3+images+are+required");
+    let images = [];
+
+    if (productData.croppedImagesData) {
+      try {
+        const croppedImagesArray = JSON.parse(productData.croppedImagesData);
+
+        if (croppedImagesArray.length < 3) {
+          return res.redirect("/admin/add-products?error=At+least+3+images+are+required");
+        }
+
+        if (croppedImagesArray.length > 4) {
+          return res.redirect("/admin/add-products?error=Maximum+4+images+allowed");
+        }
+
+        for (let i = 0; i < croppedImagesArray.length; i++) {
+          const base64Data = croppedImagesArray[i];
+
+          const base64Image = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
+          const imageBuffer = Buffer.from(base64Image, 'base64');
+
+          const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+          const filename = `cropped-${uniqueSuffix}.jpg`;
+
+          const uploadPath = path.join(__dirname, "../../public/uploads/product-images");
+          const filePath = path.join(uploadPath, filename);
+
+          if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+          }
+          await sharp(imageBuffer)
+            .resize(800, 800, {
+              fit: 'cover',
+              position: 'center'
+            })
+            .jpeg({ quality: 90 })
+            .toFile(filePath);
+
+          images.push(filename);
+        }
+      } catch (error) {
+        console.error('Error processing cropped images:', error);
+        return res.redirect("/admin/add-products?error=Error+processing+images");
+      }
     }
+    else if (req.files && req.files.length > 0) {
+      if (req.files.length < 3) {
+        return res.redirect("/admin/add-products?error=At+least+3+images+are+required");
+      }
 
-    if (req.files.length > 4) {
-      return res.redirect("/admin/add-products?error=Maximum+4+images+allowed");
-    }
+      if (req.files.length > 4) {
+        return res.redirect("/admin/add-products?error=Maximum+4+images+allowed");
+      }
 
-
-    const images = [];
-    if (req.files && req.files.length > 0) {
       req.files.forEach(file => {
         images.push(file.filename);
       });
+    } else {
+      return res.redirect("/admin/add-products?error=At+least+3+images+are+required");
     }
 
 
@@ -56,9 +99,16 @@ const addProducts = async (req, res) => {
     const status = productData.quantity > 0 ? "Available" : "Out of Stock";
 
 
-    // Handle salePrice and discount
-    const salePrice = productData.salePrice ? parseFloat(productData.salePrice) : null;
+    
+    let salePrice = productData.salePrice ? parseFloat(productData.salePrice) : null;
     const discount = productData.discount ? parseFloat(productData.discount) : 0;
+    const regularPrice = parseFloat(productData.price);
+
+    
+    if (!salePrice && discount > 0 && regularPrice > 0) {
+      salePrice = regularPrice - (regularPrice * discount / 100);
+    }
+     const isFeatured = productData.isFeatured === 'on';
 
     const product = new Product({
       productName: productData.productName,
@@ -69,6 +119,7 @@ const addProducts = async (req, res) => {
       discount: discount,
       quantity: productData.quantity,
       productImage: images,
+      isFeatured:isFeatured,
       status,
     });
 
@@ -98,7 +149,7 @@ export const getProductList = async (req, res) => {
     const minPrice = parseFloat(req.query.minPrice) || 0;
     const maxPrice = parseFloat(req.query.maxPrice) || Number.MAX_VALUE;
 
-    // Build filter object
+    
     const filter = {};
 
     if (search) {
@@ -197,7 +248,6 @@ const deleteProduct = async (req, res) => {
 
     return res.redirect('/admin/products?message=Product+soft+deleted+successfully');
   } catch (error) {
-    console.error('Error soft deleting product:', error.message);
     if (req.headers.accept && req.headers.accept.includes('application/json')) {
       return res.status(500).json({ message: 'Failed to soft delete product' });
     }
@@ -249,12 +299,12 @@ const getEditProductPage = async (req, res) => {
 
 const editProduct = async (req, res) => {
   try {
-    console.log('Edit product function called');
+   
     const productId = req.params.id;
     const productData = req.body;
     console.log('Product ID:', productId);
     console.log('Request Body:', req.body);
-    console.log('Request Files:', req.files);
+    
 
 
     if (!mongoose.Types.ObjectId.isValid(productId)) {
@@ -325,8 +375,18 @@ const editProduct = async (req, res) => {
     product.description = productData.description?.trim() || product.description;
     product.category = category._id;
     product.price = parseFloat(productData.price);
-    product.salePrice = productData.salePrice ? parseFloat(productData.salePrice) : null;
-    product.discount = productData.discount ? parseFloat(productData.discount) : 0;
+
+    let salePrice = productData.salePrice ? parseFloat(productData.salePrice) : null;
+    const discount = productData.discount ? parseFloat(productData.discount) : 0;
+    const regularPrice = parseFloat(productData.price);
+
+    if (!salePrice && discount > 0 && regularPrice > 0) {
+      salePrice = regularPrice - (regularPrice * discount / 100);
+      console.log(`Auto-calculated salePrice during edit: ${salePrice} from regularPrice: ${regularPrice} and discount: ${discount}%`);
+    }
+
+    product.salePrice = salePrice;
+    product.discount = discount;
     product.quantity = parseInt(productData.quantity);
     product.productImage = updatedImages;
 

@@ -69,3 +69,27 @@ export const loadAdminDashboard= catchAsyncError(async (req, res, next) => {
         }
     }
 })
+
+export const adminLogout = catchAsyncError(async(req,res,next) => {
+  // Enhanced cache clearing headers for admin logout
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, private, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "-1");
+  res.setHeader("Surrogate-Control", "no-store");
+  res.setHeader("Last-Modified", new Date().toUTCString());
+  res.setHeader("ETag", "");
+  res.setHeader("Clear-Site-Data", '"cache", "storage", "executionContexts"');
+
+  // Clear the authentication cookie
+  res.cookie("token","",{
+    expires: new Date(0),
+    httpOnly:true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  })
+
+  // Clear any other session-related cookies
+  res.clearCookie('connect.sid');
+
+  res.redirect('/admin/admin-login')
+})

@@ -156,11 +156,66 @@
       color: inherit;
       text-decoration: underline;
     }
+
+    /* Responsive improvements */
+    @media (max-width: 768px) {
+      .admin-header .col-md-6 {
+        text-align: center !important;
+        margin-bottom: 1rem;
+      }
+
+      .search-filter-section .col-md-3,
+      .search-filter-section .col-md-2,
+      .search-filter-section .col-md-1 {
+        margin-bottom: 1rem;
+      }
+
+      .product-card .col-md-1,
+      .product-card .col-md-2,
+      .product-card .col-md-3 {
+        margin-bottom: 0.5rem;
+      }
+
+      .stock-controls {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+      }
+
+      .stock-controls .btn {
+        flex: 1;
+        min-width: auto;
+      }
+
+      .action-btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 0.25rem;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .stats-card {
+        margin-bottom: 1rem;
+      }
+
+      .product-card {
+        padding: 1rem;
+      }
+
+      .product-card .row {
+        text-align: center;
+      }
+
+      .stock-input {
+        max-width: 80px;
+        margin: 0 auto;
+      }
+    }
   </style>
 </head>
 <body>
   <!-- Include Admin Sidebar -->
-  <%- include('../partials/admin/sidebar', { page: 'inventory' }) %>
+  <%- include('./partials/sidebar', { page: 'inventory' }) %>
 
   <div class="main-content">
     <!-- Admin Header -->
@@ -230,7 +285,7 @@
           <div class="stats-icon mx-auto mb-2" style="background: #6f42c1;">
             <i class="fas fa-rupee-sign"></i>
           </div>
-          <h4>₹<%= stats.totalValue.toFixed(0) %></h4>
+          <h4>₹<%= (stats.totalValue || 0).toFixed(0) %></h4>
           <p class="mb-0">Total Inventory Value</p>
         </div>
       </div>
@@ -348,7 +403,7 @@
               <% } %>
             </div>
             <div class="col-md-3">
-              <h6 class="mb-1"><%= product.productName %></h6>
+              <h6 class="mb-1"><%= product.productName || 'Unknown Product' %></h6>
               <p class="text-muted mb-1">
                 <% if (product.category) { %>
                   <%= product.category.name %>
@@ -356,16 +411,19 @@
                   No Category
                 <% } %>
               </p>
-              <small class="text-muted">₹<%= product.salePrice ? product.salePrice.toFixed(2) : '0.00' %></small>
+              <small class="text-muted">₹<%= (product.salePrice || product.regularPrice || 0).toFixed(2) %></small>
             </div>
             <div class="col-md-2">
               <h6 class="mb-1">Current Stock</h6>
               <div class="d-flex align-items-center">
-                <span class="fw-bold me-2"><%= product.quantity %></span>
-                <span class="stock-badge <%= product.quantity === 0 ? 'stock-out' :
-                                           product.quantity <= 10 ? 'stock-low' : 'stock-available' %>">
-                  <%= product.quantity === 0 ? 'Out of Stock' :
-                      product.quantity <= 10 ? 'Low Stock' : 'Available' %>
+                <%
+                  const safeQuantity = product.quantity || 0;
+                %>
+                <span class="fw-bold me-2"><%= safeQuantity %></span>
+                <span class="stock-badge <%= safeQuantity === 0 ? 'stock-out' :
+                                           safeQuantity <= 10 ? 'stock-low' : 'stock-available' %>">
+                  <%= safeQuantity === 0 ? 'Out of Stock' :
+                      safeQuantity <= 10 ? 'Low Stock' : 'Available' %>
                 </span>
               </div>
             </div>

@@ -15,17 +15,47 @@ const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
 
 export const register = catchAsyncError(async (req, res, next) => {
   try {
+    console.log('=== REGISTER ENDPOINT DEBUG ===');
+    console.log('Request method:', req.method);
+    console.log('Content-Type:', req.headers['content-type']);
+    console.log('Request body type:', typeof req.body);
+    console.log('Request body:', req.body);
+    console.log('Request body keys:', req.body ? Object.keys(req.body) : 'No body');
+    console.log('Request body length:', req.body ? Object.keys(req.body).length : 0);
+
+    // Check specific fields
+    if (req.body) {
+      console.log('userName field:', req.body.userName);
+      console.log('email field:', req.body.email);
+      console.log('phone field:', req.body.phone);
+    }
+    console.log('================================');
+
+    // Check if req.body exists and has data
+    if (!req.body || Object.keys(req.body).length === 0) {
+      console.log('ERROR: req.body is empty or undefined');
+      return res.status(400).json({
+        success: false,
+        message: "No form data received. Please try again."
+      });
+    }
 
     let { userName:name, email, phone, password,confirmPassword, verificationMethod } = req.body;
 
-    console.log(req.body);
+    console.log('Destructured values:', { name, email, phone, password: password ? '***' : undefined, confirmPassword: confirmPassword ? '***' : undefined, verificationMethod });
 
     if (!name || !email || !phone || !password || !confirmPassword|| !verificationMethod) {
-      return next(new ErrorHandler("All fields are required.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required."
+      });
     }
     if (password !== req.body.confirmPassword) {
-  return next(new ErrorHandler("Passwords do not match.", 400));
-}
+      return res.status(400).json({
+        success: false,
+        message: "Passwords do not match."
+      });
+    }
 
 phone = phone.trim();
 phone = phone.replace(/\s|-/g, "");
@@ -38,7 +68,10 @@ console.log("Cleaned phone:", phone);
       return phoneRegex.test(phone);
     }
     if (!validatePhoneNumber(phone)) {
-      return next(new ErrorHandler("InvalidMobilenumber.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "InvalidMobilenumber."
+      });
     }
 
     const existingUser = await User.findOne({
@@ -49,7 +82,10 @@ console.log("Cleaned phone:", phone);
     });
 
     if (existingUser) {
-      return next(new ErrorHandler("Phone or Email is already used.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "Phone or Email is already used."
+      });
     }
 
     const registrationAttemptsByUser = await User.find({
@@ -85,16 +121,26 @@ console.log("Cleaned phone:", phone);
 
       await sendVerificationCode(verificationMethod, verificationCode, email, phone, name);
 
-
-      return res.redirect(`/otp-verification?email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}&method=${encodeURIComponent(verificationMethod)}`);
+      // Return success response with redirect URL
+      return res.status(200).json({
+        success: true,
+        message: "Verification code sent successfully",
+        redirectUrl: `/otp-verification?email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}&method=${encodeURIComponent(verificationMethod)}`
+      });
     } catch (sendError) {
       console.error("Error sending verification code:", sendError);
-      return next(new ErrorHandler("Failed to send verification code. Please try again.", 500));
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send verification code. Please try again."
+      });
     }
 
   } catch (error) {
     console.error("Error during registration:", error);
-    return next(error);
+    return res.status(500).json({
+      success: false,
+      message: "Registration failed. Please try again."
+    });
   }
 
 
@@ -207,6 +253,14 @@ function generateEmailTemplate(verificationCode) {
 export const verifyOtp = catchAsyncError(async(req,res,next) => {
   const {email, otp,phone} = req.body
 
+  // Check if OTP is provided
+  if (!otp) {
+    return res.status(400).json({
+      success: false,
+      message: "OTP is required."
+    });
+  }
+
   function validatePhoneNumber(phone) {
     const phoneRegex = /^\+91\d{10}$/;
     return phoneRegex.test(phone);
@@ -249,18 +303,25 @@ export const verifyOtp = catchAsyncError(async(req,res,next) => {
       user = userAllEntries[0]
     }
 
-    if(user.verificationCode !== Number(otp)){
-      return next(new ErrorHandler("Invalid OTP.", 400));
-    }
-
     const currentTime = Date.now();
     const verificationCodeExpire = new Date(user.verificationCodeExpire).getTime()
     console.log(currentTime,"this is the current time")
-    console.log(verificationCodeExpire,"hurry upp")
+    console.log(verificationCodeExpire,"OTP expiration time")
 
-
+    // Check expiration first
     if(currentTime > verificationCodeExpire){
-      return next(new ErrorHandler("OTP expired.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired. Please request a new OTP."
+      });
+    }
+
+    // Then check if OTP matches
+    if(user.verificationCode !== Number(otp)){
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP. Please check and try again."
+      });
     }
 
     user.accountverified = true
@@ -269,11 +330,20 @@ export const verifyOtp = catchAsyncError(async(req,res,next) => {
     await user.save({validateModifiedOnly:true})
 
     sendToken(user,res)
-     return res.redirect("/login");
+
+    // Return success JSON response
+    return res.status(200).json({
+      success: true,
+      message: "Account verified successfully",
+      redirectUrl: "/login"
+    });
 
   } catch (error) {
     console.error("Error in verifyOtp:", error);
-    return next(new ErrorHandler("Internal Server Error.Connect the Service Team", 400));
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error. Please try again."
+    });
   }
 })
 
@@ -304,12 +374,15 @@ export const resendOtp = catchAsyncError(async (req, res, next) => {
 
     const lastResend = user.lastOtpResend ? new Date(user.lastOtpResend).getTime() : 0;
     const currentTime = Date.now();
-    const resendCooldown = 2 * 60 * 1000;
+    const resendCooldown = 30 * 1000; // 30 seconds cooldown to match OTP expiration
 
     if (lastResend && currentTime - lastResend < resendCooldown) {
       const waitTimeSeconds = Math.ceil((resendCooldown - (currentTime - lastResend)) / 1000);
       console.log(`OTP resend cooldown in effect. Need to wait ${waitTimeSeconds} seconds.`);
-      return next(new ErrorHandler(`Please wait ${waitTimeSeconds} seconds before requesting another OTP.`, 429));
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${waitTimeSeconds} seconds before requesting another OTP.`
+      });
     }
 
 
@@ -379,10 +452,25 @@ export const login = catchAsyncError(async (req, res, next) => {
 });
 
 export const logout = catchAsyncError(async(req,res,next) => {
+  // Enhanced cache clearing headers
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, private, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "-1");
+  res.setHeader("Surrogate-Control", "no-store");
+  res.setHeader("Last-Modified", new Date().toUTCString());
+  res.setHeader("ETag", "");
+  res.setHeader("Clear-Site-Data", '"cache", "storage", "executionContexts"');
+
+  // Clear the authentication cookie
   res.cookie("token","",{
     expires: new Date(0),
     httpOnly:true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
   })
+
+  // Clear any other session-related cookies
+  res.clearCookie('connect.sid');
 
   res.redirect('/login')
 })
@@ -574,19 +662,19 @@ export const loadShopPage = async (req, res) => {
   try {
     const categories = await Category.find({ isListed: true });
 
-    // Set up filter to only show available and non-blocked products
+   
     const filter = {
       status: "Available",
       isBlocked: { $ne: true },
       isDeleted: { $ne: true }
     };
 
-    // Use the correct field name for search
+   
     if (searchQuery) {
       filter.productName = { $regex: searchQuery, $options: "i" };
     }
 
-    // Handle category filtering properly
+    
     if (categoryFilter) {
       const cleanCategory = categoryFilter.replace(/^:/, '');
       const category = await Category.findOne({ name: cleanCategory });
@@ -595,18 +683,18 @@ export const loadShopPage = async (req, res) => {
       }
     }
 
-    // Price range filtering
+   
     if (minPrice > 0 || maxPrice < Number.MAX_VALUE) {
       filter.price = { $gte: minPrice, $lte: maxPrice };
     }
 
-    // Rating filtering
+    
     if (minRating > 0) {
       filter.rating = { $gte: minRating };
     }
 
-    // Set up sorting
-    let sortOptions = { createdAt: -1 }; // Default sort
+    
+    let sortOptions = { createdAt: -1 }; 
     switch (sortBy) {
       case 'price_low_high':
         sortOptions = { price: 1 };
@@ -639,11 +727,10 @@ export const loadShopPage = async (req, res) => {
       .skip((page - 1) * itemsPerPage)
       .limit(itemsPerPage);
 
-    // Check if the request is AJAX
     const isAjax = req.headers['x-requested-with'] === 'XMLHttpRequest' || req.headers.accept?.includes('application/json');
 
     if (isAjax) {
-      // Return JSON for AJAX requests
+      
       return res.json({
         success: true,
         products: products.map(product => ({
@@ -673,7 +760,7 @@ export const loadShopPage = async (req, res) => {
       });
     }
 
-    // Otherwise, render the EJS template
+    
     res.render("user/shop", {
       products,
       categories,
@@ -708,14 +795,14 @@ export const getProductDetails = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // First check if product exists at all
+   
     const productExists = await Product.findById(id).populate("category");
 
     if (!productExists) {
       return res.redirect('/shop?error=Product+not+found');
     }
 
-    // Check if product is blocked, deleted, or unavailable
+    
     if (productExists.isBlocked || productExists.isDeleted || productExists.status !== "Available") {
       return res.redirect('/shop?error=Product+is+not+available');
     }
@@ -779,7 +866,7 @@ export const checkUserStatus = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Only return blocked: true if user is actually blocked
+    
     if (user.isBlocked) {
       return res.status(200).json({
         success: false,
@@ -801,7 +888,7 @@ export const checkUserStatus = catchAsyncError(async (req, res, next) => {
       }
     });
   } catch (error) {
-    // Don't treat token errors as blocking - just return unauthenticated
+    
     return res.status(200).json({
       success: false,
       message: 'Invalid token',

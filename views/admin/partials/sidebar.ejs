@@ -1,5 +1,10 @@
+<!-- Sidebar Toggle Button -->
+<button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+  <i class="fas fa-chevron-left"></i>
+</button>
+
 <!-- Admin Sidebar -->
-<aside class="admin-sidebar">
+<aside class="admin-sidebar" id="adminSidebar">
   <div class="sidebar-content">
     <div class="logo">
       <i class="fas fa-cog"></i> Admin Panel
@@ -85,9 +90,60 @@
 
 <script>
   function adminLogout() {
-    if (confirm('Are you sure you want to logout?')) {
-      window.location.href = '/admin/logout';
+    // Use SweetAlert if available, otherwise fallback to confirm
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        title: 'Are you sure?',
+        text: 'You will be logged out of the admin panel',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, logout',
+        cancelButtonText: 'Cancel'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Clear localStorage before logout
+          localStorage.clear();
+          sessionStorage.clear();
+
+          // Show loading state
+          Swal.fire({
+            title: 'Logging out...',
+            allowOutsideClick: false,
+            didOpen: () => {
+              Swal.showLoading();
+            }
+          });
+
+          window.location.href = '/admin/logout';
+        }
+      });
+    } else {
+      // Fallback to native confirm
+      if (confirm('Are you sure you want to logout?')) {
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = '/admin/logout';
+      }
     }
+  }
+
+  function toggleSidebar() {
+    const sidebar = document.getElementById('adminSidebar');
+    const toggleBtn = document.getElementById('sidebarToggle');
+    const mainContent = document.querySelector('.main-content');
+
+    sidebar.classList.toggle('collapsed');
+    toggleBtn.classList.toggle('collapsed');
+
+    if (mainContent) {
+      mainContent.classList.toggle('expanded');
+    }
+
+    // Save sidebar state to localStorage
+    const isCollapsed = sidebar.classList.contains('collapsed');
+    localStorage.setItem('sidebarCollapsed', isCollapsed);
   }
 
   function toggleSubmenu(submenuId, event) {
@@ -97,7 +153,7 @@
     const submenu = document.getElementById(submenuId);
     if (submenu) {
       submenu.classList.toggle('show');
-      
+
       // Toggle arrow direction
       const arrow = event.target.closest('a').querySelector('.submenu-arrow');
       if (arrow) {
@@ -109,7 +165,19 @@
   // Auto-expand submenus and highlight current page
   document.addEventListener('DOMContentLoaded', function() {
     const currentPath = window.location.pathname;
-    
+
+    // Restore sidebar state from localStorage
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (isCollapsed) {
+      const sidebar = document.getElementById('adminSidebar');
+      const toggleBtn = document.getElementById('sidebarToggle');
+      const mainContent = document.querySelector('.main-content');
+
+      if (sidebar) sidebar.classList.add('collapsed');
+      if (toggleBtn) toggleBtn.classList.add('collapsed');
+      if (mainContent) mainContent.classList.add('expanded');
+    }
+
     // Auto-expand submenus based on current page
     if (currentPath.includes('/inventory')) {
       const inventorySubmenu = document.getElementById('inventory-submenu');
@@ -119,7 +187,7 @@
         if (arrow) arrow.style.transform = 'rotate(180deg)';
       }
     }
-    
+
     if (currentPath.includes('/orders') || currentPath.includes('/return-requests')) {
       const ordersSubmenu = document.getElementById('orders-submenu');
       if (ordersSubmenu) {
@@ -130,3 +198,6 @@
     }
   });
 </script>
+
+<!-- No Back Button Prevention Script -->
+<script src="/js/no-back-button.js"></script>

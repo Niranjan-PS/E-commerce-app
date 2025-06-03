@@ -3,66 +3,138 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Users</title>
+  <title>User Management - Admin Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
-    .content {
-      padding: 20px;
-      overflow-y: auto;
+    body {
+      background-color: #f8f9fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
     }
 
-    .search-bar {
-      max-width: 400px;
-      margin: 20px auto 30px auto;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      border-radius: 30px;
-      background-color: #fff;
-      padding: 8px 20px;
+    .admin-header {
+      background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+      color: white;
+      padding: 2rem 0;
+      margin-bottom: 2rem;
     }
 
-    #searchInput {
-      width: 100%;
-      padding: 10px 15px;
-      border: none;
-      outline: none;
-      font-size: 16px;
-      border-radius: 30px;
-      box-sizing: border-box;
-      transition: box-shadow 0.3s ease;
+    .stats-card {
+      background: white;
+      border-radius: 15px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1rem;
+      transition: transform 0.3s ease;
     }
 
-    #searchInput:focus {
-      box-shadow: 0 0 8px 2px #4CAF50;
+    .stats-card:hover {
+      transform: translateY(-5px);
     }
 
-    h2 {
-      margin-bottom: 20px;
-      text-align: center;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background-color: #fff;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 0 20px rgba(0,0,0,0.1);
-    }
-
-    table th, table td {
-      padding: 12px 15px;
-      text-align: left;
-      border-bottom: 1px solid #e0e0e0;
-    }
-
-    table th {
-      background-color: #4CAF50;
+    .stats-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
       color: white;
     }
 
-    table tr:hover {
-      background-color: #f5f5f5;
+    .search-filter-section {
+      background: white;
+      border-radius: 15px;
+      padding: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin-bottom: 2rem;
+    }
+
+    .user-card {
+      background: white;
+      border-radius: 15px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+    }
+
+    .user-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .user-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .status-badge {
+      padding: 0.5rem 1rem;
+      border-radius: 25px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+    }
+
+    .status-active {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    .status-blocked {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    .action-btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+      margin: 0.2rem;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .btn-block {
+      background: #dc3545;
+      color: white;
+    }
+
+    .btn-block:hover {
+      background: #c82333;
+      color: white;
+    }
+
+    .btn-unblock {
+      background: #28a745;
+      color: white;
+    }
+
+    .btn-unblock:hover {
+      background: #218838;
+      color: white;
+    }
+
+    .pagination-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 2rem;
     }
 
     .block-btn {
@@ -127,10 +199,121 @@
       font-style: italic;
     }
 
+    /* Table Styles */
+    .users-table {
+      background: white;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin-bottom: 2rem;
+    }
+
+    .users-table table {
+      margin-bottom: 0;
+    }
+
+    .users-table th {
+      background: linear-gradient(135deg, #6f42c1 0%, #007bff 100%);
+      color: white;
+      font-weight: 600;
+      border: none;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .users-table td {
+      padding: 1rem;
+      vertical-align: middle;
+      border-bottom: 1px solid #eee;
+      text-align: center;
+    }
+
+    .users-table tbody tr:hover {
+      background-color: #f8f9fa;
+    }
+
+    .users-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .user-avatar-table {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6f42c1 0%, #007bff 100%);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin: 0 auto;
+    }
+
+    .user-info {
+      text-align: left;
+    }
+
+    .user-name {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 0.25rem;
+    }
+
+    .user-email {
+      color: #6c757d;
+      font-size: 0.9rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .user-phone {
+      color: #6c757d;
+      font-size: 0.85rem;
+    }
+
+    .join-date {
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
+
     @media (max-width: 768px) {
-      table {
-        display: block;
+      .users-table {
         overflow-x: auto;
+      }
+
+      .users-table table {
+        min-width: 800px;
+      }
+
+      .users-table th,
+      .users-table td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.9rem;
+      }
+
+      .user-avatar-table {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+      }
+
+      .action-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .users-table th,
+      .users-table td {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.8rem;
+      }
+
+      .user-avatar-table {
+        width: 35px;
+        height: 35px;
+        font-size: 0.9rem;
       }
     }
   </style>
@@ -140,88 +323,279 @@
   <%- include('partials/sidebar', { page: 'users' }) %>
 
   <div class="main-content">
-    <div class="content">
-    <div class="search-bar">
-      <form action="/admin/users" method="get">
-        <input
-          type="text"
-          id="searchInput"
-          name="search"
-          value="<%= search %>"
-          placeholder="Search by name or email..."
-          autocomplete="off"
-        >
+    <!-- Admin Header -->
+    <div class="admin-header">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-md-6">
+            <h1><i class="fas fa-users me-3"></i>User Management</h1>
+            <p class="mb-0">Manage all registered users and their accounts</p>
+          </div>
+          <div class="col-md-6 text-end">
+            <button class="btn btn-light" onclick="exportUsers()">
+              <i class="fas fa-download me-2"></i>Export Users
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+    <!-- User Statistics -->
+    <div class="row mb-4">
+      <div class="col-md-3 col-sm-6 col-12">
+        <div class="stats-card text-center">
+          <div class="stats-icon mx-auto mb-2" style="background: #6f42c1;">
+            <i class="fas fa-users"></i>
+          </div>
+          <h4><%= user ? user.length : 0 %></h4>
+          <p class="mb-0">Total Users</p>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6 col-12">
+        <div class="stats-card text-center">
+          <div class="stats-icon mx-auto mb-2" style="background: #28a745;">
+            <i class="fas fa-user-check"></i>
+          </div>
+          <h4><%= user ? user.filter(u => !u.isBlocked).length : 0 %></h4>
+          <p class="mb-0">Active Users</p>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6 col-12">
+        <div class="stats-card text-center">
+          <div class="stats-icon mx-auto mb-2" style="background: #dc3545;">
+            <i class="fas fa-user-slash"></i>
+          </div>
+          <h4><%= user ? user.filter(u => u.isBlocked).length : 0 %></h4>
+          <p class="mb-0">Blocked Users</p>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6 col-12">
+        <div class="stats-card text-center">
+          <div class="stats-icon mx-auto mb-2" style="background: #17a2b8;">
+            <i class="fas fa-user-plus"></i>
+          </div>
+          <h4>
+            <%
+              const today = new Date();
+              const todayUsers = user ? user.filter(u => {
+                const userDate = new Date(u.createdAt);
+                return userDate.toDateString() === today.toDateString();
+              }).length : 0;
+            %>
+            <%= todayUsers %>
+          </h4>
+          <p class="mb-0">New Today</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="search-filter-section">
+      <form action="/admin/users" method="get" class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Search Users</label>
+          <input
+            type="text"
+            class="form-control"
+            name="search"
+            value="<%= typeof search !== 'undefined' ? search : '' %>"
+            placeholder="Search by name, email, or phone..."
+            autocomplete="off"
+          >
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Status</label>
+          <select class="form-select" name="status">
+            <option value="">All Users</option>
+            <option value="active" <%= (typeof status !== 'undefined' && status === 'active') ? 'selected' : '' %>>Active</option>
+            <option value="blocked" <%= (typeof status !== 'undefined' && status === 'blocked') ? 'selected' : '' %>>Blocked</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">&nbsp;</label>
+          <div class="d-flex">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-search me-1"></i>Search
+            </button>
+            <a href="/admin/users" class="btn btn-outline-secondary ms-2">
+              <i class="fas fa-times me-1"></i>Clear
+            </a>
+          </div>
+        </div>
       </form>
     </div>
 
-    <h2>Users Management</h2>
-
+    <!-- Users List -->
     <% if (message) { %>
-      <div class="no-users"><%= message %></div>
+      <div class="alert alert-info text-center">
+        <i class="fas fa-info-circle me-2"></i><%= message %>
+      </div>
     <% } else { %>
-      <table id="userTable">
-        <thead>
-          <tr>
+      <% if (user && user.length > 0) { %>
+        <div class="users-table">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th style="width: 80px;">Avatar</th>
+                <th style="width: 250px;">User Information</th>
+                <th style="width: 150px;">Phone</th>
+                <th style="width: 120px;">Join Date</th>
+                <th style="width: 100px;">Status</th>
+                <th style="width: 120px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% user.forEach(userData => { %>
+                <tr>
+                  <!-- Avatar -->
+                  <td>
+                    <div class="user-avatar-table">
+                      <%= userData.name.charAt(0).toUpperCase() %>
+                    </div>
+                  </td>
 
-            <th>Name</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% user.forEach(user => { %>
-            <tr>
+                  <!-- User Information -->
+                  <td>
+                    <div class="user-info">
+                      <div class="user-name"><%= userData.name %></div>
+                      <div class="user-email">
+                        <i class="fas fa-envelope me-1"></i><%= userData.email %>
+                      </div>
+                    </div>
+                  </td>
 
-              <td><%= user.name %></td>
-              <td><%= user.email %></td>
-              <td><%= user.phone || 'N/A' %></td>
-              <td><%= user.isBlocked ? 'Blocked' : 'Active' %></td>
-              <td>
-                <button
-                  class="block-btn <%= user.isBlocked ? 'unblock' : 'block' %>"
-                  data-user-id="<%= user._id %>"
-                  onclick="toggleBlock(this)"
-                >
-                  <%= user.isBlocked ? 'Unblock' : 'Block' %>
-                </button>
-              </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
+                  <!-- Phone -->
+                  <td>
+                    <% if (userData.phone) { %>
+                      <span class="user-phone">
+                        <i class="fas fa-phone me-1"></i><%= userData.phone %>
+                      </span>
+                    <% } else { %>
+                      <span class="text-muted">-</span>
+                    <% } %>
+                  </td>
 
-      <% if (totalPages > 1) { %>
-        <div class="pagination">
-          <% if (currentPage > 1) { %>
-            <a href="/admin/users?page=<%= currentPage-1 %><% if (search) { %>&search=<%= search %><% } %>">Previous</a>
-          <% } %>
+                  <!-- Join Date -->
+                  <td>
+                    <span class="join-date">
+                      <i class="fas fa-calendar me-1"></i>
+                      <%= new Date(userData.createdAt).toLocaleDateString('en-IN', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      }) %>
+                    </span>
+                  </td>
 
-          <% for (let i = 1; i <= totalPages; i++) { %>
-            <a
-              href="/admin/users?page=<%= i %><% if (search) { %>&search=<%= search %><% } %>"
-              class="<%= i === currentPage ? 'active' : '' %>"
-            >
-              <%= i %>
+                  <!-- Status -->
+                  <td>
+                    <% if (userData.isBlocked) { %>
+                      <span class="status-badge status-blocked">
+                        <i class="fas fa-ban me-1"></i>Blocked
+                      </span>
+                    <% } else { %>
+                      <span class="status-badge status-active">
+                        <i class="fas fa-check-circle me-1"></i>Active
+                      </span>
+                    <% } %>
+                  </td>
+
+                  <!-- Actions -->
+                  <td>
+                    <button
+                      class="action-btn <%= userData.isBlocked ? 'btn-unblock' : 'btn-block' %>"
+                      data-user-id="<%= userData._id %>"
+                      onclick="toggleBlock(this)"
+                    >
+                      <% if (userData.isBlocked) { %>
+                        <i class="fas fa-unlock me-1"></i>Unblock
+                      <% } else { %>
+                        <i class="fas fa-ban me-1"></i>Block
+                      <% } %>
+                    </button>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <!-- Empty State -->
+        <div class="users-table">
+          <div class="text-center py-5">
+            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+            <h3>No Users Found</h3>
+            <p class="text-muted">No users match your current search criteria.</p>
+            <a href="/admin/users" class="btn btn-primary">
+              <i class="fas fa-refresh me-2"></i>View All Users
             </a>
-          <% } %>
+          </div>
+        </div>
+      <% } %>
 
-          <% if (currentPage < totalPages) { %>
-            <a href="/admin/users?page=<%= currentPage+1 %><% if (search) { %>&search=<%= search %><% } %>">Next</a>
-          <% } %>
+      <!-- Pagination -->
+      <% if (totalPages > 1) { %>
+        <div class="pagination-container">
+          <nav aria-label="User pagination">
+            <ul class="pagination">
+              <% if (currentPage > 1) { %>
+                <li class="page-item">
+                  <a class="page-link" href="/admin/users?page=<%= currentPage-1 %><% if (typeof search !== 'undefined' && search) { %>&search=<%= search %><% } %><% if (typeof status !== 'undefined' && status) { %>&status=<%= status %><% } %>">
+                    <i class="fas fa-chevron-left"></i> Previous
+                  </a>
+                </li>
+              <% } %>
+
+              <% for (let i = 1; i <= totalPages; i++) { %>
+                <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                  <a class="page-link" href="/admin/users?page=<%= i %><% if (typeof search !== 'undefined' && search) { %>&search=<%= search %><% } %><% if (typeof status !== 'undefined' && status) { %>&status=<%= status %><% } %>">
+                    <%= i %>
+                  </a>
+                </li>
+              <% } %>
+
+              <% if (currentPage < totalPages) { %>
+                <li class="page-item">
+                  <a class="page-link" href="/admin/users?page=<%= currentPage+1 %><% if (typeof search !== 'undefined' && search) { %>&search=<%= search %><% } %><% if (typeof status !== 'undefined' && status) { %>&status=<%= status %><% } %>">
+                    Next <i class="fas fa-chevron-right"></i>
+                  </a>
+                </li>
+              <% } %>
+            </ul>
+          </nav>
         </div>
       <% } %>
     <% } %>
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     async function toggleBlock(button) {
       const userId = button.getAttribute('data-user-id');
-      const isBlocked = button.classList.contains('block');
+      const isBlocked = button.classList.contains('btn-block');
+      const action = isBlocked ? 'block' : 'unblock';
+      const actionText = isBlocked ? 'Block' : 'Unblock';
+
+      // Show confirmation dialog
+      const result = await Swal.fire({
+        title: `${actionText} User?`,
+        text: `Are you sure you want to ${action} this user?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: isBlocked ? '#dc3545' : '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: `Yes, ${actionText}!`,
+        cancelButtonText: 'Cancel'
+      });
+
+      if (!result.isConfirmed) return;
 
       try {
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
         const response = await fetch(`/admin/${isBlocked ? 'blockUser' : 'unblockUser'}?id=${userId}`, {
           method: 'PATCH',
           headers: {
@@ -230,27 +604,53 @@
         });
 
         if (response.ok) {
-          location.reload(); // Refresh to see changes
+          await Swal.fire({
+            title: 'Success!',
+            text: `User has been ${action}ed successfully.`,
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false
+          });
+          location.reload();
         } else {
           const error = await response.json();
-          alert(error.message || 'Failed to update user status');
+          throw new Error(error.message || 'Failed to update user status');
         }
       } catch (error) {
         console.error('Error:', error);
-        alert('An error occurred while processing the request.');
+        button.disabled = false;
+        button.innerHTML = isBlocked ? '<i class="fas fa-ban me-1"></i>Block' : '<i class="fas fa-unlock me-1"></i>Unblock';
+
+        Swal.fire({
+          title: 'Error!',
+          text: error.message || 'An error occurred while processing the request.',
+          icon: 'error',
+          confirmButtonColor: '#dc3545'
+        });
       }
     }
 
-    // Submit search form when user stops typing
-    const searchInput = document.getElementById('searchInput');
+    function exportUsers() {
+      Swal.fire({
+        title: 'Export Users',
+        text: 'This feature will be available soon!',
+        icon: 'info',
+        confirmButtonColor: '#6f42c1'
+      });
+    }
+
+    // Auto-submit search form when user stops typing
+    const searchInput = document.querySelector('input[name="search"]');
     let searchTimer;
 
-    searchInput.addEventListener('input', () => {
-      clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => {
-        searchInput.form.submit();
-      }, 800);
-    });
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+          searchInput.form.submit();
+        }, 800);
+      });
+    }
   </script>
 </body>
 </html>

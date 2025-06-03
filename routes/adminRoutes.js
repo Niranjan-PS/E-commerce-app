@@ -4,7 +4,7 @@ import { User } from '../model/userModel.js'
 import { Category } from '../model/categoryModel.js';
 import { customerInfo } from "../controllers/admin/customerController.js"
 import {categoryInfo,addCategory, getEditCategory,EditCategory,deleteCategory} from "../controllers/admin/categoryController.js"
-import {loadLogin,adminLogin,loadAdminDashboard} from "../controllers/admin/adminController.js"
+import {loadLogin,adminLogin,loadAdminDashboard,adminLogout} from "../controllers/admin/adminController.js"
 import { toggleCategoryStatus } from '../controllers/admin/categoryController.js'
 import {upload} from '../helpers/multer.js'
 import { isAdminAuthenticated } from '../middlewares/auth.js'
@@ -39,6 +39,7 @@ import {
 
 router.get('/admin-login',loadLogin)
 router.post('/admin-login',adminLogin)
+router.get('/logout', isAdminAuthenticated, adminLogout)
 router.get('/', isAdminAuthenticated, loadAdminDashboard)
 router.get('/dashboard', isAdminAuthenticated, (req, res) => {
   res.render('dashboard');

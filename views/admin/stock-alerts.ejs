@@ -16,6 +16,18 @@
       padding: 0;
     }
 
+    .main-content {
+      margin-left: 250px;
+      min-height: 100vh;
+      transition: margin-left 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        margin-left: 0;
+      }
+    }
+
     .admin-header {
       background: linear-gradient(135deg, #dc3545 0%, #ffc107 100%);
       color: white;
@@ -131,11 +143,64 @@
     .stock-input {
       width: 80px;
     }
+
+    /* Responsive improvements */
+    @media (max-width: 768px) {
+      .admin-header .col-md-6 {
+        text-align: center !important;
+        margin-bottom: 1rem;
+      }
+
+      .alert-card .col-md-1,
+      .alert-card .col-md-2,
+      .alert-card .col-md-3,
+      .alert-card .col-md-4 {
+        margin-bottom: 0.5rem;
+        text-align: center;
+      }
+
+      .quick-restock {
+        justify-content: center;
+      }
+
+      .action-btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 0.25rem;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .summary-card {
+        padding: 1rem;
+      }
+
+      .stat-item {
+        padding: 0.5rem;
+      }
+
+      .stat-number {
+        font-size: 1.5rem;
+      }
+
+      .alert-card {
+        padding: 1rem;
+      }
+
+      .alert-card .row {
+        text-align: center;
+      }
+
+      .product-image {
+        width: 40px;
+        height: 40px;
+      }
+    }
   </style>
 </head>
 <body>
   <!-- Include Admin Sidebar -->
-  <%- include('../partials/admin/sidebar', { page: 'stock-alerts' }) %>
+  <%- include('./partials/sidebar', { page: 'inventory' }) %>
 
   <div class="main-content">
     <!-- Admin Header -->
@@ -204,7 +269,7 @@
                   No Category
                 <% } %>
               </p>
-              <small class="text-muted">₹<%= product.salePrice.toFixed(2) %></small>
+              <small class="text-muted">₹<%= (product.salePrice || product.regularPrice || 0).toFixed(2) %></small>
             </div>
             <div class="col-md-2">
               <span class="stock-badge stock-critical">
@@ -262,7 +327,7 @@
                     No Category
                   <% } %>
                 </p>
-                <small class="text-muted">₹<%= product.salePrice.toFixed(2) %></small>
+                <small class="text-muted">₹<%= product.salePrice ? product.salePrice.toFixed(2) : 'N/A' %></small>
               </div>
               <div class="col-md-2">
                 <span class="stock-badge stock-warning">

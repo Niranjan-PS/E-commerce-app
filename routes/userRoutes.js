@@ -98,7 +98,7 @@ const setNoCacheHeaders = (req, res, next) => {
 router.use(setNoCacheHeaders);
 
 router.get('/register', (req, res) => {
-  res.render('user/register');
+  res.render('user/register', { error: req.query.error || null });
 });
 
 router.get("/otp-verification", (req, res) => {
@@ -112,7 +112,7 @@ router.post('/otp-verification', verifyOtp);
 router.post('/resend-otp', resendOtp)
 
 router.get('/login', (req, res) => {
-  res.render('user/login', { error: 'Invalid email or password' });
+  res.render('user/login', { error: req.query.error || null });
 });
 
 router.post("/login", login);

@@ -19,16 +19,26 @@ app.use(session({
   secret: process.env.JWT_SECRET_KEY || 'your-secret-key',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false } 
+  cookie: { secure: false }
 }));
 
 
+// Enhanced global cache control middleware
 app.use((req, res, next) => {
-  res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  // Comprehensive cache prevention
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, private, max-age=0");
   res.set("Pragma", "no-cache");
-  res.set("Expires", "0");
+  res.set("Expires", "-1");
   res.setHeader('Surrogate-Control', 'no-store');
-  res.setHeader('Vary', 'User-Agent');
+  res.setHeader('Vary', 'User-Agent, Accept-Encoding');
+  res.setHeader('Last-Modified', new Date().toUTCString());
+  res.setHeader('ETag', '');
+
+  // Security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+
   next();
 });
 

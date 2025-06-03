@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <title>Verify OTP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -80,7 +82,10 @@
         <div class="timer" id="timer"></div>
       </div>
 
-      <button type="submit" class="btn">Verify</button>
+      <button type="submit" class="btn" id="verifyBtn">Verify</button>
+      <div id="expiredMessage" style="display: none; color: red; margin-top: 10px; font-weight: bold;">
+        OTP has expired. Please click "Resend OTP" to get a new code.
+      </div>
     </form>
 
     <div class="link" onclick="window.location.href='/register'">Back to Register</div>
@@ -89,27 +94,187 @@
   <script>
     const timerDisplay = document.getElementById("timer");
     const resendBtn = document.getElementById("resendBtn");
+    const verifyBtn = document.getElementById("verifyBtn");
+    const expiredMessage = document.getElementById("expiredMessage");
+    const otpForm = document.querySelector("form");
 
     const EXPIRY_KEY = "otp_expiry";
+    let currentInterval = null;
 
     function startTimer(duration) {
       let endTime = Date.now() + duration;
       localStorage.setItem(EXPIRY_KEY, endTime);
 
-      const interval = setInterval(() => {
+      // Clear any existing interval
+      if (currentInterval) {
+        clearInterval(currentInterval);
+      }
+
+      // Reset UI state
+      verifyBtn.disabled = false;
+      expiredMessage.style.display = "none";
+      resendBtn.disabled = true;
+
+      currentInterval = setInterval(() => {
         const timeLeft = Math.floor((endTime - Date.now()) / 1000);
 
         if (timeLeft > 0) {
           timerDisplay.textContent = `0 : ${timeLeft < 10 ? '0' + timeLeft : timeLeft} seconds remaining`;
           resendBtn.disabled = true;
+          verifyBtn.disabled = false;
+          expiredMessage.style.display = "none";
         } else {
-          clearInterval(interval);
-          timerDisplay.textContent = "";
+          // Timer expired
+          clearInterval(currentInterval);
+          timerDisplay.textContent = "OTP Expired";
           resendBtn.disabled = false;
+          verifyBtn.disabled = true;
+          expiredMessage.style.display = "block";
           localStorage.removeItem(EXPIRY_KEY);
         }
       }, 1000);
     }
+
+    // Handle form submission with AJAX and SweetAlert
+    otpForm.addEventListener("submit", async function(e) {
+      e.preventDefault(); // Always prevent default form submission
+
+      if (verifyBtn.disabled) {
+        Swal.fire({
+          icon: 'error',
+          title: 'OTP Expired',
+          text: 'Your OTP has expired. Please request a new OTP to continue.',
+          confirmButtonColor: '#000'
+        });
+        return false;
+      }
+
+      // Show loading state
+      const originalText = verifyBtn.textContent;
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = 'Verifying...';
+
+      try {
+        // Get form data
+        const formData = new FormData(otpForm);
+        const urlEncodedData = new URLSearchParams();
+
+        // Convert FormData to URLSearchParams for proper backend parsing
+        for (const [key, value] of formData.entries()) {
+          urlEncodedData.append(key, value);
+        }
+
+        // Submit form via AJAX
+        const response = await fetch('/otp-verification', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: urlEncodedData
+        });
+
+        // Check if response is a redirect (successful verification)
+        if (response.redirected) {
+          // Show success message and redirect
+          Swal.fire({
+            icon: 'success',
+            title: 'Verification Successful!',
+            text: 'Your account has been verified. Redirecting to login page...',
+            confirmButtonColor: '#000',
+            timer: 2000,
+            timerProgressBar: true,
+            showConfirmButton: false
+          }).then(() => {
+            window.location.href = response.url;
+          });
+          return;
+        }
+
+        // Try to parse JSON response (for errors)
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const result = await response.json();
+
+          if (result.success === false) {
+            // Handle error response with SweetAlert
+            let errorMessage = '';
+
+            switch(result.message) {
+              case 'Invalid OTP. Please check and try again.':
+                errorMessage = 'The OTP you entered is incorrect. Please check and try again.';
+                break;
+              case 'OTP has expired. Please request a new OTP.':
+                errorMessage = 'Your OTP has expired. Please click "Resend OTP" to get a new code.';
+                break;
+              case 'User not found.':
+                errorMessage = 'User account not found. Please register again.';
+                break;
+              case 'OTP is required.':
+                errorMessage = 'Please enter the OTP code.';
+                break;
+              default:
+                errorMessage = result.message || 'OTP verification failed. Please try again.';
+            }
+
+            Swal.fire({
+              icon: 'error',
+              title: 'Verification Failed',
+              text: errorMessage,
+              confirmButtonColor: '#000'
+            });
+          } else if (result.success === true) {
+            // Handle success response
+            Swal.fire({
+              icon: 'success',
+              title: 'Verification Successful!',
+              text: 'Your account has been verified. Redirecting to login page...',
+              confirmButtonColor: '#000',
+              timer: 2000,
+              timerProgressBar: true,
+              showConfirmButton: false
+            }).then(() => {
+              if (result.redirectUrl) {
+                window.location.href = result.redirectUrl;
+              } else {
+                window.location.href = '/login';
+              }
+            });
+          }
+        } else {
+          // Handle non-JSON response
+          const text = await response.text();
+          if (text.includes('login') || response.url.includes('login')) {
+            // Successful verification
+            Swal.fire({
+              icon: 'success',
+              title: 'Verification Successful!',
+              text: 'Your account has been verified. Redirecting to login page...',
+              confirmButtonColor: '#000',
+              timer: 2000,
+              timerProgressBar: true,
+              showConfirmButton: false
+            }).then(() => {
+              window.location.href = response.url;
+            });
+          } else {
+            throw new Error('Unexpected response format');
+          }
+        }
+      } catch (error) {
+        console.error('OTP verification error:', error);
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Network Error',
+          text: 'Unable to connect to the server. Please check your internet connection and try again.',
+          confirmButtonColor: '#000'
+        });
+      } finally {
+        // Reset button state
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = originalText;
+      }
+    });
 
     // On page load, resume timer
     const savedExpiry = localStorage.getItem(EXPIRY_KEY);
@@ -120,8 +285,12 @@
       startTimer(30000); // 30 seconds
     }
 
-    
+    // Resend OTP functionality
     resendBtn.addEventListener("click", () => {
+      // Disable resend button temporarily
+      resendBtn.disabled = true;
+      resendBtn.textContent = "Sending...";
+
       fetch('/resend-otp', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -133,12 +302,46 @@
       })
       .then(res => res.json())
       .then(data => {
-        alert(data.message || "OTP resent!");
-        startTimer(30000); // restart 30s timer
+        if (data.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'OTP Sent',
+            text: data.message || "OTP resent successfully!",
+            confirmButtonColor: '#000',
+            timer: 2000,
+            timerProgressBar: true
+          });
+          startTimer(30000); // restart 30s timer
+          resendBtn.textContent = "Resend OTP";
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Resend Failed',
+            text: data.message || "Failed to resend OTP. Please try again.",
+            confirmButtonColor: '#000'
+          });
+          resendBtn.disabled = false;
+          resendBtn.textContent = "Resend OTP";
+        }
       })
       .catch(err => {
-        alert("Error resending OTP.");
+        console.error("Error resending OTP:", err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Network Error',
+          text: "Error resending OTP. Please check your connection and try again.",
+          confirmButtonColor: '#000'
+        });
+        resendBtn.disabled = false;
+        resendBtn.textContent = "Resend OTP";
       });
+    });
+
+    // Clear localStorage when page is unloaded (optional cleanup)
+    window.addEventListener("beforeunload", function() {
+      if (verifyBtn.disabled) {
+        localStorage.removeItem(EXPIRY_KEY);
+      }
     });
   </script>
 </body>

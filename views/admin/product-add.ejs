@@ -6,6 +6,9 @@
     <title>Add New Product</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    <link rel="stylesheet" href="/css/admin.css">
     <style>
         .error-message {
             color: #dc3545;
@@ -24,17 +27,115 @@
             object-fit: cover;
             border: 1px solid #dee2e6;
             border-radius: 4px;
+            position: relative;
         }
+        .image-preview .remove-btn {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .crop-modal .modal-body {
+            padding: 0;
+        }
+        .crop-container {
+            max-height: 400px;
+            overflow: hidden;
+        }
+        .crop-container img {
+            max-width: 100%;
+            height: auto;
+        }
+        .crop-controls {
+            padding: 15px;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+        }
+        .cropped-images-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .cropped-image-item {
+            position: relative;
+            display: inline-block;
+        }
+/* Style the container */
+.mb-4 {
+  margin-bottom: 16px;
+}
+
+/* Style the checkbox */
+input[type="checkbox"] {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #007bff;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+}
+
+input[type="checkbox"]:checked {
+  background-color: #007bff;
+}
+
+input[type="checkbox"]:checked::before {
+  content: '\2713'; /* Unicode checkmark */
+  font-size: 16px;
+  color: white;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Style the label */
+label {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+/* Style the error message */
+.error-message {
+  color: red;
+  font-size: 14px;
+  margin-top: 4px;
+  display: none; /* Initially hidden */
+}
+
+/* Show error message when there's an error */
+input[type="checkbox"]:invalid ~ .error-message {
+  display: block;
+}
+
+
     </style>
 </head>
-<body class="bg-light">
-    <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="card shadow">
-                    <div class="card-header bg-primary text-white">
-                        <h2 class="h4 mb-0">Add New Product</h2>
-                    </div>
+<body>
+    <!-- Include Admin Sidebar -->
+    <%- include('partials/sidebar', { page: 'products' }) %>
+
+    <div class="main-content">
+        <div class="container py-5">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <div class="card shadow">
+                        <div class="card-header bg-primary text-white">
+                            <h2 class="h4 mb-0"><i class="fas fa-plus-circle me-2"></i>Add New Product</h2>
+                        </div>
                     <div class="card-body">
                         <% if (typeof error !== 'undefined' && error) { %>
                             <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -58,6 +159,15 @@
                                 <div id="description-error" class="error-message"></div>
                             </div>
 
+                            <div class="mb-4">
+  <label for="isFeatured">Featured:</label>
+<input type="checkbox" id="isFeatured" name="isFeatured" >
+
+  <!-- No 'required' attribute = Optional -->
+  <div id="featured-error" class="error-message"></div>
+</div>
+
+
                             <div class="row">
                                 <div class="col-md-6 mb-4">
                                     <label for="price" class="form-label">Regular Price</label>
@@ -76,7 +186,7 @@
                                                step="0.01" min="0" placeholder="0.00">
                                     </div>
                                     <div id="salePrice-error" class="error-message"></div>
-                                    <small class="text-muted">Leave empty if no sale price</small>
+                                    <small class="text-muted">Leave empty to auto-calculate from discount, or enter manually</small>
                                 </div>
                             </div>
 
@@ -115,9 +225,16 @@
                             <div class="mb-4">
                                 <label for="images" class="form-label">Product Images (At least 3 images required)</label>
                                 <input class="form-control" type="file" id="images" name="images"
-                                       multiple accept="image/jpeg,image/png,image/jpg" required>
-                                <small class="form-text text-muted">Select at least 3 images. Only JPG and PNG formats are allowed.</small>
-                                <div class="image-preview-container mt-3" id="imagePreview"></div>
+                                       multiple accept="image/jpeg,image/png,image/jpg">
+                                <small class="form-text text-muted">Select images to crop and add. Only JPG and PNG formats are allowed.</small>
+
+                                <!-- Cropped Images Display -->
+                                <div class="cropped-images-container mt-3" id="croppedImagesContainer">
+                                    <div class="text-muted" id="noImagesText">No images added yet. Please select and crop at least 3 images.</div>
+                                </div>
+
+                                <!-- Hidden input to store cropped image data -->
+                                <input type="hidden" id="croppedImagesData" name="croppedImagesData">
                                 <div id="images-error" class="error-message"></div>
                             </div>
 
@@ -131,49 +248,288 @@
             </div>
         </div>
     </div>
+    </div>
+
+    <!-- Image Crop Modal -->
+    <div class="modal fade crop-modal" id="cropModal" tabindex="-1" aria-labelledby="cropModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cropModalLabel">
+                        <i class="fas fa-crop me-2"></i>Crop Image
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="crop-container">
+                        <img id="cropImage" style="max-width: 100%;">
+                    </div>
+                </div>
+                <div class="crop-controls">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="rotateCropper(-90)">
+                                <i class="fas fa-undo"></i> Rotate Left
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="rotateCropper(90)">
+                                <i class="fas fa-redo"></i> Rotate Right
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetCropper()">
+                                <i class="fas fa-refresh"></i> Reset
+                            </button>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" onclick="cropAndSave()">
+                                <i class="fas fa-check me-1"></i>Crop & Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
     <script>
-        // Image preview and validation
+        let cropper = null;
+        let currentFile = null;
+        let currentFileIndex = 0;
+        let filesToProcess = [];
+        let croppedImages = [];
+
+        // Image selection and cropping
         document.getElementById('images').addEventListener('change', function(e) {
-            const previewContainer = document.getElementById('imagePreview');
-            previewContainer.innerHTML = '';
             const files = Array.from(this.files);
             const errorElement = document.getElementById('images-error');
 
-            if (files.length < 3) {
-                errorElement.textContent = 'Please select at least 3 images';
+            if (files.length === 0) {
                 return;
-            } else {
-                errorElement.textContent = '';
             }
 
-            files.forEach(file => {
-                if (!file.type.startsWith('image/')) {
-                    errorElement.textContent = 'Only image files are allowed';
+            // Validate file types
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+            for (let file of files) {
+                if (!allowedTypes.includes(file.type)) {
+                    errorElement.textContent = 'Only JPG and PNG images are allowed';
                     return;
                 }
+            }
 
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.classList.add('image-preview');
-                    previewContainer.appendChild(img);
+            errorElement.textContent = '';
+            filesToProcess = files;
+            currentFileIndex = 0;
+            processNextImage();
+        });
+
+        function processNextImage() {
+            if (currentFileIndex >= filesToProcess.length) {
+                // All images processed
+                filesToProcess = [];
+                document.getElementById('images').value = '';
+                updateCroppedImagesDisplay();
+                return;
+            }
+
+            currentFile = filesToProcess[currentFileIndex];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const cropImage = document.getElementById('cropImage');
+                cropImage.src = e.target.result;
+
+                // Show crop modal
+                const cropModal = new bootstrap.Modal(document.getElementById('cropModal'));
+                cropModal.show();
+
+                // Initialize cropper when modal is shown
+                document.getElementById('cropModal').addEventListener('shown.bs.modal', function() {
+                    if (cropper) {
+                        cropper.destroy();
+                    }
+                    cropper = new Cropper(cropImage, {
+                        aspectRatio: 1,
+                        viewMode: 1,
+                        autoCropArea: 0.8,
+                        responsive: true,
+                        restore: false,
+                        guides: true,
+                        center: true,
+                        highlight: false,
+                        cropBoxMovable: true,
+                        cropBoxResizable: true,
+                        toggleDragModeOnDblclick: false,
+                    });
+                }, { once: true });
+            };
+            reader.readAsDataURL(currentFile);
+        }
+
+        // Cropper control functions
+        function rotateCropper(degree) {
+            if (cropper) {
+                cropper.rotate(degree);
+            }
+        }
+
+        function resetCropper() {
+            if (cropper) {
+                cropper.reset();
+            }
+        }
+
+        function cropAndSave() {
+            if (!cropper) return;
+
+            const canvas = cropper.getCroppedCanvas({
+                width: 800,
+                height: 800,
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            });
+
+            canvas.toBlob(function(blob) {
+                const croppedImage = {
+                    blob: blob,
+                    dataUrl: canvas.toDataURL('image/jpeg', 0.9),
+                    originalName: currentFile.name,
+                    index: croppedImages.length
+                };
+
+                croppedImages.push(croppedImage);
+                currentFileIndex++;
+
+                // Hide modal and destroy cropper
+                const cropModal = bootstrap.Modal.getInstance(document.getElementById('cropModal'));
+                cropModal.hide();
+
+                if (cropper) {
+                    cropper.destroy();
+                    cropper = null;
                 }
-                reader.readAsDataURL(file);
+
+                // Process next image or finish
+                setTimeout(() => {
+                    processNextImage();
+                }, 300);
+            }, 'image/jpeg', 0.9);
+        }
+
+        function updateCroppedImagesDisplay() {
+            const container = document.getElementById('croppedImagesContainer');
+            const noImagesText = document.getElementById('noImagesText');
+
+            if (croppedImages.length === 0) {
+                noImagesText.style.display = 'block';
+                container.innerHTML = '<div class="text-muted" id="noImagesText">No images added yet. Please select and crop at least 3 images.</div>';
+                document.getElementById('croppedImagesData').value = '';
+                return;
+            }
+
+            noImagesText.style.display = 'none';
+            container.innerHTML = '';
+
+            croppedImages.forEach((image, index) => {
+                const imageItem = document.createElement('div');
+                imageItem.className = 'cropped-image-item';
+                imageItem.innerHTML = `
+                    <img src="${image.dataUrl}" class="image-preview" alt="Cropped image ${index + 1}">
+                    <button type="button" class="remove-btn" onclick="removeCroppedImage(${index})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(imageItem);
+            });
+
+            // Update hidden input with cropped images data
+            const imageDataArray = croppedImages.map(img => img.dataUrl);
+            document.getElementById('croppedImagesData').value = JSON.stringify(imageDataArray);
+        }
+
+        function removeCroppedImage(index) {
+            croppedImages.splice(index, 1);
+            // Update indices
+            croppedImages.forEach((img, i) => {
+                img.index = i;
+            });
+            updateCroppedImagesDisplay();
+        }
+
+        // Auto-calculate sale price based on regular price and discount
+        function calculateSalePrice() {
+            const priceInput = document.getElementById('price');
+            const salePriceInput = document.getElementById('salePrice');
+            const discountInput = document.getElementById('discount');
+
+            const regularPrice = parseFloat(priceInput.value) || 0;
+            const discount = parseFloat(discountInput.value) || 0;
+            const currentSalePrice = salePriceInput.value.trim();
+
+            // Only calculate if salePrice is empty and both regularPrice and discount are provided
+            if (!currentSalePrice && regularPrice > 0 && discount > 0) {
+                const calculatedSalePrice = regularPrice - (regularPrice * discount / 100);
+                salePriceInput.value = calculatedSalePrice.toFixed(2);
+
+                // Add visual feedback
+                salePriceInput.style.backgroundColor = '#e8f5e8';
+                salePriceInput.style.border = '2px solid #28a745';
+
+                // Show a small notification
+                const salePriceContainer = salePriceInput.closest('.col-md-6');
+                let notification = salePriceContainer.querySelector('.auto-calc-notification');
+                if (!notification) {
+                    notification = document.createElement('small');
+                    notification.className = 'auto-calc-notification text-success mt-1 d-block';
+                    salePriceContainer.appendChild(notification);
+                }
+                notification.innerHTML = '<i class="fas fa-check-circle me-1"></i>Auto-calculated from discount';
+
+                // Remove visual feedback after 3 seconds
+                setTimeout(() => {
+                    salePriceInput.style.backgroundColor = '';
+                    salePriceInput.style.border = '';
+                    if (notification) {
+                        notification.remove();
+                    }
+                }, 3000);
+            }
+        }
+
+        // Add event listeners for auto-calculation
+        document.addEventListener('DOMContentLoaded', function() {
+            const priceInput = document.getElementById('price');
+            const discountInput = document.getElementById('discount');
+            const salePriceInput = document.getElementById('salePrice');
+
+            // Calculate when price or discount changes
+            priceInput.addEventListener('input', calculateSalePrice);
+            discountInput.addEventListener('input', calculateSalePrice);
+
+            // Clear auto-calculation when user manually enters sale price
+            salePriceInput.addEventListener('input', function() {
+                if (this.value.trim()) {
+                    this.style.backgroundColor = '';
+                    this.style.border = '';
+                    const notification = this.closest('.col-md-6').querySelector('.auto-calc-notification');
+                    if (notification) {
+                        notification.remove();
+                    }
+                }
             });
         });
 
         // Form validation
         document.getElementById('productForm').addEventListener('submit', function(e) {
-    let isValid = true;
+            let isValid = true;
 
-    // Clear previous errors
-    const errorElements = document.querySelectorAll('.error-message');
-    errorElements.forEach(el => el.textContent = '');
+            // Auto-calculate sale price before validation if needed
+            calculateSalePrice();
+
+            // Clear previous errors
+            const errorElements = document.querySelectorAll('.error-message');
+            errorElements.forEach(el => el.textContent = '');
 
     // Validate product name
     const productName = document.getElementById('productName');
@@ -245,21 +601,12 @@
         isValid = false;
     }
 
-    // Validate images
-    const images = document.getElementById('images');
-    if (images.files.length < 3) {
-        document.getElementById('images-error').textContent = 'Please select at least 3 images';
+    // Validate cropped images
+    if (croppedImages.length < 3) {
+        document.getElementById('images-error').textContent = 'Please crop and add at least 3 images';
         isValid = false;
     } else {
-        // Optional: Validate image file types (jpeg, png, etc.)
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
-        for (let i = 0; i < images.files.length; i++) {
-            if (!allowedTypes.includes(images.files[i].type)) {
-                document.getElementById('images-error').textContent = 'Only JPG, PNG, GIF images are allowed';
-                isValid = false;
-                break;
-            }
-        }
+        document.getElementById('images-error').textContent = '';
     }
 
     if (!isValid) {

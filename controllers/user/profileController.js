@@ -81,8 +81,44 @@ export const updateProfile = catchAsyncError(async (req, res, next) => {
       country: country ? country.trim() : user.address?.country || null
     };
 
-    // Handle profile image upload
-    if (req.file) {
+    // Handle profile image upload (cropped or traditional)
+    if (req.body.croppedImageData) {
+      try {
+        // Handle cropped image
+        const base64Data = req.body.croppedImageData;
+        const base64Image = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
+        const imageBuffer = Buffer.from(base64Image, 'base64');
+
+        // Generate unique filename
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        const filename = `profile-cropped-${uniqueSuffix}.jpg`;
+
+        // Define upload path
+        const uploadPath = path.join(__dirname, "../../public/uploads/profile-images");
+        const filePath = path.join(uploadPath, filename);
+
+        // Ensure directory exists
+        if (!fs.existsSync(uploadPath)) {
+          fs.mkdirSync(uploadPath, { recursive: true });
+        }
+
+        // Delete old profile image if exists
+        if (user.profileImage) {
+          const oldImagePath = path.join(uploadPath, user.profileImage);
+          fs.unlink(oldImagePath, (err) => {
+            if (err) console.log("Error deleting old profile image:", err);
+          });
+        }
+
+        // Save cropped image
+        fs.writeFileSync(filePath, imageBuffer);
+        user.profileImage = filename;
+      } catch (error) {
+        console.error('Error processing cropped profile image:', error);
+        return res.redirect('/profile/edit?error=Error+processing+profile+image');
+      }
+    } else if (req.file) {
+      // Handle traditional file upload
       // Delete old profile image if exists
       if (user.profileImage) {
         const oldImagePath = path.join(__dirname, "../../public/uploads/profile-images", user.profileImage);
