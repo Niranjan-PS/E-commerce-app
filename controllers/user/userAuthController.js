@@ -531,7 +531,7 @@ export const resetPassword = catchAsyncError(async(req,res,next) => {
 
 export const checkUserStatus = catchAsyncError(async (req, res, next) => {
   try {
-    console.log("✅ User status check route hit");
+    console.log("User status check route hit");
     const token = req.cookies.userToken || req.cookies.adminToken
 
     if (!token) {
@@ -567,7 +567,7 @@ export const checkUserStatus = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    console.log("🔍 User Info:", user.email, "| isAdmin:", user.isAdmin);
+    console.log(" User Info:", user.email, "| isAdmin:", user.isAdmin);
 
     if (user.isAdmin) {
       return res.status(200).json({
@@ -602,7 +602,7 @@ export const checkUserStatus = catchAsyncError(async (req, res, next) => {
     });
 
   } catch (error) {
-    console.error("❌ Error in checkUserStatus:", error.message);
+    console.error(" Error in checkUserStatus:", error.message);
     return res.status(200).json({
       success: false,
       message: 'Something went wrong',
