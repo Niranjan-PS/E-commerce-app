@@ -210,9 +210,9 @@ export const deleteAddress = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Check if this is the default address
+    
     if (address.isDefault) {
-      // Check if there are other addresses
+      
       const otherAddresses = await Address.find({ 
         user: req.user._id, 
         _id: { $ne: id }, 
@@ -220,12 +220,12 @@ export const deleteAddress = catchAsyncError(async (req, res, next) => {
       });
 
       if (otherAddresses.length > 0) {
-        // Make the first other address default
+        
         await Address.findByIdAndUpdate(otherAddresses[0]._id, { isDefault: true });
       }
     }
 
-    // Soft delete the address
+    
     address.isActive = false;
     await address.save();
 
@@ -259,7 +259,7 @@ export const setDefaultAddress = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Set this address as default
+    
     address.isDefault = true;
     await address.save();
 
