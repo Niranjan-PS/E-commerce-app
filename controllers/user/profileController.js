@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// View Profile
+
 export const viewProfile = catchAsyncError(async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);

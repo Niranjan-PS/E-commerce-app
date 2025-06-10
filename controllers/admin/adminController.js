@@ -48,7 +48,7 @@ export const adminLogin = catchAsyncError(async (req, res, next) => {
         }
 
 
-         sendToken(admin, res);
+         sendToken(admin, res,'adminToken');
        return  res.redirect('/admin/dashboard')
 
 

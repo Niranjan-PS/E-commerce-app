@@ -139,6 +139,42 @@
       transform: translateY(-5px);
       box-shadow: 0 8px 16px rgba(0,0,0,0.2);
     }
+
+    /* Rating Styles */
+    .product-rating {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+    }
+
+    .stars {
+      display: flex;
+      gap: 1px;
+    }
+
+    .star {
+      font-size: 1rem;
+      color: #ddd;
+    }
+
+    .star.filled {
+      color: #ffc107;
+    }
+
+    .star.half {
+      color: #ffc107;
+      opacity: 0.7;
+    }
+
+    .star.empty {
+      color: #ddd;
+    }
+
+    .rating-text {
+      color: #666;
+      font-size: 0.8rem;
+    }
     .product-thumb {
       height: 200px;
       overflow: hidden;
@@ -332,7 +368,8 @@
           <form id="filterForm" method="GET" action="/shop">
             <div class="filter-group">
               <label class="filter-label">Search</label>
-              <input type="text" name="search" value="<%= searchQuery %>" class="form-control" placeholder="Search products...">
+              <input type="text" id="shopSearchInput" name="search" value="<%= searchQuery %>" class="form-control" placeholder="Search products...">
+              <div id="shopSearchError" class="text-danger small mt-1" style="display: none;"></div>
             </div>
 
             <div class="filter-group">
@@ -373,7 +410,7 @@
 
             <div class="filter-group">
               <label class="filter-label">Sort By</label>
-              <select name="sort" class="form-select">
+              <select name="sortBy" class="form-select">
                 <option value="">Default</option>
                 <option value="price_low_high" <%= sortBy === 'price_low_high' ? "selected" : "" %>>Price: Low to High</option>
                 <option value="price_high_low" <%= sortBy === 'price_high_low' ? "selected" : "" %>>Price: High to Low</option>
@@ -385,7 +422,7 @@
             </div>
 
             <div class="d-grid gap-2">
-              <button type="submit" class="btn btn-filter">Apply Filters</button>
+              <button type="submit" id="shopFilterButton" class="btn btn-filter" disabled>Apply Filters</button>
               <a href="/shop" class="btn btn-reset">Reset Filters</a>
             </div>
           </form>
@@ -393,7 +430,7 @@
       </div>
 
       <!-- Product Grid -->
-      <div class="col-lg-9">
+      <div class="col-lg-9 products-grid-container">
         <div class="row" id="productGrid">
           <% if (products.length === 0) { %>
             <div class="col-12 text-center py-5">
@@ -421,6 +458,35 @@
                     <div class="product-info">
                       <h5 class="product-title text-dark"><%= product.productName %></h5>
                       <p class="product-category text-muted"><%= product.category ? product.category.name : "Uncategorized" %></p>
+
+                      <!-- Rating Display -->
+                      <div class="product-rating mb-2">
+                        <div class="stars">
+                          <%
+                            const avgRating = product.averageRating || 0;
+                            const fullStars = Math.floor(avgRating);
+                            const hasHalfStar = (avgRating % 1) >= 0.5;
+                            const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+                          %>
+                          <% for(let i = 0; i < fullStars; i++) { %>
+                            <span class="star filled">★</span>
+                          <% } %>
+                          <% if(hasHalfStar) { %>
+                            <span class="star half">★</span>
+                          <% } %>
+                          <% for(let i = 0; i < emptyStars; i++) { %>
+                            <span class="star empty">☆</span>
+                          <% } %>
+                        </div>
+                        <span class="rating-text">
+                          <% if(product.ratingCount > 0) { %>
+                            (<%= avgRating.toFixed(1) %>) <%= product.ratingCount %> rating<%= product.ratingCount !== 1 ? 's' : '' %>
+                          <% } else { %>
+                            No ratings yet
+                          <% } %>
+                        </span>
+                      </div>
+
                       <div class="price-section">
                         <% if (product.salePrice && product.salePrice < product.price) { %>
                           <div class="d-flex align-items-center flex-wrap">
@@ -439,14 +505,7 @@
                           <span class="product-price text-primary fw-bold fs-5">₹<%= product.price.toFixed(2) %></span>
                         <% } %>
                       </div>
-                      <% if (product.rating > 0) { %>
-                        <div class="rating-section mt-2">
-                          <% for (let i = 1; i <= 5; i++) { %>
-                            <i class="fas fa-star <%= i <= product.rating ? 'text-warning' : 'text-muted' %>" style="font-size: 0.8rem;"></i>
-                          <% } %>
-                          <span class="text-muted ms-1" style="font-size: 0.9rem;">(<%= product.reviewCount || 0 %>)</span>
-                        </div>
-                      <% } %>
+
                     </div>
                   </a>
                 </div>
@@ -455,20 +514,42 @@
           <% } %>
         </div>
 
-        <!-- Pagination -->
-        <% if (totalPages > 1) { %>
-          <nav aria-label="Page navigation" class="mt-4">
-            <ul class="pagination justify-content-center">
-              <% for(let i = 1; i <= totalPages; i++) { %>
-                <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-                  <a class="page-link" href="/shop?page=<%= i %>&search=<%= encodeURIComponent(searchQuery) %>&category=<%= encodeURIComponent(categoryFilter) %>&sort=<%= encodeURIComponent(sortBy) %>&minPrice=<%= minPrice > 0 ? minPrice : '' %>&maxPrice=<%= maxPrice < Number.MAX_VALUE ? maxPrice : '' %>&minRating=<%= minRating > 0 ? minRating : '' %>">
-                    <%= i %>
-                  </a>
-                </li>
-              <% } %>
-            </ul>
-          </nav>
-        <% } %>
+        <!-- Results Info -->
+        <div class="results-info text-muted mb-3">
+          <%
+            const start = ((currentPage - 1) * 8) + 1;
+            const end = Math.min(start + products.length - 1, products.length > 0 ? start + products.length - 1 : 0);
+            const total = products.length; // This will be updated via AJAX
+          %>
+          <% if (products.length > 0) { %>
+            Showing <%= start %>-<%= end %> of <%= total %> products
+            <% if (searchQuery) { %>
+              for "<%= searchQuery %>"
+            <% } %>
+          <% } else { %>
+            No products found
+            <% if (searchQuery) { %>
+              for "<%= searchQuery %>"
+            <% } %>
+          <% } %>
+        </div>
+
+        <!-- Pagination Container -->
+        <div class="pagination-container">
+          <% if (totalPages > 1) { %>
+            <nav aria-label="Page navigation" class="mt-4">
+              <ul class="pagination justify-content-center">
+                <% for(let i = 1; i <= totalPages; i++) { %>
+                  <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                    <a class="page-link" href="#" data-pagination-page="<%= i %>">
+                      <%= i %>
+                    </a>
+                  </li>
+                <% } %>
+              </ul>
+            </nav>
+          <% } %>
+        </div>
       </div>
     </div>
   </div>
@@ -514,40 +595,159 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Pagination Utilities -->
+  <script src="/js/pagination-utils.js"></script>
+  <script src="/js/shop-pagination.js"></script>
+  <!-- Global User Status Checker -->
+  <script src="/js/user-status-checker.js"></script>
   <script>
-    // Check user status periodically to handle real-time blocking
-    function checkUserStatus() {
-      fetch('/check-status', {
-        method: 'GET',
-        credentials: 'include'
-      })
-      .then(response => response.json())
-      .then(data => {
-        // Only logout if user is specifically blocked, not just unauthenticated
-        if (data.blocked === true) {
-          // User has been blocked, show message and redirect
-          Swal.fire({
-            icon: 'error',
-            title: 'Account Blocked',
-            text: data.message || 'Your account has been blocked. Please contact support.',
-            confirmButtonColor: '#d33',
-            allowOutsideClick: false,
-            allowEscapeKey: false
-          }).then(() => {
-            // Clear any local storage/session data
-            document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-            window.location.href = '/login?error=Account has been blocked';
-          });
-        }
-      })
-      .catch(error => {
-        console.error('Error checking user status:', error);
-        // Don't logout on network errors
-      });
+    // Search validation function
+    function validateSearchInput(searchValue) {
+      // Allow empty search (show all products)
+      if (!searchValue) {
+        return { isValid: true, message: '' };
+      }
+
+      // Check if input contains only spaces (before trimming)
+      if (/^\s+$/.test(searchValue)) {
+        return { isValid: false, message: 'Search cannot contain only spaces' };
+      }
+
+      const trimmedValue = searchValue.trim();
+
+      // After trimming, if empty, it's valid (same as empty search)
+      if (trimmedValue === '') {
+        return { isValid: true, message: '' };
+      }
+
+      // Check if input contains at least one alphabetic character
+      if (!/[a-zA-Z]/.test(trimmedValue)) {
+        return { isValid: false, message: 'Please enter a valid search keyword with at least one letter' };
+      }
+
+      // Check minimum length (at least 2 characters after trimming)
+      if (trimmedValue.length < 2) {
+        return { isValid: false, message: 'Search keyword must be at least 2 characters long' };
+      }
+
+      return { isValid: true, message: '' };
     }
 
-    // Check user status every 30 seconds
-    setInterval(checkUserStatus, 30000);
+    // Update filter button state
+    function updateFilterButtonState() {
+      const searchInput = document.getElementById('shopSearchInput');
+      const filterButton = document.getElementById('shopFilterButton');
+      const searchError = document.getElementById('shopSearchError');
+      const categorySelect = document.querySelector('select[name="category"]');
+
+      const searchValue = searchInput.value;
+      const categoryValue = categorySelect.value;
+      const validation = validateSearchInput(searchValue);
+
+      // Show/hide error message
+      if (!validation.isValid) {
+        searchError.textContent = validation.message;
+        searchError.style.display = 'block';
+        searchInput.classList.add('is-invalid');
+      } else {
+        searchError.style.display = 'none';
+        searchInput.classList.remove('is-invalid');
+      }
+
+      // Enable button if search is valid OR if any other filter is set
+      const hasOtherFilters = categoryValue.trim() !== '' ||
+                             document.querySelector('input[name="minPrice"]').value.trim() !== '' ||
+                             document.querySelector('input[name="maxPrice"]').value.trim() !== '' ||
+                             document.querySelector('select[name="minRating"]').value.trim() !== '' ||
+                             document.querySelector('select[name="sortBy"]').value.trim() !== '';
+
+      const shouldEnableButton = validation.isValid || hasOtherFilters || searchValue.trim() === '';
+      filterButton.disabled = !shouldEnableButton;
+    }
+
+    // Initialize shop page validation
+    document.addEventListener('DOMContentLoaded', function() {
+      const filterForm = document.getElementById('filterForm');
+      const searchInput = document.getElementById('shopSearchInput');
+      const categorySelect = document.querySelector('select[name="category"]');
+      const otherInputs = document.querySelectorAll('input[name="minPrice"], input[name="maxPrice"], select[name="minRating"], select[name="sortBy"]');
+
+      // Add real-time validation
+      searchInput.addEventListener('input', updateFilterButtonState);
+      categorySelect.addEventListener('change', updateFilterButtonState);
+
+      // Add listeners to other filter inputs
+      otherInputs.forEach(input => {
+        input.addEventListener('input', updateFilterButtonState);
+        input.addEventListener('change', updateFilterButtonState);
+      });
+
+      // Initial validation
+      updateFilterButtonState();
+
+      // Form submission validation - prevent page reload and use AJAX
+      filterForm.addEventListener('submit', function(e) {
+        e.preventDefault(); // Always prevent default form submission
+
+        const searchValue = searchInput.value;
+        const validation = validateSearchInput(searchValue);
+
+        if (!validation.isValid) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Invalid Search',
+            text: validation.message,
+            confirmButtonColor: '#6200ea'
+          });
+          return false;
+        }
+
+        // If valid, trigger AJAX filter update via shop pagination
+        if (window.shopPagination) {
+          const formData = new FormData(filterForm);
+          const filters = {};
+          for (const [key, value] of formData.entries()) {
+            if (value.trim() !== '') {
+              filters[key] = value.trim();
+            }
+          }
+          window.shopPagination.updateFilters(filters, true);
+        } else {
+          // Fallback to regular form submission if pagination not available
+          filterForm.submit();
+        }
+
+        return false;
+      });
+
+      // Auto-submit when filter dropdowns change
+      const autoSubmitElements = document.querySelectorAll('select[name="category"], select[name="sortBy"], select[name="minRating"]');
+      autoSubmitElements.forEach(element => {
+        element.addEventListener('change', function() {
+          // Trigger form submission
+          const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+          filterForm.dispatchEvent(submitEvent);
+        });
+      });
+
+      // Auto-submit for price inputs with debounce
+      const priceInputs = document.querySelectorAll('input[name="minPrice"], input[name="maxPrice"]');
+      let priceTimeout;
+      priceInputs.forEach(input => {
+        input.addEventListener('input', function() {
+          clearTimeout(priceTimeout);
+          priceTimeout = setTimeout(() => {
+            const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+            filterForm.dispatchEvent(submitEvent);
+          }, 1000); // 1 second delay
+        });
+      });
+    });
+  </script>
+  <script>
+    // User status checking is now handled by the global user-status-checker.js
 
     // Add to wishlist function
     function addToWishlist(productId) {

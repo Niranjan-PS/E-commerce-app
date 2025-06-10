@@ -74,7 +74,7 @@ const orderSchema = new mongoose.Schema({
   },
   items: [orderItemSchema],
 
-  // Address Information
+  
   shippingAddress: {
     fullName: {
       type: String,
@@ -111,7 +111,7 @@ const orderSchema = new mongoose.Schema({
     }
   },
 
-  // Order Totals
+  
   subtotal: {
     type: Number,
     required: true
@@ -145,7 +145,7 @@ const orderSchema = new mongoose.Schema({
     required: true
   },
 
-  // Payment Information
+ 
   paymentMethod: {
     type: String,
     enum: ['COD', 'Online', 'Wallet'],
@@ -157,14 +157,14 @@ const orderSchema = new mongoose.Schema({
     default: 'Pending'
   },
 
-  // Order Status
+ 
   orderStatus: {
     type: String,
     enum: ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Returned'],
     default: 'Pending'
   },
 
-  // Timestamps
+  
   orderDate: {
     type: Date,
     default: Date.now
@@ -172,7 +172,7 @@ const orderSchema = new mongoose.Schema({
   expectedDelivery: {
     type: Date,
     default: function() {
-      // Default to 7 days from order date
+      
       const deliveryDate = new Date();
       deliveryDate.setDate(deliveryDate.getDate() + 7);
       return deliveryDate;
@@ -183,19 +183,19 @@ const orderSchema = new mongoose.Schema({
     default: null
   },
 
-  // Order Notes
+ 
   notes: {
     type: String,
     default: ""
   },
 
-  // Tracking Information
+ 
   trackingNumber: {
     type: String,
     default: null
   },
 
-  // Cancellation Information
+ 
   cancellationReason: {
     type: String,
     default: null
@@ -257,15 +257,15 @@ orderSchema.methods.canBeCancelled = function() {
 orderSchema.methods.canBeReturned = function() {
   return this.orderStatus === 'Delivered' &&
          this.deliveredAt &&
-         (Date.now() - this.deliveredAt.getTime()) <= (7 * 24 * 60 * 60 * 1000) && // 7 days
-         this.returnStatus === 'None'; // Can only request return if no return is in progress
+         (Date.now() - this.deliveredAt.getTime()) <= (7 * 24 * 60 * 60 * 1000) && 
+         this.returnStatus === 'None'; 
 };
 
 orderSchema.methods.canRequestReturn = function() {
   return this.orderStatus === 'Delivered' &&
          this.deliveredAt &&
-         (Date.now() - this.deliveredAt.getTime()) <= (7 * 24 * 60 * 60 * 1000) && // 7 days
-         ['None', 'Rejected'].includes(this.returnStatus); // Can request if no return or previous return was rejected
+         (Date.now() - this.deliveredAt.getTime()) <= (7 * 24 * 60 * 60 * 1000) && 
+         ['None', 'Rejected'].includes(this.returnStatus); 
 };
 
 orderSchema.methods.updateStatus = function(newStatus) {

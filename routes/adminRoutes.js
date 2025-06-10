@@ -46,19 +46,19 @@ router.get('/dashboard', isAdminAuthenticated, (req, res) => {
 });
 router.get("/users", isAdminAuthenticated, customerInfo)
 
-router.get('/blockUser', isAdminAuthenticated, async (req, res) => {
-  const userId = req.query.id;
+// router.get('/blockUser', isAdminAuthenticated, async (req, res) => {
+//   const userId = req.query.id;
 
-  if (!userId) return res.status(400).send("User ID is required");
+//   if (!userId) return res.status(400).send("User ID is required");
 
-  try {
-    await User.findByIdAndUpdate(userId, { isBlocked: true });
-    res.redirect('/admin/users');
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Invalid User ID");
-  }
-});
+//   try {
+//     await User.findByIdAndUpdate(userId, { isBlocked: true });
+//     res.redirect('/admin/users');
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).send("Invalid User ID");
+//   }
+// });
 router.patch('/blockUser', isAdminAuthenticated, async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.query.id, { isBlocked: true });
@@ -140,7 +140,6 @@ router.get('/inventory/alerts', isAdminAuthenticated, getLowStockAlerts);
 router.get('/inventory/movements', isAdminAuthenticated, getStockMovements);
 
 export default router;
-
 
 
 

@@ -6,12 +6,13 @@ import {
   resendOtp,
   login,
   logout,
+  checkUserStatus
+  
+} from "../controllers/user/userAuthController.js";
+import {
   loadHomePage,
   loadShopPage,
-  getProductDetails,
-  checkUserStatus,
-  pagenotFound
-} from "../controllers/user/userController.js";
+  getProductDetails,pagenotFound} from "../controllers/user/userController.js"
 import {
   createDummyCoupons,
   validateCoupon,
@@ -140,36 +141,36 @@ router.delete("/reviews/:reviewId", isAuthenticated, deleteReview);
 
 
 router.get('/google', (req, res, next) => {
-  console.log('🔗 Google OAuth initiated');
+  console.log(' Google OAuth initiated');
   passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
 });
 
 router.get('/google/callback', (req, res, next) => {
-  console.log('🔄 Google OAuth callback received');
+  console.log(' Google OAuth callback received');
   passport.authenticate('google', {
     failureRedirect: '/login?error=Google authentication failed',
     session: false
   }, (err, user, info) => {
     if (err) {
-      console.error('❌ Google OAuth error:', err);
+      console.error(' Google OAuth error:', err);
       return res.redirect('/login?error=Authentication error occurred');
     }
     if (!user) {
-      console.error('❌ Google OAuth failed - no user returned:', info);
+      console.error(' Google OAuth failed - no user returned:', info);
       return res.redirect('/login?error=Google authentication failed');
     }
 
-    console.log('✅ Google OAuth successful for user:', user.email);
+    console.log(' Google OAuth successful for user:', user.email);
 
-    // Generate JWT token
+    
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: '7d' });
     res.cookie('token', token, {
       httpOnly: true,
       secure: false,
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000 
     });
 
-    console.log('🍪 JWT token set for user:', user.email);
+    console.log(' JWT token set for user:', user.email);
     res.redirect('/home');
   })(req, res, next);
 });
@@ -230,7 +231,7 @@ router.get("/orders/:orderId", isAuthenticated, getOrderDetails);
 router.post("/orders/:orderId/cancel", isAuthenticated, cancelOrder);
 router.post("/orders/:orderId/return", isAuthenticated, returnOrder);
 router.get("/orders/:orderId/invoice", isAuthenticated, downloadInvoice);
-router.post("/orders/:orderId/mark-delivered", isAuthenticated, markOrderDelivered); // Test route
+router.post("/orders/:orderId/mark-delivered", isAuthenticated, markOrderDelivered); 
 
 router.get("/pageNotFound", pagenotFound);
 

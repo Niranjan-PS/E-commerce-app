@@ -4,7 +4,7 @@ import { Order } from "../../model/orderModel.js";
 import { catchAsyncError } from "../../middlewares/catchAsync.js";
 import ErrorHandler from "../../middlewares/error.js";
 
-// Get inventory dashboard
+
 export const getInventoryDashboard = catchAsyncError(async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -17,10 +17,10 @@ export const getInventoryDashboard = catchAsyncError(async (req, res, next) => {
     const sortBy = req.query.sortBy || 'createdAt';
     const sortOrder = req.query.sortOrder || 'desc';
 
-    // Build query
+    
     let query = { isDeleted: false };
 
-    // Search functionality
+    
     if (search) {
       query.$or = [
         { productName: new RegExp(search, 'i') },
@@ -29,12 +29,12 @@ export const getInventoryDashboard = catchAsyncError(async (req, res, next) => {
       ];
     }
 
-    // Category filter
+    
     if (category) {
       query.category = category;
     }
 
-    // Stock status filter with null handling
+   
     if (stockStatus === 'low') {
       query.$or = [
         { quantity: { $lte: 10, $gt: 0 } },
@@ -51,30 +51,30 @@ export const getInventoryDashboard = catchAsyncError(async (req, res, next) => {
       query.quantity = { $gt: 0 };
     }
 
-    // Sort options
+   
     const sortOptions = {};
     sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
-    // Get products with category population
+    
     const products = await Product.find(query)
       .populate('category', 'name')
       .sort(sortOptions)
       .skip(skip)
       .limit(limit);
 
-    // Get total count for pagination
+    
     const totalProducts = await Product.countDocuments(query);
     const totalPages = Math.ceil(totalProducts / limit);
 
-    // Get categories for filter
+   
     const categories = await Category.find({ isListed: true });
 
-    // Get inventory statistics with null value handling
+    
     const inventoryStats = await Product.aggregate([
       { $match: { isDeleted: false } },
       {
         $addFields: {
-          // Handle null/undefined values by setting defaults
+          
           safeQuantity: { $ifNull: ['$quantity', 0] },
           safeSalePrice: { $ifNull: ['$salePrice', 0] },
           safeRegularPrice: { $ifNull: ['$regularPrice', 0] }
@@ -138,11 +138,11 @@ export const getInventoryDashboard = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Update stock quantity
+
 export const updateStock = catchAsyncError(async (req, res, next) => {
   try {
     const { productId } = req.params;
-    const { quantity, action } = req.body; // action: 'set', 'add', 'subtract'
+    const { quantity, action } = req.body;
 
     if (quantity === undefined || quantity === null || quantity < 0) {
       return res.status(400).json({
@@ -183,7 +183,7 @@ export const updateStock = catchAsyncError(async (req, res, next) => {
         });
     }
 
-    // Update product quantity
+   
     product.quantity = newQuantity;
     await product.save();
 
@@ -289,7 +289,7 @@ export const bulkUpdateStock = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Get low stock alerts
+
 export const getLowStockAlerts = catchAsyncError(async (req, res, next) => {
   try {
     const lowStockThreshold = 10;
@@ -423,7 +423,7 @@ export const getStockMovements = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Auto-update stock based on order actions
+
 export const updateStockOnOrder = async (orderId, action) => {
   try {
     const order = await Order.findById(orderId).populate('items.product');
@@ -446,17 +446,17 @@ export const updateStockOnOrder = async (orderId, action) => {
 
       switch (action) {
         case 'place':
-          // Decrease stock when order is placed
+          
           product.quantity = Math.max(0, currentQuantity - itemQuantity);
           break;
 
         case 'cancel':
-          // Restore stock when order is cancelled
+          
           product.quantity = currentQuantity + itemQuantity;
           break;
 
         case 'return':
-          // Restore stock when order is returned
+         
           const returnedQuantity = item.returnedQuantity || itemQuantity;
           product.quantity = currentQuantity + returnedQuantity;
           break;

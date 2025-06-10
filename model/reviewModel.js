@@ -23,11 +23,11 @@ const reviewSchema = new mongoose.Schema({
     trim: true,
     validate: {
       validator: function(v) {
-        // Check if comment contains only spaces or numbers
+        
         const trimmed = v.trim();
         if (trimmed.length === 0) return false;
         
-        // Check if comment contains only numbers
+       
         if (/^\d+$/.test(trimmed)) return false;
         
         return true;
@@ -49,10 +49,10 @@ const reviewSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Compound index to ensure one review per user per product
+
 reviewSchema.index({ user: 1, product: 1 }, { unique: true });
 
-// Static method to calculate average rating for a product
+
 reviewSchema.statics.calculateAverageRating = async function(productId) {
   const result = await this.aggregate([
     { $match: { product: productId, isApproved: true } },

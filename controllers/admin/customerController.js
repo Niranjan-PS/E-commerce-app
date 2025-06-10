@@ -8,7 +8,7 @@ export const customerInfo = catchAsyncError(async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const limit = 5;
 
-    // Build query for users with pagination
+
     const query = {
       isAdmin: false,
       $or: [
@@ -17,13 +17,14 @@ export const customerInfo = catchAsyncError(async (req, res, next) => {
       ],
     };
 
-    // Add status filter if provided
+
     if (status === 'active') {
       query.isBlocked = false;
     } else if (status === 'blocked') {
       query.isBlocked = true;
     }
 
+    // Get paginated user data and total count for pagination
     const [userData, total] = await Promise.all([
       User.find(query)
         .limit(limit)
@@ -33,8 +34,48 @@ export const customerInfo = catchAsyncError(async (req, res, next) => {
       User.countDocuments(query)
     ]);
 
+    // Get actual statistics from the entire user collection (not filtered by search/status)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const [totalUsers, activeUsers, blockedUsers, newTodayUsers] = await Promise.all([
+      User.countDocuments({ isAdmin: false }),
+      User.countDocuments({ isAdmin: false, isBlocked: false }),
+      User.countDocuments({ isAdmin: false, isBlocked: true }),
+      User.countDocuments({
+        isAdmin: false,
+        createdAt: {
+          $gte: today,
+          $lt: tomorrow
+        }
+      })
+    ]);
+
     const totalPages = Math.ceil(total / limit);
     const currentPage = Math.min(Math.max(page, 1), totalPages);
+
+    // Check if this is an AJAX request
+    const isAjax = req.headers['x-requested-with'] === 'XMLHttpRequest' || req.headers.accept?.includes('application/json');
+
+    if (isAjax) {
+      return res.json({
+        success: true,
+        users: userData,
+        totalPages,
+        currentPage,
+        totalUsers: total,
+        search,
+        status,
+        userStats: {
+          totalUsers,
+          activeUsers,
+          blockedUsers,
+          newTodayUsers
+        }
+      });
+    }
 
     res.render('admin/users', {
       user: userData,
@@ -42,10 +83,25 @@ export const customerInfo = catchAsyncError(async (req, res, next) => {
       currentPage,
       search,
       status,
-      message: userData.length === 0 ? "No users found." : null
+      message: userData.length === 0 ? "No users found." : null,
+      // Pass actual statistics from entire collection
+      userStats: {
+        totalUsers,
+        activeUsers,
+        blockedUsers,
+        newTodayUsers
+      }
     });
 
   } catch (error) {
+    console.error("Error loading users:", error);
+    const isAjax = req.headers['x-requested-with'] === 'XMLHttpRequest' || req.headers.accept?.includes('application/json');
+    if (isAjax) {
+      return res.status(500).json({
+        success: false,
+        message: "Server error while loading users"
+      });
+    }
     next(error);
   }
 });

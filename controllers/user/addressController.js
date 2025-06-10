@@ -2,7 +2,7 @@ import { Address } from "../../model/addressModel.js";
 import { catchAsyncError } from "../../middlewares/catchAsync.js";
 import ErrorHandler from "../../middlewares/error.js";
 
-// Get all addresses for a user
+
 export const getAddresses = catchAsyncError(async (req, res, next) => {
   try {
     const addresses = await Address.getUserAddresses(req.user._id);
@@ -18,7 +18,7 @@ export const getAddresses = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Load add address page
+
 export const loadAddAddress = catchAsyncError(async (req, res, next) => {
   try {
     res.render("user/add-address", {
@@ -31,7 +31,7 @@ export const loadAddAddress = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Add new address
+
 export const addAddress = catchAsyncError(async (req, res, next) => {
   try {
     const {
@@ -48,7 +48,7 @@ export const addAddress = catchAsyncError(async (req, res, next) => {
       isDefault
     } = req.body;
 
-    // Validate required fields
+    
     if (!title || !fullName || !phone || !street || !city || !state || !zipCode) {
       return res.redirect('/addresses/add?error=All required fields must be filled');
     }
@@ -65,7 +65,7 @@ export const addAddress = catchAsyncError(async (req, res, next) => {
       return res.redirect('/addresses/add?error=ZIP code must be 6 digits');
     }
 
-    // Check if this is the user's first address
+    
     const existingAddresses = await Address.find({ user: req.user._id, isActive: true });
     const shouldBeDefault = existingAddresses.length === 0 || isDefault === 'on';
 
@@ -97,7 +97,7 @@ export const addAddress = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Load edit address page
+
 export const loadEditAddress = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -122,7 +122,7 @@ export const loadEditAddress = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Update address
+
 export const updateAddress = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -150,24 +150,24 @@ export const updateAddress = catchAsyncError(async (req, res, next) => {
       return res.redirect('/addresses?error=Address not found');
     }
 
-    // Validate required fields
+   
     if (!title || !fullName || !phone || !street || !city || !state || !zipCode) {
       return res.redirect(`/addresses/edit/${id}?error=All required fields must be filled`);
     }
 
-    // Validate phone number
+    
     const phoneRegex = /^\+91\d{10}$/;
     if (!phoneRegex.test(phone.trim())) {
       return res.redirect(`/addresses/edit/${id}?error=Invalid phone number format. Use +91XXXXXXXXXX`);
     }
 
-    // Validate ZIP code
+   
     const zipRegex = /^\d{6}$/;
     if (!zipRegex.test(zipCode.trim())) {
       return res.redirect(`/addresses/edit/${id}?error=ZIP code must be 6 digits`);
     }
 
-    // Update address fields
+    
     address.title = title.trim();
     address.fullName = fullName.trim();
     address.phone = phone.trim();

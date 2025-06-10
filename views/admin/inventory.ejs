@@ -312,8 +312,9 @@
       <form method="GET" action="/admin/inventory" class="row g-3">
         <div class="col-md-3">
           <label class="form-label">Search Products</label>
-          <input type="text" class="form-control" name="search" value="<%= search %>"
+          <input type="text" id="inventorySearchInput" class="form-control" name="search" value="<%= search %>"
                  placeholder="Product name, brand, or description...">
+          <div id="inventorySearchError" class="text-danger small mt-1" style="display: none;"></div>
         </div>
         <div class="col-md-2">
           <label class="form-label">Category</label>
@@ -352,7 +353,7 @@
         <div class="col-md-2">
           <label class="form-label">&nbsp;</label>
           <div class="d-flex">
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" id="inventorySearchButton" class="btn btn-primary" disabled>
               <i class="fas fa-search me-1"></i>Search
             </button>
             <a href="/admin/inventory" class="clear-btn">
@@ -568,6 +569,112 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    // Search validation function
+    function validateSearchInput(searchValue) {
+      // Allow empty search (show all products)
+      if (!searchValue) {
+        return { isValid: true, message: '' };
+      }
+
+      // Check if input contains only spaces (before trimming)
+      if (/^\s+$/.test(searchValue)) {
+        return { isValid: false, message: 'Search cannot contain only spaces' };
+      }
+
+      const trimmedValue = searchValue.trim();
+
+      // After trimming, if empty, it's valid (same as empty search)
+      if (trimmedValue === '') {
+        return { isValid: true, message: '' };
+      }
+
+      // Check if input contains at least one alphabetic character
+      if (!/[a-zA-Z]/.test(trimmedValue)) {
+        return { isValid: false, message: 'Please enter a valid search keyword with at least one letter' };
+      }
+
+      // Check minimum length (at least 2 characters after trimming)
+      if (trimmedValue.length < 2) {
+        return { isValid: false, message: 'Search keyword must be at least 2 characters long' };
+      }
+
+      return { isValid: true, message: '' };
+    }
+
+    // Update search button state
+    function updateInventorySearchButtonState() {
+      const searchInput = document.getElementById('inventorySearchInput');
+      const searchButton = document.getElementById('inventorySearchButton');
+      const searchError = document.getElementById('inventorySearchError');
+      const categorySelect = document.querySelector('select[name="category"]');
+      const stockStatusSelect = document.querySelector('select[name="stockStatus"]');
+
+      const searchValue = searchInput.value;
+      const categoryValue = categorySelect ? categorySelect.value : '';
+      const stockStatusValue = stockStatusSelect ? stockStatusSelect.value : '';
+      const validation = validateSearchInput(searchValue);
+
+      // Show/hide error message
+      if (!validation.isValid) {
+        searchError.textContent = validation.message;
+        searchError.style.display = 'block';
+        searchInput.classList.add('is-invalid');
+      } else {
+        searchError.style.display = 'none';
+        searchInput.classList.remove('is-invalid');
+      }
+
+      // Enable button if search is valid OR if any filter is set
+      const hasFilters = categoryValue.trim() !== '' || stockStatusValue.trim() !== '';
+      const shouldEnableButton = validation.isValid || hasFilters || searchValue.trim() === '';
+      searchButton.disabled = !shouldEnableButton;
+    }
+
+    // Initialize inventory search validation
+    document.addEventListener('DOMContentLoaded', function() {
+      const searchForm = document.querySelector('form[action="/admin/inventory"]');
+      const searchInput = document.getElementById('inventorySearchInput');
+      const categorySelect = document.querySelector('select[name="category"]');
+      const stockStatusSelect = document.querySelector('select[name="stockStatus"]');
+      const sortBySelect = document.querySelector('select[name="sortBy"]');
+      const sortOrderSelect = document.querySelector('select[name="sortOrder"]');
+
+      // Add real-time validation
+      searchInput.addEventListener('input', updateInventorySearchButtonState);
+
+      if (categorySelect) categorySelect.addEventListener('change', updateInventorySearchButtonState);
+      if (stockStatusSelect) stockStatusSelect.addEventListener('change', updateInventorySearchButtonState);
+      if (sortBySelect) sortBySelect.addEventListener('change', updateInventorySearchButtonState);
+      if (sortOrderSelect) sortOrderSelect.addEventListener('change', updateInventorySearchButtonState);
+
+      // Initial validation
+      updateInventorySearchButtonState();
+
+      // Form submission validation
+      if (searchForm) {
+        searchForm.addEventListener('submit', function(e) {
+          const searchValue = searchInput.value;
+          const validation = validateSearchInput(searchValue);
+
+          if (!validation.isValid) {
+            e.preventDefault();
+            Swal.fire({
+              icon: 'warning',
+              title: 'Invalid Search',
+              text: validation.message,
+              confirmButtonColor: '#dc3545'
+            });
+            return false;
+          }
+
+          // If valid, allow form submission
+          return true;
+        });
+      }
+    });
+  </script>
   <script>
     let currentProductId = null;
 

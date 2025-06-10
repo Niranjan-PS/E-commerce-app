@@ -4,15 +4,16 @@ import { Product } from "../../model/productModel.js";
 import { Category } from "../../model/categoryModel.js";
 import { catchAsyncError } from "../../middlewares/catchAsync.js";
 import ErrorHandler from "../../middlewares/error.js";
+import HttpStatus from "../../helpers/httpStatus.js";
 
-// Get cart page
+
 export const getCart = catchAsyncError(async (req, res, next) => {
   try {
     const cart = await Cart.getOrCreateCart(req.user._id);
-    
-    // Validate cart items against current product status
+
+   
     await validateCartItems(cart);
-    
+
     res.render("user/cart", {
       cart,
       cartLimits: CART_LIMITS,
@@ -25,38 +26,38 @@ export const getCart = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Add product to cart
+
 export const addToCart = catchAsyncError(async (req, res, next) => {
   try {
     const { productId, quantity = 1 } = req.body;
-    
-    // Validate product
+
+   
     const product = await Product.findById(productId).populate('category');
     if (!product) {
-      return res.status(404).json({
+      return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: 'Product not found'
       });
     }
 
-    // Check if product or category is blocked/unlisted
+   
     if (product.isBlocked || product.isDeleted || product.status !== "Available") {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: 'This product is currently not available'
       });
     }
 
     if (!product.category.isListed) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: 'This product category is currently not available'
       });
     }
 
-    // Check stock availability
+    
     if (product.quantity <= 0) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: 'Product is out of stock'
       });
@@ -64,7 +65,7 @@ export const addToCart = catchAsyncError(async (req, res, next) => {
 
     // Get or create cart
     const cart = await Cart.getOrCreateCart(req.user._id);
-    
+
     // Check if adding this quantity would exceed stock
     const existingItem = cart.getItem(productId);
     const currentQuantityInCart = existingItem ? existingItem.quantity : 0;
@@ -72,7 +73,7 @@ export const addToCart = catchAsyncError(async (req, res, next) => {
     const totalQuantity = currentQuantityInCart + requestedQuantity;
 
     if (totalQuantity > product.quantity) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: `Only ${product.quantity} items available. You already have ${currentQuantityInCart} in cart.`
       });
@@ -89,7 +90,7 @@ export const addToCart = catchAsyncError(async (req, res, next) => {
       await wishlist.save();
     }
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: `${requestedQuantity} item(s) added to cart`,
       cartCount: cart.totalItems,
@@ -98,15 +99,15 @@ export const addToCart = catchAsyncError(async (req, res, next) => {
 
   } catch (error) {
     console.error("Error adding to cart:", error);
-    
+
     if (error.message.includes('Maximum') || error.message.includes('Only')) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: error.message
       });
     }
 
-    return res.status(500).json({
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to add item to cart'
     });
@@ -117,18 +118,18 @@ export const addToCart = catchAsyncError(async (req, res, next) => {
 export const updateCartQuantity = catchAsyncError(async (req, res, next) => {
   try {
     const { productId, quantity } = req.body;
-    
+
     // Validate product and stock
     const product = await Product.findById(productId);
     if (!product) {
-      return res.status(404).json({
+      return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: 'Product not found'
       });
     }
 
     if (quantity > product.quantity) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: `Only ${product.quantity} items available in stock`
       });
@@ -137,7 +138,7 @@ export const updateCartQuantity = catchAsyncError(async (req, res, next) => {
     // Get cart
     const cart = await Cart.findOne({ user: req.user._id });
     if (!cart) {
-      return res.status(404).json({
+      return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: 'Cart not found'
       });
@@ -147,7 +148,7 @@ export const updateCartQuantity = catchAsyncError(async (req, res, next) => {
     cart.updateItemQuantity(productId, parseInt(quantity));
     await cart.save();
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: 'Cart updated successfully',
       cartCount: cart.totalItems,
@@ -157,15 +158,15 @@ export const updateCartQuantity = catchAsyncError(async (req, res, next) => {
 
   } catch (error) {
     console.error("Error updating cart quantity:", error);
-    
+
     if (error.message.includes('Maximum') || error.message.includes('Only')) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: error.message
       });
     }
 
-    return res.status(500).json({
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to update cart'
     });
@@ -176,11 +177,11 @@ export const updateCartQuantity = catchAsyncError(async (req, res, next) => {
 export const removeFromCart = catchAsyncError(async (req, res, next) => {
   try {
     const { productId } = req.params;
-    
+
     // Get cart
     const cart = await Cart.findOne({ user: req.user._id });
     if (!cart) {
-      return res.status(404).json({
+      return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: 'Cart not found'
       });
@@ -190,7 +191,7 @@ export const removeFromCart = catchAsyncError(async (req, res, next) => {
     cart.removeItem(productId);
     await cart.save();
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: 'Item removed from cart',
       cartCount: cart.totalItems,
@@ -199,19 +200,19 @@ export const removeFromCart = catchAsyncError(async (req, res, next) => {
 
   } catch (error) {
     console.error("Error removing from cart:", error);
-    return res.status(500).json({
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to remove item from cart'
     });
   }
 });
 
-// Clear entire cart
+
 export const clearCart = catchAsyncError(async (req, res, next) => {
   try {
     const cart = await Cart.findOne({ user: req.user._id });
     if (!cart) {
-      return res.status(404).json({
+      return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: 'Cart not found'
       });
@@ -220,7 +221,7 @@ export const clearCart = catchAsyncError(async (req, res, next) => {
     cart.clearCart();
     await cart.save();
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: 'Cart cleared successfully',
       cartCount: 0,
@@ -229,7 +230,7 @@ export const clearCart = catchAsyncError(async (req, res, next) => {
 
   } catch (error) {
     console.error("Error clearing cart:", error);
-    return res.status(500).json({
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to clear cart'
     });
@@ -242,14 +243,14 @@ export const getCartCount = catchAsyncError(async (req, res, next) => {
     const cart = await Cart.findOne({ user: req.user._id });
     const cartCount = cart ? cart.totalItems : 0;
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       cartCount
     });
 
   } catch (error) {
     console.error("Error getting cart count:", error);
-    return res.status(500).json({
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       cartCount: 0
     });

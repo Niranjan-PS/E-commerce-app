@@ -6,6 +6,7 @@ import path from "path";
 import sharp from "sharp";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import HttpStatus from "../../helpers/httpStatus.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -99,12 +100,12 @@ const addProducts = async (req, res) => {
     const status = productData.quantity > 0 ? "Available" : "Out of Stock";
 
 
-    
+
     let salePrice = productData.salePrice ? parseFloat(productData.salePrice) : null;
     const discount = productData.discount ? parseFloat(productData.discount) : 0;
     const regularPrice = parseFloat(productData.price);
 
-    
+
     if (!salePrice && discount > 0 && regularPrice > 0) {
       salePrice = regularPrice - (regularPrice * discount / 100);
     }
@@ -149,7 +150,7 @@ export const getProductList = async (req, res) => {
     const minPrice = parseFloat(req.query.minPrice) || 0;
     const maxPrice = parseFloat(req.query.maxPrice) || Number.MAX_VALUE;
 
-    
+
     const filter = {};
 
     if (search) {
@@ -224,7 +225,10 @@ const deleteProduct = async (req, res) => {
 
     if (!id) {
       if (req.headers.accept && req.headers.accept.includes('application/json')) {
-        return res.status(400).json({ message: 'Product ID is required' });
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          success: false,
+          message: 'Product ID is required'
+        });
       }
       return res.redirect('/admin/products?error=Product+ID+is+required');
     }
@@ -232,29 +236,41 @@ const deleteProduct = async (req, res) => {
     const product = await Product.findById(id);
     if (!product) {
       if (req.headers.accept && req.headers.accept.includes('application/json')) {
-        return res.status(404).json({ message: 'Product not found' });
+        return res.status(HttpStatus.NOT_FOUND).json({
+          success: false,
+          message: 'Product not found'
+        });
       }
       return res.redirect('/admin/products?error=Product+not+found');
     }
 
-
+    // Soft delete 
     product.isDeleted = true;
+    product.deletedAt = new Date();
     await product.save();
     console.log(`Product ${id} soft deleted successfully`);
 
     if (req.headers.accept && req.headers.accept.includes('application/json')) {
-      return res.json({ message: 'Product soft deleted successfully' });
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        message: 'Product has been moved to trash successfully',
+        productName: product.productName
+      });
     }
 
     return res.redirect('/admin/products?message=Product+soft+deleted+successfully');
   } catch (error) {
+    console.error('Error soft deleting product:', error);
     if (req.headers.accept && req.headers.accept.includes('application/json')) {
-      return res.status(500).json({ message: 'Failed to soft delete product' });
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: 'Failed to delete product. Please try again.'
+      });
     }
     return res.redirect('/admin/products?error=Failed+to+soft+delete+product');
   }
 };
-
+//product blocking
 const toggleBlockProduct = async (req, res) => {
   try {
     const productId = req.params.id;
@@ -299,12 +315,12 @@ const getEditProductPage = async (req, res) => {
 
 const editProduct = async (req, res) => {
   try {
-   
+
     const productId = req.params.id;
     const productData = req.body;
     console.log('Product ID:', productId);
     console.log('Request Body:', req.body);
-    
+
 
 
     if (!mongoose.Types.ObjectId.isValid(productId)) {
@@ -415,10 +431,143 @@ const editProduct = async (req, res) => {
 };
 
 
+// Restore soft-deleted product
+const restoreProduct = async (req, res) => {
+  try {
+    const { id } = req.body;
+
+    if (!id) {
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          success: false,
+          message: 'Product ID is required'
+        });
+      }
+      return res.redirect('/admin/products?error=Product+ID+is+required');
+    }
+
+    // Find product including soft-deleted ones
+    console.log(`Attempting to restore product with ID: ${id}`);
+    const product = await Product.findByIdWithDeleted(id);
+    console.log(`Found product:`, product ? {
+      id: product._id,
+      name: product.productName,
+      isDeleted: product.isDeleted,
+      deletedAt: product.deletedAt
+    } : 'null');
+
+    if (!product) {
+      console.log(`Product not found for ID: ${id}`);
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return res.status(HttpStatus.NOT_FOUND).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+      return res.redirect('/admin/products?error=Product+not+found');
+    }
+
+    if (!product.isDeleted) {
+      console.log(`Product ${id} is not deleted, cannot restore`);
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          success: false,
+          message: 'Product is not deleted'
+        });
+      }
+      return res.redirect('/admin/products?error=Product+is+not+deleted');
+    }
+
+    // Restore the product
+    console.log(`Restoring product ${id}: setting isDeleted to false`);
+    product.isDeleted = false;
+    product.deletedAt = null;
+    const savedProduct = await product.save({ validateBeforeSave: false });
+    console.log(`Product ${id} restored successfully. New state:`, {
+      id: savedProduct._id,
+      name: savedProduct.productName,
+      isDeleted: savedProduct.isDeleted,
+      deletedAt: savedProduct.deletedAt
+    });
+
+    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        message: 'Product has been restored successfully',
+        productName: product.productName
+      });
+    }
+
+    return res.redirect('/admin/products?message=Product+restored+successfully');
+  } catch (error) {
+    console.error('Error restoring product:', error);
+    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: 'Failed to restore product. Please try again.'
+      });
+    }
+    return res.redirect('/admin/products?error=Failed+to+restore+product');
+  }
+};
+
+// Get soft-deleted products
+const getDeletedProducts = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 4;
+    const skip = (page - 1) * limit;
+
+    // Get soft-deleted products - use includeDeleted option to bypass middleware
+    const deletedProducts = await Product.find({ isDeleted: true }, null, { includeDeleted: true })
+      .populate('category')
+      .sort({ deletedAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const totalProducts = await Product.countDocuments({ isDeleted: true }, { includeDeleted: true });
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    const categories = await Category.find({ isListed: true });
+
+    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+      return res.json({
+        success: true,
+        products: deletedProducts,
+        categories: categories,
+        currentPage: page,
+        totalPages: totalPages,
+        totalProducts: totalProducts
+      });
+    }
+
+    res.render('admin/deleted-products', {
+      products: deletedProducts,
+      categories: categories,
+      currentPage: page,
+      totalPages: totalPages,
+      totalProducts: totalProducts,
+      message: req.query.message || null,
+      error: req.query.error || null
+    });
+  } catch (error) {
+    console.error('Error fetching deleted products:', error);
+    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: 'Failed to load deleted products'
+      });
+    }
+    res.redirect('/admin/products?error=Failed+to+load+deleted+products');
+  }
+};
+
 export {
   getProductAddPage,
   addProducts,
   deleteProduct,
+  restoreProduct,
+  getDeletedProducts,
   toggleBlockProduct,
   getEditProductPage,
   editProduct,

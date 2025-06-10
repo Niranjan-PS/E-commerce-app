@@ -19,8 +19,15 @@ passport.use(new GoogleStrategy({
                 user.accountverified = true;
                 await user.save();
             }
-            console.log('Existing Google user found:', user.email);
-            return done(null, user);
+            // console.log('Existing Google user found:', user.email);
+            // return done(null, user);
+             if (user.isBlocked) {
+        console.log('Blocked Google user tried to log in:', user.email);
+        return done(null, false, { message: 'Your account is blocked' });
+    }
+
+    console.log('Existing Google user found:', user.email);
+    return done(null, user);
         } else {
             // Create new user
             user = new User({
@@ -46,7 +53,12 @@ passport.serializeUser((user, done) => {
 passport.deserializeUser(async (id, done) => {
     try {
         const user = await User.findById(id);
-        done(null, user);
+       
+        if (!user || user.isBlocked) {
+            return done(null, false); 
+        }
+         done(null, user);
+
     } catch (err) {
         done(err, null);
     }

@@ -81,6 +81,42 @@
       border-radius: 50%;
       padding: 2px 6px;
     }
+
+    /* Rating Styles */
+    .product-rating {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+    }
+
+    .stars {
+      display: flex;
+      gap: 1px;
+    }
+
+    .star {
+      font-size: 1rem;
+      color: #ddd;
+    }
+
+    .star.filled {
+      color: #ffc107;
+    }
+
+    .star.half {
+      color: #ffc107;
+      opacity: 0.7;
+    }
+
+    .star.empty {
+      color: #ddd;
+    }
+
+    .rating-text {
+      color: #666;
+      font-size: 0.8rem;
+    }
     .dropdown-menu {
       background-color: #2a2a2a;
       border: 1px solid #444;
@@ -236,14 +272,15 @@
       <form id="searchForm" action="/shop" method="GET">
         <div class="input-group">
           <input type="text" id="searchInput" name="search" class="form-control" placeholder="Search products...">
-          <select name="category" class="form-select">
+          <select name="category" id="categorySelect" class="form-select">
             <option value="">All Categories</option>
             <% categories.forEach(category => { %>
               <option value="<%= category.name %>"><%= category.name %></option>
             <% }) %>
           </select>
-          <button type="submit" class="btn btn-primary" style="background-color: #6200ea; border-color: #6200ea;">Search</button>
+          <button type="submit" id="searchButton" class="btn btn-primary" style="background-color: #6200ea; border-color: #6200ea;" disabled>Search</button>
         </div>
+        <div id="searchError" class="text-danger small mt-2" style="display: none;"></div>
       </form>
     </div>
   </section>
@@ -286,6 +323,35 @@
                   <div class="product-info" style="padding: 1.5rem;">
                     <h5 class="product-title" style="font-weight: 600; margin-bottom: 0.5rem; color: #333;"><%= product.productName %></h5>
                     <p class="product-category text-muted" style="font-size: 0.9rem; margin-bottom: 0.5rem;"><%= product.category ? product.category.name : "Uncategorized" %></p>
+
+                     <!-- Rating Display -->
+                      <div class="product-rating mb-2">
+                        <div class="stars">
+                          <%
+                            const avgRating = product.averageRating || 0;
+                            const fullStars = Math.floor(avgRating);
+                            const hasHalfStar = (avgRating % 1) >= 0.5;
+                            const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+                          %>
+                          <% for(let i = 0; i < fullStars; i++) { %>
+                            <span class="star filled">★</span>
+                          <% } %>
+                          <% if(hasHalfStar) { %>
+                            <span class="star half">★</span>
+                          <% } %>
+                          <% for(let i = 0; i < emptyStars; i++) { %>
+                            <span class="star empty">☆</span>
+                          <% } %>
+                        </div>
+                        <span class="rating-text">
+                          <% if(product.ratingCount > 0) { %>
+                            (<%= avgRating.toFixed(1) %>) <%= product.ratingCount %> rating<%= product.ratingCount !== 1 ? 's' : '' %>
+                          <% } else { %>
+                            No ratings yet
+                          <% } %>
+                        </span>
+                      </div>
+
                     <div class="price-section">
                       <% if (product.salePrice && product.salePrice < product.price) { %>
                         <div class="d-flex align-items-center flex-wrap">
@@ -359,6 +425,34 @@
                   <div class="product-info" style="padding: 1.5rem;">
                     <h5 class="product-title" style="font-weight: 600; margin-bottom: 0.5rem; color: #333;"><%= product.productName %></h5>
                     <p class="product-category text-muted" style="font-size: 0.9rem; margin-bottom: 0.5rem;"><%= product.category ? product.category.name : "Uncategorized" %></p>
+                     <!-- Rating Display -->
+                      <div class="product-rating mb-2">
+                        <div class="stars">
+                          <%
+                            const avgRating = product.averageRating || 0;
+                            const fullStars = Math.floor(avgRating);
+                            const hasHalfStar = (avgRating % 1) >= 0.5;
+                            const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+                          %>
+                          <% for(let i = 0; i < fullStars; i++) { %>
+                            <span class="star filled">★</span>
+                          <% } %>
+                          <% if(hasHalfStar) { %>
+                            <span class="star half">★</span>
+                          <% } %>
+                          <% for(let i = 0; i < emptyStars; i++) { %>
+                            <span class="star empty">☆</span>
+                          <% } %>
+                        </div>
+                        <span class="rating-text">
+                          <% if(product.ratingCount > 0) { %>
+                            (<%= avgRating.toFixed(1) %>) <%= product.ratingCount %> rating<%= product.ratingCount !== 1 ? 's' : '' %>
+                          <% } else { %>
+                            No ratings yet
+                          <% } %>
+                        </span>
+                      </div>
+
                     <div class="price-section">
                       <% if (product.salePrice && product.salePrice < product.price) { %>
                         <div class="d-flex align-items-center flex-wrap">
@@ -445,49 +539,142 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <!-- No Back Button Prevention Script -->
   <script src="/js/no-back-button.js"></script>
+  <!-- Global User Status Checker for Google Auth Users -->
+  <script src="/js/user-status-checker.js"></script>
   <script>
-    // Check user status periodically to handle real-time blocking
-    function checkUserStatus() {
-      fetch('/check-status', {
-        method: 'GET',
+
+  async function checkUserStatus() {
+    try {
+      const res = await fetch('/api/v1/user/check-status',{
+         headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
         credentials: 'include'
-      })
-      .then(response => response.json())
-      .then(data => {
-        // Only logout if user is specifically blocked, not just unauthenticated
-        if (data.blocked === true) {
-          // User has been blocked, show message and redirect
-          Swal.fire({
-            icon: 'error',
-            title: 'Account Blocked',
-            text: data.message || 'Your account has been blocked. Please contact support.',
-            confirmButtonColor: '#d33',
-            allowOutsideClick: false,
-            allowEscapeKey: false
-          }).then(() => {
-            // Clear any local storage/session data
-            document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-            window.location.href = '/login?error=Account has been blocked';
-          });
-        }
-      })
-      .catch(error => {
-        console.error('Error checking user status:', error);
-        // Don't logout on network errors
       });
+      const contentType = res.headers.get("content-type");
+
+    // If response is HTML (like a login page), don't parse as JSON
+    if (!contentType || !contentType.includes("application/json")) {
+      console.warn("Non-JSON response received, possibly redirected to login.");
+      window.location.href = "/logout";
+      return;
+    }
+    
+      const data = await res.json();
+      console.log("----this is  the live data----",data)
+
+      if (!data.authenticated || data.blocked) {
+        alert("You have been blocked by the admin. You will be logged out.");
+        window.location.href = "/logout"; // triggers server logout
+      }
+    } catch (err) {
+      console.error("Error checking user status:", err);
+    }
+  }
+
+  // Check every 15 seconds
+  setInterval(checkUserStatus, 15000);
+
+
+
+    
+
+
+    // Search validation function
+    function validateSearchInput(searchValue) {
+      // Allow empty search (show all products)
+      if (!searchValue) {
+        return { isValid: true, message: '' };
+      }
+
+      // Check if input contains only spaces (before trimming)
+      if (/^\s+$/.test(searchValue)) {
+        return { isValid: false, message: 'Search cannot contain only spaces' };
+      }
+
+      const trimmedValue = searchValue.trim();
+
+      // After trimming, if empty, it's valid (same as empty search)
+      if (trimmedValue === '') {
+        return { isValid: true, message: '' };
+      }
+
+      // Check if input contains at least one alphabetic character
+      if (!/[a-zA-Z]/.test(trimmedValue)) {
+        return { isValid: false, message: 'Please enter a valid search keyword with at least one letter' };
+      }
+
+      // Check minimum length (at least 2 characters after trimming)
+      if (trimmedValue.length < 2) {
+        return { isValid: false, message: 'Search keyword must be at least 2 characters long' };
+      }
+
+      return { isValid: true, message: '' };
     }
 
-    // Check user status every 30 seconds
-    setInterval(checkUserStatus, 30000);
+    // Update search button state
+    function updateSearchButtonState() {
+      const searchInput = document.getElementById('searchInput');
+      const searchButton = document.getElementById('searchButton');
+      const searchError = document.getElementById('searchError');
+      const categorySelect = document.getElementById('categorySelect');
 
-    window.addEventListener('pageshow', (event) => {
-      if (event.persisted) {
-        window.location.reload();
+      const searchValue = searchInput.value;
+      const categoryValue = categorySelect.value;
+      const validation = validateSearchInput(searchValue);
+
+      // Show/hide error message
+      if (!validation.isValid) {
+        searchError.textContent = validation.message;
+        searchError.style.display = 'block';
+        searchInput.classList.add('is-invalid');
+      } else {
+        searchError.style.display = 'none';
+        searchInput.classList.remove('is-invalid');
       }
-    });
+
+      // Enable button if search is valid OR if category is selected OR if search is empty
+      const shouldEnableButton = validation.isValid || categoryValue.trim() !== '' || searchValue.trim() === '';
+      searchButton.disabled = !shouldEnableButton;
+    }
 
     // Initialize pagination on page load
     document.addEventListener('DOMContentLoaded', () => {
+      // Initialize search validation
+      const searchForm = document.getElementById('searchForm');
+      const searchInput = document.getElementById('searchInput');
+      const categorySelect = document.getElementById('categorySelect');
+
+      if (searchForm && searchInput && categorySelect) {
+        // Add real-time validation
+        searchInput.addEventListener('input', updateSearchButtonState);
+        categorySelect.addEventListener('change', updateSearchButtonState);
+
+        // Initial validation
+        updateSearchButtonState();
+
+        // Form submission validation
+        searchForm.addEventListener('submit', function(e) {
+          const searchValue = searchInput.value;
+          const validation = validateSearchInput(searchValue);
+
+          if (!validation.isValid) {
+            e.preventDefault();
+            Swal.fire({
+              icon: 'warning',
+              title: 'Invalid Search',
+              text: validation.message,
+              confirmButtonColor: '#6200ea'
+            });
+            return false;
+          }
+
+          // If valid, allow form submission
+          return true;
+        });
+      }
+
       // Only initialize pagination controls, don't load content via AJAX on first load
       // The server already renders the first page correctly with sale prices
       initializePaginationControls('featured');
@@ -528,14 +715,14 @@
         });
     }
 
-    // Initialize pagination controls without loading content
+    // Initialize pagination controls and add event listeners
     function initializePaginationControls(section) {
       const paginationContainer = document.getElementById(section === 'featured' ? 'featuredPagination' : 'latestPagination');
       if (paginationContainer) {
         // Set up basic pagination for page 1 (server-rendered content)
         paginationContainer.innerHTML = `
           <li class="page-item disabled">
-            <a class="page-link" href="#" aria-label="Previous">
+            <a class="page-link" href="#" data-page="0" data-section="${section}" aria-label="Previous">
               <span aria-hidden="true">«</span>
             </a>
           </li>
@@ -548,221 +735,264 @@
             </a>
           </li>
         `;
-      }
-    }
 
-    // Search form now redirects to shop page directly
+        // Add event listeners to pagination links
+        paginationContainer.addEventListener('click', function(e) {
+          e.preventDefault();
+          const link = e.target.closest('a[data-page]');
+          if (link && !link.closest('.page-item').classList.contains('disabled')) {
+            const page = parseInt(link.dataset.page);
+            const sectionType = link.dataset.section;
+            if (page && sectionType) {
+              loadProducts(sectionType, page);
+            }
+          }
 
-    // Event delegation for pagination clicks
-    document.addEventListener('click', (event) => {
-      const pageLink = event.target.closest('.page-link');
-      if (pageLink) {
-        event.preventDefault();
-        const page = parseInt(pageLink.getAttribute('data-page'));
-        const section = pageLink.getAttribute('data-section');
-        if (page && section) {
-          handlePagination(page, section, false);
-        }
-      }
-    });
-
-    // Handle pagination with AJAX
-    async function handlePagination(page, section, isInitialLoad = false) {
-      const searchInput = document.getElementById('searchInput');
-      const searchQuery = searchInput ? searchInput.value.trim() : '';
-      const categorySelect = document.querySelector('select[name="category"]');
-      const categoryFilter = categorySelect ? categorySelect.value.trim() : '';
-
-      const params = new URLSearchParams();
-      params.append('page', page);
-      if (searchQuery) params.append('search', searchQuery);
-      if (categoryFilter) params.append('category', categoryFilter);
-      params.append('section', section);
-
-      const url = '/home?' + params.toString();
-      console.log(`Pagination URL for ${section}:`, url);
-
-      Swal.fire({
-        title: 'Loading page...',
-        allowOutsideClick: false,
-        didOpen: () => {
-          Swal.showLoading();
-        }
-      });
-
-      try {
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
+          // Handle previous/next button clicks
+          const prevNextLink = e.target.closest('a[aria-label="Previous"], a[aria-label="Next"]');
+          if (prevNextLink && !prevNextLink.closest('.page-item').classList.contains('disabled')) {
+            const page = parseInt(prevNextLink.dataset.page);
+            const sectionType = prevNextLink.dataset.section;
+            if (page && sectionType) {
+              loadProducts(sectionType, page);
+            }
           }
         });
-        console.log(`Pagination Response Status for ${section}:`, response.status, `Content-Type:`, response.headers.get('Content-Type'));
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP error! Status: ${response.status}, Response: ${errorText.slice(0, 50)}...`);
-        }
-        if (response.headers.get('Content-Type')?.includes('text/html')) {
-          const text = await response.text();
-          throw new Error(`Expected JSON, received HTML: ${text.slice(0, 50)}...`);
-        }
-        const data = await response.json();
-        console.log(`Pagination Response Data for ${section}:`, data);
-
-        if (!data || typeof data !== 'object') {
-          throw new Error('Invalid response format');
-        }
-        if (data.success) {
-          updateProductGrid(data, section);
-          updatePaginationControls(data, section);
-          if (!isInitialLoad) {
-            Swal.fire({
-              icon: 'success',
-              title: 'Page Loaded!',
-              text: `Loaded page ${data.currentPage} successfully.`,
-              confirmButtonColor: '#6200ea',
-              timer: 1500,
-              timerProgressBar: true
-            });
-          } else {
-            Swal.close(); // Close the loading popup on initial load
-          }
-        } else {
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: data.message || 'Failed to load page.',
-            confirmButtonColor: '#6200ea'
-          });
-        }
-      } catch (error) {
-        console.error(`Pagination Fetch Error for ${section}:`, error.message, error.stack);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'Failed to load products. The server returned an unexpected response. Please try again later.',
-          confirmButtonColor: '#6200ea'
-        });
-        throw error;
       }
     }
 
-    // Function to update the product grid dynamically
-    function updateProductGrid(data, section) {
-      const productGrid = document.getElementById(section === 'featured' ? 'featuredProductGrid' : 'latestProductGrid');
-
-      if (!productGrid) {
-        console.error(`Product grid for ${section} not found`);
-        return;
-      }
-
-      // Validate data
-      if (!data.products || !Array.isArray(data.products)) {
-        console.error(`Invalid products data for ${section}:`, data.products);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'Invalid product data received.',
-          confirmButtonColor: '#6200ea'
-        });
-        return;
-      }
-
-      // Update product grid
-      productGrid.innerHTML = '';
-      if (data.products.length === 0) {
-        productGrid.innerHTML = '<div class="col-12 text-center"><p>No products available at the moment.</p></div>';
-        Swal.fire({
-          icon: 'info',
-          title: 'No Products',
-          text: 'No products found.',
-          confirmButtonColor: '#6200ea'
-        });
-      } else {
-        data.products.forEach(product => {
-          const productCard = `
-            <div class="col-md-3">
-              <div class="card product-card" style="border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: transform 0.3s, box-shadow 0.3s; margin-bottom: 1.5rem;">
-                <a href="/product/${product._id}" class="text-decoration-none">
-                  <div class="product-thumb" style="height: 200px; overflow: hidden;">
-                    ${product.productImage && product.productImage.length > 0
-                      ? `<img src="/Uploads/product-images/${product.productImage[0]}" alt="${product.productName}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;" />`
-                      : `<img src="/images/default-product.jpg" alt="No image" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;" />`}
-                  </div>
-                  <div class="product-info" style="padding: 1.5rem;">
-                    <h5 class="product-title" style="font-weight: 600; margin-bottom: 0.5rem; color: #333;">${product.productName}</h5>
-                    <p class="product-category text-muted" style="font-size: 0.9rem; margin-bottom: 0.5rem;">${typeof product.category === 'string' ? product.category : (product.category ? product.category.name : "Uncategorized")}</p>
-                    <div class="price-section">
-                      ${product.salePrice && product.salePrice < product.price
-                        ? `<div class="d-flex align-items-center flex-wrap">
-                             <span class="sale-price text-success fw-bold fs-5">₹${product.salePrice.toFixed(2)}</span>
-                             <span class="original-price text-muted text-decoration-line-through ms-2" style="font-size: 0.9rem;">₹${product.price.toFixed(2)}</span>
-                           </div>
-                           ${product.discount > 0
-                             ? `<div class="mt-1"><span class="discount-badge bg-danger text-white px-2 py-1 rounded" style="font-size: 0.7rem; font-weight: bold;">-${product.discount}% OFF</span></div>`
-                             : ''}
-                           <div class="savings-text mt-1">
-                             <small class="text-success fw-bold">Save ₹${(product.price - product.salePrice).toFixed(2)}</small>
-                           </div>`
-                        : `<span class="product-price text-primary fw-bold" style="font-size: 1.2rem;">₹${product.price.toFixed(2)}</span>`}
-                    </div>
-                  </div>
-                </a>
-              </div>
-            </div>
-          `;
-          productGrid.innerHTML += productCard;
-        });
-      }
-    }
-
-    // Function to update pagination controls
-    function updatePaginationControls(data, section) {
+    // Load products via AJAX for pagination
+    function loadProducts(section, page) {
+      const gridContainer = document.getElementById(section === 'featured' ? 'featuredProductGrid' : 'latestProductGrid');
       const paginationContainer = document.getElementById(section === 'featured' ? 'featuredPagination' : 'latestPagination');
 
-      if (!paginationContainer) {
-        console.error(`Pagination container for ${section} not found`);
+      if (!gridContainer) return;
+
+      // Add smooth fade transition
+      gridContainer.style.opacity = '0.7';
+      gridContainer.style.transition = 'opacity 0.3s ease';
+
+      // Make AJAX request
+      fetch(`/?page=${page}&section=${section}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        }
+      })
+      .then(response => {
+        // Check if user was blocked during the request
+        if (response.status === 401 || response.status === 403) {
+          checkUserStatus(); // Trigger immediate status check
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.success) {
+          // Check if current page has no products and we're not on page 1
+          if ((!data.products || data.products.length === 0) && page > 1) {
+            // Silently navigate to page 1 if current page is empty (no notifications)
+            loadProducts(section, 1);
+            return;
+          }
+
+          // Update product grid
+          updateProductGrid(gridContainer, data.products);
+
+          // Update pagination
+          updatePagination(paginationContainer, data.currentPage, data.totalPages, section);
+
+          // Restore opacity for smooth transition
+          gridContainer.style.opacity = '1';
+
+          // No scrolling - keep user's current position
+        } else {
+          gridContainer.innerHTML = '<div class="col-12 text-center"><p class="text-danger">Failed to load products</p></div>';
+          gridContainer.style.opacity = '1';
+        }
+      })
+      .catch(error => {
+        console.error('Error loading products:', error);
+        gridContainer.innerHTML = '<div class="col-12 text-center"><p class="text-danger">Error loading products</p></div>';
+        gridContainer.style.opacity = '1';
+      });
+    }
+
+    // Update product grid with new products
+    function updateProductGrid(container, products) {
+      if (!products || products.length === 0) {
+        container.innerHTML = '<div class="col-12 text-center"><p>No products available</p></div>';
         return;
       }
 
-      paginationContainer.innerHTML = '';
+      const productHTML = products.map(product => `
+        <div class="col-md-3">
+          <div class="card product-card" style="border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: transform 0.3s, box-shadow 0.3s; margin-bottom: 1.5rem; position: relative;">
+            <button class="btn btn-outline-danger wishlist-btn" onclick="addToWishlist('${product._id}')" style="position: absolute; top: 10px; right: 10px; z-index: 10; border-radius: 50%; width: 40px; height: 40px; padding: 0; background: rgba(255,255,255,0.9); border: 1px solid #dc3545;">
+              <i class="fas fa-heart" style="color: #dc3545;"></i>
+            </button>
+            <a href="/product/${product._id}" class="text-decoration-none">
+              <div class="product-thumb" style="height: 200px; overflow: hidden;">
+                ${product.productImage && product.productImage.length > 0
+                  ? `<img src="/Uploads/product-images/${product.productImage[0]}" alt="${product.productName}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;" />`
+                  : `<img src="/images/default-product.jpg" alt="No image" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;" />`
+                }
+              </div>
+              <div class="product-info" style="padding: 1.5rem;">
+                <h5 class="product-title" style="font-weight: 600; margin-bottom: 0.5rem; color: #333;">${product.productName}</h5>
+                <p class="product-category text-muted" style="font-size: 0.9rem; margin-bottom: 0.5rem;">${product.category ? (product.category.name || product.category) : 'Uncategorized'}</p>
 
-      // Previous button
-      paginationContainer.innerHTML += `
-        <li class="page-item ${data.currentPage === 1 ? 'disabled' : ''}">
-          <a class="page-link" href="#" data-page="${data.currentPage - 1}" data-section="${section}" aria-label="Previous">
+                <!-- Rating Display -->
+                <div class="product-rating mb-2">
+                  <div class="stars">
+                    ${(() => {
+                      const avgRating = product.averageRating || 0;
+                      const fullStars = Math.floor(avgRating);
+                      const hasHalfStar = (avgRating % 1) >= 0.5;
+                      const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+                      let starsHTML = '';
+
+                      // Full stars
+                      for(let i = 0; i < fullStars; i++) {
+                        starsHTML += '<span class="star filled">★</span>';
+                      }
+
+                      // Half star
+                      if(hasHalfStar) {
+                        starsHTML += '<span class="star half">★</span>';
+                      }
+
+                      // Empty stars
+                      for(let i = 0; i < emptyStars; i++) {
+                        starsHTML += '<span class="star empty">☆</span>';
+                      }
+
+                      return starsHTML;
+                    })()}
+                  </div>
+                  <span class="rating-text">
+                    ${product.ratingCount > 0
+                      ? `(${(product.averageRating || 0).toFixed(1)}) ${product.ratingCount} rating${product.ratingCount !== 1 ? 's' : ''}`
+                      : 'No ratings yet'
+                    }
+                  </span>
+                </div>
+
+                <div class="price-section">
+                  ${product.salePrice && product.salePrice < product.price
+                    ? `<div class="d-flex align-items-center flex-wrap">
+                         <span class="sale-price text-success fw-bold fs-5">₹${product.salePrice.toFixed(2)}</span>
+                         <span class="original-price text-muted text-decoration-line-through ms-2" style="font-size: 0.9rem;">₹${product.price.toFixed(2)}</span>
+                       </div>
+                       ${product.discount > 0
+                         ? `<div class="mt-1"><span class="discount-badge bg-danger text-white px-2 py-1 rounded" style="font-size: 0.7rem; font-weight: bold;">-${product.discount}% OFF</span></div>`
+                         : ''
+                       }
+                       <div class="savings-text mt-1">
+                         <small class="text-success fw-bold">Save ₹${(product.price - product.salePrice).toFixed(2)}</small>
+                       </div>`
+                    : `<span class="product-price text-primary fw-bold" style="font-size: 1.2rem;">₹${product.price.toFixed(2)}</span>`
+                  }
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
+      `).join('');
+
+      container.innerHTML = productHTML;
+    }
+
+    // Update pagination controls
+    function updatePagination(container, currentPage, totalPages, section) {
+      if (!container) {
+        return;
+      }
+
+      // If no pages or only one page, hide pagination
+      if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+      }
+
+      let paginationHTML = '';
+
+      // Previous button - always show, disable when on first page
+      paginationHTML += `
+        <li class="page-item ${currentPage <= 1 ? 'disabled' : ''}">
+          <a class="page-link" href="#" data-page="${currentPage - 1}" data-section="${section}" aria-label="Previous" title="Previous Page">
             <span aria-hidden="true">«</span>
           </a>
         </li>
       `;
 
-      // Page numbers
-      const maxPagesToShow = 5;
-      let startPage = Math.max(1, data.currentPage - Math.floor(maxPagesToShow / 2));
-      let endPage = Math.min(data.totalPages, startPage + maxPagesToShow - 1);
+      // Show page numbers with smart pagination
+      const maxVisiblePages = 5;
+      let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+      let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
-      if (endPage - startPage + 1 < maxPagesToShow) {
-        startPage = Math.max(1, endPage - maxPagesToShow + 1);
+      // Adjust start page if we're near the end
+      if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
       }
 
+      // First page and ellipsis if needed
+      if (startPage > 1) {
+        paginationHTML += `
+          <li class="page-item">
+            <a class="page-link" href="#" data-page="1" data-section="${section}">1</a>
+          </li>
+        `;
+        if (startPage > 2) {
+          paginationHTML += `
+            <li class="page-item disabled">
+              <span class="page-link">...</span>
+            </li>
+          `;
+        }
+      }
+
+      // Page numbers
       for (let i = startPage; i <= endPage; i++) {
-        paginationContainer.innerHTML += `
-          <li class="page-item ${data.currentPage === i ? 'active' : ''}">
-            <a class="page-link" href="#" data-page="${i}" data-section="${section}">${i}</a>
+        paginationHTML += `
+          <li class="page-item ${i === currentPage ? 'active' : ''}">
+            <a class="page-link" href="#" data-page="${i}" data-section="${section}" title="Page ${i}">${i}</a>
           </li>
         `;
       }
 
-      // Next button
-      paginationContainer.innerHTML += `
-        <li class="page-item ${data.currentPage === data.totalPages ? 'disabled' : ''}">
-          <a class="page-link" href="#" data-page="${data.currentPage + 1}" data-section="${section}" aria-label="Next">
+      // Last page and ellipsis if needed
+      if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+          paginationHTML += `
+            <li class="page-item disabled">
+              <span class="page-link">...</span>
+            </li>
+          `;
+        }
+        paginationHTML += `
+          <li class="page-item">
+            <a class="page-link" href="#" data-page="${totalPages}" data-section="${section}">${totalPages}</a>
+          </li>
+        `;
+      }
+
+      // Next button - always show, disable when on last page
+      paginationHTML += `
+        <li class="page-item ${currentPage >= totalPages ? 'disabled' : ''}">
+          <a class="page-link" href="#" data-page="${currentPage + 1}" data-section="${section}" aria-label="Next" title="Next Page">
             <span aria-hidden="true">»</span>
           </a>
         </li>
       `;
+
+      container.innerHTML = paginationHTML;
     }
+
+    // Search form now redirects to shop page directly
+
 
     // Add to wishlist function
     function addToWishlist(productId) {

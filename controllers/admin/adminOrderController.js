@@ -3,6 +3,7 @@ import { User } from "../../model/userModel.js";
 import { Product } from "../../model/productModel.js";
 import { catchAsyncError } from "../../middlewares/catchAsync.js";
 import ErrorHandler from "../../middlewares/error.js";
+import HttpStatus from "../../helpers/httpStatus.js";
 
 // Get admin orders dashboard
 export const getAdminOrders = catchAsyncError(async (req, res, next) => {
@@ -126,7 +127,7 @@ export const updateOrderStatus = catchAsyncError(async (req, res, next) => {
     const validStatuses = ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
 
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: 'Invalid order status'
       });
@@ -135,7 +136,7 @@ export const updateOrderStatus = catchAsyncError(async (req, res, next) => {
     const order = await Order.findById(orderId);
 
     if (!order) {
-      return res.status(404).json({
+      return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: 'Order not found'
       });
@@ -165,7 +166,7 @@ export const updateOrderStatus = catchAsyncError(async (req, res, next) => {
 
     await order.save();
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: `Order status updated to ${status}`,
       order: {
@@ -177,7 +178,7 @@ export const updateOrderStatus = catchAsyncError(async (req, res, next) => {
 
   } catch (error) {
     console.error("Error updating order status:", error);
-    return res.status(500).json({
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to update order status'
     });

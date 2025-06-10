@@ -5,12 +5,12 @@ import ErrorHandler from "../../middlewares/error.js";
 import PDFDocument from 'pdfkit';
 import { updateStockOnOrder } from "../admin/inventoryController.js";
 
-// Get order details
+
 export const getOrderDetails = catchAsyncError(async (req, res, next) => {
   try {
     const { orderId } = req.params;
 
-    // Get order details with populated product information
+   
     const order = await Order.findOne({
       _id: orderId,
       user: req.user._id
@@ -20,7 +20,7 @@ export const getOrderDetails = catchAsyncError(async (req, res, next) => {
       return res.redirect('/?error=Order not found');
     }
 
-    // Add return eligibility to order (call methods before converting to object)
+    
     const canBeCancelled = order.canBeCancelled();
     const canRequestReturn = order.canRequestReturn();
 
@@ -63,7 +63,7 @@ export const getUserOrders = catchAsyncError(async (req, res, next) => {
         ]
       });
     } else {
-      // Get user's orders with optional status filter
+      
       let query = { user: req.user._id };
       if (status) {
         query.orderStatus = status;

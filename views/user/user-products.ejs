@@ -15,16 +15,66 @@
       font-weight: bold;
       text-decoration: underline;
     }
+
+    /* Rating Styles */
+    .product-rating {
+      display: flex;
+      align-items: center;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .stars {
+      display: flex;
+      gap: 1px;
+    }
+
+    .star {
+      font-size: 1rem;
+      color: #ddd;
+    }
+
+    .star.filled {
+      color: #ffc107;
+    }
+
+    .star.half {
+      color: #ffc107;
+      opacity: 0.7;
+    }
+
+    .star.empty {
+      color: #ddd;
+    }
+
+    .rating-text {
+      color: #666;
+      font-size: 0.8rem;
+    }
+
+    .price-info {
+      margin-top: 0.5rem;
+    }
+
+    .product-card {
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .product-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
   </style>
 </head>
 <body>
   <div class="container py-4">
     <h2 class="mb-4">All Products</h2>
 
-    
+
     <form id="filterForm" class="row mb-4" method="GET" action="/user-products">
       <div class="col-md-4">
         <input type="text" class="form-control" id="searchInput" name="search" placeholder="Search product..." value="<%= searchQuery %>">
+        <div id="searchError" class="text-danger small mt-1" style="display: none;"></div>
       </div>
       <div class="col-md-4">
         <select class="form-select" id="categorySelect" name="category">
@@ -35,12 +85,26 @@
         </select>
       </div>
       <div class="col-md-4">
-        <button type="button" onclick="submitFilterForm()" class="btn btn-primary w-100">Filter</button>
+        <button type="button" id="filterButton" onclick="submitFilterForm()" class="btn btn-primary w-100" disabled>Filter</button>
       </div>
     </form>
 
+    <!-- Results Info -->
+    <div class="results-info text-muted mb-3">
+      <% if (products && products.length > 0) { %>
+        <%
+          const start = ((currentPage - 1) * 8) + 1;
+          const end = Math.min(start + products.length - 1, products.length > 0 ? start + products.length - 1 : 0);
+        %>
+        Showing <%= start %>-<%= end %> of <%= products.length %> products
+        <% if (searchQuery) { %>
+          for "<%= searchQuery %>"
+        <% } %>
+      <% } %>
+    </div>
+
     <!-- Product Grid -->
-    <div class="row row-cols-1 row-cols-md-4 g-4" id="productGrid">
+    <div class="row row-cols-1 row-cols-md-4 g-4 products-grid-container" id="productGrid">
       <% if (products.length === 0) { %>
         <!-- Show "No products found" with SweetAlert2 -->
         <script>
@@ -62,6 +126,43 @@
             <div class="card-body">
               <h5 class="card-title"><%= product.productName %></h5>
               <p class="card-text"><%= product.description %></p>
+
+              <!-- Rating Display -->
+              <div class="product-rating mb-2">
+                <div class="stars">
+                  <%
+                    const avgRating = product.averageRating || 0;
+                    const fullStars = Math.floor(avgRating);
+                    const hasHalfStar = (avgRating % 1) >= 0.5;
+                    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+                  %>
+                  <% for(let i = 0; i < fullStars; i++) { %>
+                    <span class="star filled">★</span>
+                  <% } %>
+                  <% if(hasHalfStar) { %>
+                    <span class="star half">★</span>
+                  <% } %>
+                  <% for(let i = 0; i < emptyStars; i++) { %>
+                    <span class="star empty">☆</span>
+                  <% } %>
+                </div>
+                <span class="rating-text ms-2">
+                  <% if(product.ratingCount > 0) { %>
+                    (<%= avgRating.toFixed(1) %>) <%= product.ratingCount %> rating<%= product.ratingCount !== 1 ? 's' : '' %>
+                  <% } else { %>
+                    No ratings yet
+                  <% } %>
+                </span>
+              </div>
+
+              <div class="price-info">
+                <% if (product.salePrice && product.salePrice < product.price) { %>
+                  <span class="sale-price text-success fw-bold">₹<%= product.salePrice.toFixed(2) %></span>
+                  <span class="original-price text-muted text-decoration-line-through ms-2">₹<%= product.price.toFixed(2) %></span>
+                <% } else { %>
+                  <span class="product-price text-primary fw-bold">₹<%= product.price.toFixed(2) %></span>
+                <% } %>
+              </div>
             </div>
             <div class="card-footer">
               <a href="/products/<%= product._id %>" class="btn btn-sm btn-outline-primary w-100">View Details</a>
@@ -71,36 +172,116 @@
       <% }); %>
     </div>
 
-    <!-- Pagination -->
-    <nav class="mt-4">
-      <ul class="pagination justify-content-center">
-        <% for (let i = 1; i <= totalPages; i++) { %>
-          <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-            <a class="page-link" href="/user-products?page=<%= i %>&search=<%= encodeURIComponent(searchQuery) %>&category=<%= encodeURIComponent(categoryFilter) %>"><%= i %></a>
-          </li>
-        <% } %>
-      </ul>
-    </nav>
+    <!-- Pagination Container -->
+    <div class="pagination-container">
+      <% if (totalPages > 1) { %>
+        <nav class="mt-4">
+          <ul class="pagination justify-content-center">
+            <% for (let i = 1; i <= totalPages; i++) { %>
+              <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                <a class="page-link" href="#" data-pagination-page="<%= i %>"><%= i %></a>
+              </li>
+            <% } %>
+          </ul>
+        </nav>
+      <% } %>
+    </div>
   </div>
 
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <!-- SweetAlert2 JS -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Pagination Utilities -->
+  <script src="/js/pagination-utils.js"></script>
+  <script src="/js/user-products-pagination.js"></script>
   <script>
+    // Search validation function
+    function validateSearchInput(searchValue) {
+      // Allow empty search (show all products)
+      if (!searchValue) {
+        return { isValid: true, message: '' };
+      }
+
+      // Check if input contains only spaces (before trimming)
+      if (/^\s+$/.test(searchValue)) {
+        return { isValid: false, message: 'Search cannot contain only spaces' };
+      }
+
+      const trimmedValue = searchValue.trim();
+
+      // After trimming, if empty, it's valid (same as empty search)
+      if (trimmedValue === '') {
+        return { isValid: true, message: '' };
+      }
+
+      // Check if input contains at least one alphabetic character
+      if (!/[a-zA-Z]/.test(trimmedValue)) {
+        return { isValid: false, message: 'Please enter a valid search keyword with at least one letter' };
+      }
+
+      // Check minimum length (at least 2 characters after trimming)
+      if (trimmedValue.length < 2) {
+        return { isValid: false, message: 'Search keyword must be at least 2 characters long' };
+      }
+
+      return { isValid: true, message: '' };
+    }
+
+    // Update search button state
+    function updateSearchButtonState() {
+      const searchInput = document.getElementById('searchInput');
+      const filterButton = document.getElementById('filterButton');
+      const searchError = document.getElementById('searchError');
+      const categorySelect = document.getElementById('categorySelect');
+
+      const searchValue = searchInput.value;
+      const categoryValue = categorySelect.value;
+      const validation = validateSearchInput(searchValue);
+
+      // Show/hide error message
+      if (!validation.isValid) {
+        searchError.textContent = validation.message;
+        searchError.style.display = 'block';
+        searchInput.classList.add('is-invalid');
+      } else {
+        searchError.style.display = 'none';
+        searchInput.classList.remove('is-invalid');
+      }
+
+      // Enable button if search is valid OR if category is selected OR if search is empty
+      const shouldEnableButton = validation.isValid || categoryValue.trim() !== '' || searchValue.trim() === '';
+      filterButton.disabled = !shouldEnableButton;
+    }
+
     // Handle filter form submission with SweetAlert2
     function submitFilterForm() {
       const form = document.getElementById('filterForm');
       const searchInput = document.getElementById('searchInput');
       const categorySelect = document.getElementById('categorySelect');
 
+      // Validate search input
+      const searchValue = searchInput.value;
+      const validation = validateSearchInput(searchValue);
+
+      if (!validation.isValid) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Invalid Search',
+          text: validation.message,
+          confirmButtonColor: '#6200ea'
+        });
+        return;
+      }
+
       // Manually construct query parameters
       const params = new URLSearchParams();
-      const searchValue = searchInput.value.trim();
+      const trimmedSearchValue = searchValue.trim();
       const categoryValue = categorySelect.value.trim();
 
-      if (searchValue) {
-        params.append('search', searchValue);
+      if (trimmedSearchValue) {
+        params.append('search', trimmedSearchValue);
       }
       if (categoryValue) {
         params.append('category', categoryValue);
@@ -175,11 +356,48 @@
         });
     }
 
+    // Initialize search validation on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const searchInput = document.getElementById('searchInput');
+      const categorySelect = document.getElementById('categorySelect');
+
+      // Add real-time validation
+      searchInput.addEventListener('input', updateSearchButtonState);
+      categorySelect.addEventListener('change', updateSearchButtonState);
+
+      // Initial validation
+      updateSearchButtonState();
+
+      // Allow Enter key to submit if valid
+      searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const validation = validateSearchInput(this.value);
+          if (validation.isValid || this.value.trim() === '') {
+            submitFilterForm();
+          } else {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Invalid Search',
+              text: validation.message,
+              confirmButtonColor: '#6200ea'
+            });
+          }
+        }
+      });
+    });
+
     // Automatically load products on page load if search is empty
     window.addEventListener('load', () => {
       const searchInput = document.getElementById('searchInput');
       if (!searchInput.value.trim()) {
-        submitFilterForm();
+        // Only auto-submit if there's no search term
+        setTimeout(() => {
+          const filterButton = document.getElementById('filterButton');
+          if (!filterButton.disabled) {
+            submitFilterForm();
+          }
+        }, 100);
       }
     });
   </script>

@@ -313,6 +313,43 @@
         font-size: 12px;
       }
     }
+
+    /* Validation feedback styles */
+    .invalid-feedback {
+      display: block !important;
+      width: 100%;
+      margin-top: 0.25rem;
+      font-size: 0.875rem;
+      color: #dc3545;
+    }
+
+    .form-control.is-invalid {
+      border-color: #dc3545;
+      padding-right: calc(1.5em + 0.75rem);
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right calc(0.375em + 0.1875rem) center;
+      background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+    }
+
+    .form-control.is-valid {
+      border-color: #198754;
+      padding-right: calc(1.5em + 0.75rem);
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='m2.3 6.73.94-.94 1.44 1.44L7.4 4.5l.94.94L4.66 9.17z'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right calc(0.375em + 0.1875rem) center;
+      background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+    }
+
+    .form-control.is-invalid:focus {
+      border-color: #dc3545;
+      box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+
+    .form-control.is-valid:focus {
+      border-color: #198754;
+      box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+    }
   </style>
 </head>
 <body>
@@ -549,6 +586,8 @@
 
 
     async function handleAddCategory(event) {
+      event.preventDefault(); // Always prevent default to handle validation first
+
       const form = document.getElementById('categoryForm');
       const nameInput = document.getElementById('name');
       const descriptionInput = document.getElementById('description');
@@ -556,9 +595,10 @@
       const descriptionValue = descriptionInput.value.trim();
       const addBtn = document.getElementById('addCategoryBtn');
 
-      // Client-side validation
+      // Comprehensive client-side validation
+
+      // 1. Required field validation
       if (!nameValue) {
-        event.preventDefault();
         Swal.fire({
           icon: 'error',
           title: 'Validation Error',
@@ -568,8 +608,8 @@
         return false;
       }
 
+      // 2. Length validation
       if (nameValue.length < 2) {
-        event.preventDefault();
         Swal.fire({
           icon: 'error',
           title: 'Validation Error',
@@ -580,7 +620,6 @@
       }
 
       if (nameValue.length > 30) {
-        event.preventDefault();
         Swal.fire({
           icon: 'error',
           title: 'Validation Error',
@@ -590,18 +629,99 @@
         return false;
       }
 
-      if (descriptionValue.length > 100) {
-        event.preventDefault();
+      // 3. Space validation - cannot be only spaces
+      if (/^\s+$/.test(nameValue)) {
         Swal.fire({
           icon: 'error',
           title: 'Validation Error',
-          text: 'Description must be less than 100 characters'
+          text: 'Category name cannot contain only spaces'
         });
-        descriptionInput.focus();
+        nameInput.focus();
         return false;
       }
 
-      // If validation passes, show loading and allow form submission
+      // 4. Character validation - only letters, numbers, spaces, and hyphens
+      if (!/^[a-zA-Z0-9\s-]+$/.test(nameValue)) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Validation Error',
+          text: 'Category name can only contain letters, numbers, spaces, and hyphens'
+        });
+        nameInput.focus();
+        return false;
+      }
+
+      // 5. Cannot start or end with spaces
+      if (nameValue !== nameValue.trim()) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Validation Error',
+          text: 'Category name cannot start or end with spaces'
+        });
+        nameInput.focus();
+        return false;
+      }
+
+      // 6. Cannot have multiple consecutive spaces
+      if (/\s{2,}/.test(nameValue)) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Validation Error',
+          text: 'Category name cannot have multiple consecutive spaces'
+        });
+        nameInput.focus();
+        return false;
+      }
+
+      // 7. Must start with a letter
+      if (!/^[a-zA-Z]/.test(nameValue)) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Validation Error',
+          text: 'Category name must start with a letter'
+        });
+        nameInput.focus();
+        return false;
+      }
+
+      // 8. Check for duplicate names (case-insensitive)
+      const existingCategories = Array.from(document.querySelectorAll('#categoryTableBody tr td:first-child'))
+        .map(td => td.textContent.trim().toLowerCase());
+
+      if (existingCategories.includes(nameValue.toLowerCase())) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Duplicate Category',
+          text: 'A category with this name already exists (case-insensitive check)'
+        });
+        nameInput.focus();
+        return false;
+      }
+
+      // 9. Description validation (if provided)
+      if (descriptionValue) {
+        if (descriptionValue.length > 100) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Validation Error',
+            text: 'Description must be less than 100 characters'
+          });
+          descriptionInput.focus();
+          return false;
+        }
+
+        if (/^\s+$/.test(descriptionValue)) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Validation Error',
+            text: 'Description cannot contain only spaces'
+          });
+          descriptionInput.focus();
+          return false;
+        }
+      }
+
+      // If all validations pass, show loading and submit form
       addBtn.disabled = true;
       addBtn.textContent = 'Adding...';
 
@@ -613,9 +733,165 @@
         }
       });
 
-      // Let the form submit normally
+      // Submit the form programmatically
+      form.submit();
       return true;
     }
+
+    // Real-time validation for category name
+    document.addEventListener('DOMContentLoaded', function() {
+      const nameInput = document.getElementById('name');
+      const descriptionInput = document.getElementById('description');
+
+      // Add validation feedback elements
+      if (!document.getElementById('name-feedback')) {
+        const nameFeedback = document.createElement('div');
+        nameFeedback.id = 'name-feedback';
+        nameFeedback.className = 'invalid-feedback';
+        nameFeedback.style.display = 'none';
+        nameInput.parentNode.appendChild(nameFeedback);
+      }
+
+      if (!document.getElementById('description-feedback')) {
+        const descFeedback = document.createElement('div');
+        descFeedback.id = 'description-feedback';
+        descFeedback.className = 'invalid-feedback';
+        descFeedback.style.display = 'none';
+        descriptionInput.parentNode.appendChild(descFeedback);
+      }
+
+      // Real-time validation for name input
+      nameInput.addEventListener('input', function() {
+        const value = this.value;
+        const trimmedValue = value.trim();
+        const feedback = document.getElementById('name-feedback');
+
+        // Reset styles
+        this.classList.remove('is-invalid', 'is-valid');
+        feedback.style.display = 'none';
+
+        if (value.length === 0) {
+          return; // Don't show validation for empty field while typing
+        }
+
+        let isValid = true;
+        let errorMessage = '';
+
+        // Check various validation rules
+        if (trimmedValue.length < 2) {
+          isValid = false;
+          errorMessage = 'Must be at least 2 characters';
+        } else if (trimmedValue.length > 30) {
+          isValid = false;
+          errorMessage = 'Must be less than 30 characters';
+        } else if (/^\s+$/.test(value)) {
+          isValid = false;
+          errorMessage = 'Cannot contain only spaces';
+        } else if (!/^[a-zA-Z0-9\s-]*$/.test(trimmedValue)) {
+          isValid = false;
+          errorMessage = 'Only letters, numbers, spaces, and hyphens allowed';
+        } else if (!/^[a-zA-Z]/.test(trimmedValue)) {
+          isValid = false;
+          errorMessage = 'Must start with a letter';
+        } else if (/\s{2,}/.test(trimmedValue)) {
+          isValid = false;
+          errorMessage = 'Cannot have multiple consecutive spaces';
+        } else {
+          // Check for duplicates (case-insensitive)
+          const existingCategories = Array.from(document.querySelectorAll('#categoryTableBody tr td:first-child'))
+            .map(td => td.textContent.trim().toLowerCase());
+
+          if (existingCategories.includes(trimmedValue.toLowerCase())) {
+            isValid = false;
+            errorMessage = 'Category name already exists';
+          }
+        }
+
+        // Apply validation feedback
+        if (isValid) {
+          this.classList.add('is-valid');
+        } else {
+          this.classList.add('is-invalid');
+          feedback.textContent = errorMessage;
+          feedback.style.display = 'block';
+        }
+      });
+
+      // Real-time validation for description
+      descriptionInput.addEventListener('input', function() {
+        const value = this.value;
+        const trimmedValue = value.trim();
+        const feedback = document.getElementById('description-feedback');
+
+        // Reset styles
+        this.classList.remove('is-invalid', 'is-valid');
+        feedback.style.display = 'none';
+
+        if (value.length === 0) {
+          return; // Don't show validation for empty field
+        }
+
+        let isValid = true;
+        let errorMessage = '';
+
+        if (value.length > 100) {
+          isValid = false;
+          errorMessage = 'Must be less than 100 characters';
+        } else if (/^\s+$/.test(value)) {
+          isValid = false;
+          errorMessage = 'Cannot contain only spaces';
+        }
+
+        // Apply validation feedback
+        if (isValid) {
+          this.classList.add('is-valid');
+        } else {
+          this.classList.add('is-invalid');
+          feedback.textContent = errorMessage;
+          feedback.style.display = 'block';
+        }
+      });
+
+      // Debounced AJAX check for duplicate category names
+      let debounceTimer;
+      nameInput.addEventListener('input', function() {
+        const value = this.value.trim();
+
+        if (value.length < 2) return;
+
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(async () => {
+          try {
+            const response = await fetch(`/admin/check-category-name?name=${encodeURIComponent(value)}`, {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/json'
+              }
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              const feedback = document.getElementById('name-feedback');
+
+              if (data.exists) {
+                this.classList.remove('is-valid');
+                this.classList.add('is-invalid');
+                feedback.textContent = 'Category name already exists';
+                feedback.style.display = 'block';
+              } else if (this.classList.contains('is-invalid') && feedback.textContent === 'Category name already exists') {
+                // Clear the duplicate error if it was the only issue
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+                feedback.style.display = 'none';
+              }
+            }
+          } catch (error) {
+            console.log('Could not check for duplicate category names:', error);
+            // Fail silently for duplicate check
+          }
+        }, 500);
+      });
+    });
 
     // Toggle category status
     async function toggleCategoryStatus(element, categoryId) {

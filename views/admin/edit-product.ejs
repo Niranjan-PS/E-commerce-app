@@ -6,6 +6,8 @@
   <title>Edit Perfume Product - Admin</title>
   <!-- Bootstrap 5 CSS CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <!-- SweetAlert2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <style>
     .error-message {
       color: #dc3545;
@@ -204,92 +206,183 @@
 
   <!-- Bootstrap 5 JS CDN (with Popper.js) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <!-- SweetAlert2 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
-    document.getElementById('editProductForm').addEventListener('submit', function (e) {
-      let isValid = true;
+    document.getElementById('editProductForm').addEventListener('submit', async function (e) {
+      e.preventDefault(); // Always prevent default to handle validation first
+
+      // Clear previous errors
       const errors = document.querySelectorAll('.error-message');
       errors.forEach(error => error.classList.add('d-none'));
 
-      // Validate Product Name
+      // Validate all fields and collect errors
+      const validationErrors = await validateAllFields();
+
+      // If validation passes, show loading and submit
+      if (validationErrors.length === 0) {
+        // Show loading state
+        Swal.fire({
+          title: 'Updating Product...',
+          html: 'Please wait while we update your product.',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          showConfirmButton: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        // Submit the form
+        this.submit();
+      } else {
+        // Show validation errors with SweetAlert
+        await showValidationErrors(validationErrors);
+      }
+    });
+
+    // Comprehensive validation function for edit product
+    async function validateAllFields() {
+      const errors = [];
+
+      // Product name validation
       const productName = document.getElementById('productName').value.trim();
       if (!productName) {
-        document.getElementById('productNameError').classList.remove('d-none');
-        isValid = false;
+        errors.push({ field: 'Product Name', message: 'Product name is required' });
+      } else if (productName.length < 2) {
+        errors.push({ field: 'Product Name', message: 'Product name must be at least 2 characters' });
+      } else if (productName.length > 50) {
+        errors.push({ field: 'Product Name', message: 'Product name must be less than 50 characters' });
+      } else if (!/^[A-Za-z0-9\s-]+$/.test(productName)) {
+        errors.push({ field: 'Product Name', message: 'Product name can only contain letters, numbers, spaces, and hyphens' });
+      } else if (!/^[A-Za-z]/.test(productName)) {
+        errors.push({ field: 'Product Name', message: 'Product name must start with a letter' });
       }
 
-      // Validate Description
+      // Description validation
       const description = document.getElementById('description').value.trim();
       if (!description) {
-        document.getElementById('descriptionError').classList.remove('d-none');
-        isValid = false;
+        errors.push({ field: 'Description', message: 'Description is required' });
+      } else if (description.length < 10) {
+        errors.push({ field: 'Description', message: 'Description must be at least 10 characters long' });
+      } else if (description.length > 500) {
+        errors.push({ field: 'Description', message: 'Description must be less than 500 characters' });
       }
 
-      // Validate Category
+      // Category validation
       const category = document.getElementById('category').value;
       if (!category) {
-        document.getElementById('categoryError').classList.remove('d-none');
-        isValid = false;
+        errors.push({ field: 'Category', message: 'Category is required' });
       }
 
-      // Validate Price
+      // Price validation
       const price = parseFloat(document.getElementById('price').value);
-      if (isNaN(price) || price < 0) {
-        document.getElementById('priceError').classList.remove('d-none');
-        isValid = false;
+      if (isNaN(price) || price <= 0) {
+        errors.push({ field: 'Price', message: 'Price must be a valid positive number' });
+      } else if (price > 1000000) {
+        errors.push({ field: 'Price', message: 'Price cannot exceed ₹10,00,000' });
       }
 
-      // Validate Sale Price
+      // Sale price validation
       const salePrice = document.getElementById('salePrice').value.trim();
-      if (salePrice && (isNaN(parseFloat(salePrice)) || parseFloat(salePrice) < 0)) {
-        document.getElementById('salePriceError').classList.remove('d-none');
-        isValid = false;
-      } else if (salePrice && !isNaN(price) && parseFloat(salePrice) >= price) {
-        document.getElementById('salePriceError').classList.remove('d-none');
-        isValid = false;
+      if (salePrice) {
+        if (isNaN(parseFloat(salePrice)) || parseFloat(salePrice) < 0) {
+          errors.push({ field: 'Sale Price', message: 'Sale price must be a valid positive number' });
+        } else if (!isNaN(price) && parseFloat(salePrice) >= price) {
+          errors.push({ field: 'Sale Price', message: 'Sale price must be less than regular price' });
+        }
       }
 
-      // Validate Discount
+      // Discount validation
       const discount = document.getElementById('discount').value.trim();
-      if (discount && (isNaN(parseFloat(discount)) || parseFloat(discount) < 0 || parseFloat(discount) > 100)) {
-        document.getElementById('discountError').classList.remove('d-none');
-        isValid = false;
+      if (discount) {
+        if (isNaN(parseFloat(discount)) || parseFloat(discount) < 0 || parseFloat(discount) > 100) {
+          errors.push({ field: 'Discount', message: 'Discount must be between 0 and 100' });
+        }
       }
 
+      // Quantity validation
       const quantity = parseInt(document.getElementById('quantity').value);
       if (isNaN(quantity) || quantity < 0) {
-        document.getElementById('quantityError').classList.remove('d-none');
-        isValid = false;
+        errors.push({ field: 'Quantity', message: 'Quantity must be a valid non-negative integer' });
+      } else if (quantity > 10000) {
+        errors.push({ field: 'Quantity', message: 'Quantity cannot exceed 10,000' });
       }
 
-       const productImages = JSON.parse('<%- JSON.stringify(product && product.productImage ? product.productImage : []) %>');
-  const imageInputs = [1, 2, 3, 4].map(i => document.getElementById(`image${i}`)).filter(input => input !== null);
-  const existingImages = Array.isArray(productImages) ? productImages.length : 0;
-  let newImageCount = 0;
+      // Image validation
+      const productImages = JSON.parse('<%- JSON.stringify(product && product.productImage ? product.productImage : []) %>');
+      const imageInputs = [1, 2, 3, 4].map(i => document.getElementById(`image${i}`)).filter(input => input !== null);
+      const existingImages = Array.isArray(productImages) ? productImages.length : 0;
+      let validNewImages = 0;
 
       imageInputs.forEach((input, index) => {
         if (input.files.length > 0) {
           const file = input.files[0];
           const validTypes = ['image/jpeg', 'image/png'];
           if (!validTypes.includes(file.type)) {
-            document.getElementById(`image${index + 1}Error`).classList.remove('d-none');
-            isValid = false;
+            errors.push({ field: `Image ${index + 1}`, message: 'Please upload a valid JPG or PNG image' });
           } else {
-            newImageCount++;
+            validNewImages++;
           }
         }
       });
 
-
-      const replacedImages = imageInputs.reduce((count, input, idx) => {
-        return count + (input.files.length > 0 && productImages[idx] ? 1 : 0);
-      }, 0);
-      // We'll handle the image count validation on the server side
-      // No need to validate here as we're keeping existing images if not replaced
-
-      if (!isValid) {
-        e.preventDefault();
+      // Check total image count (existing + new valid images)
+      const totalValidImages = existingImages + validNewImages;
+      if (totalValidImages < 3) {
+        errors.push({ field: 'Images', message: 'Product must have at least 3 images' });
       }
-    });
+
+      return errors;
+    }
+
+    // Function to show validation errors with SweetAlert
+    async function showValidationErrors(errors) {
+      if (errors.length === 1) {
+        // Single error - show simple alert
+        await Swal.fire({
+          icon: 'error',
+          title: 'Validation Error',
+          text: `${errors[0].field}: ${errors[0].message}`,
+          confirmButtonColor: '#dc3545',
+          confirmButtonText: 'Fix Issue'
+        });
+      } else {
+        // Multiple errors - show detailed list
+        const errorList = errors.map(error => `• <strong>${error.field}:</strong> ${error.message}`).join('<br>');
+        await Swal.fire({
+          icon: 'error',
+          title: 'Multiple Validation Errors',
+          html: `Please fix the following issues:<br><br>${errorList}`,
+          confirmButtonColor: '#dc3545',
+          confirmButtonText: 'Fix Issues',
+          width: '600px'
+        });
+      }
+
+      // Focus on the first error field
+      if (errors.length > 0) {
+        const firstErrorField = errors[0].field.toLowerCase().replace(' ', '');
+        const fieldMap = {
+          'productname': 'productName',
+          'description': 'description',
+          'category': 'category',
+          'price': 'price',
+          'saleprice': 'salePrice',
+          'discount': 'discount',
+          'quantity': 'quantity'
+        };
+
+        const fieldId = fieldMap[firstErrorField];
+        if (fieldId) {
+          const field = document.getElementById(fieldId);
+          if (field) {
+            field.focus();
+            field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      }
+    }
 
     // Preview new images
     [1, 2, 3, 4].forEach(i => {

@@ -8,7 +8,7 @@ export const isAuthenticated = catchAsyncError(async(req,res,next)=>{
     
     authNoCache(req, res, () => {});
 
-    const {token}= req.cookies
+    const token= req.cookies.userToken
     console.log("cokkiess",req.cookies)
     if(!token){
        return res.redirect('/login')
@@ -22,13 +22,13 @@ export const isAuthenticated = catchAsyncError(async(req,res,next)=>{
 
        
         if(!req.user) {
-            res.clearCookie('token');
+            res.clearCookie('userToken');
             return res.redirect('/login?error=User not found');
         }
 
         
         if(req.user.isBlocked) {
-            res.clearCookie('token');
+            res.clearCookie('userToken');
            
             if(req.headers['x-requested-with'] === 'XMLHttpRequest' || req.headers.accept?.includes('application/json')) {
                 return res.status(401).json({
@@ -43,7 +43,7 @@ export const isAuthenticated = catchAsyncError(async(req,res,next)=>{
         console.log("user is ",req.user)
         next()
     } catch (error) {
-        res.clearCookie('token');
+        res.clearCookie('userToken');
         return res.redirect('/login?error=Invalid session');
     }
 })
@@ -52,7 +52,7 @@ export const isAdminAuthenticated = catchAsyncError(async(req,res,next)=>{
     
     authNoCache(req, res, () => {});
 
-    const {token}= req.cookies
+    const token= req.cookies.adminToken
     console.log("Admin cookies:",req.cookies)
     if(!token){
        return res.redirect('/admin/admin-login')
@@ -65,7 +65,7 @@ export const isAdminAuthenticated = catchAsyncError(async(req,res,next)=>{
         const admin = await User.findById(userId)
 
         if(!admin || !admin.isAdmin) {
-            res.clearCookie('token');
+            res.clearCookie('adminToken');
             return res.redirect('/admin/admin-login')
         }
 
@@ -73,7 +73,7 @@ export const isAdminAuthenticated = catchAsyncError(async(req,res,next)=>{
         console.log("admin is ",req.admin)
         next()
     } catch (error) {
-        res.clearCookie('token');
+        res.clearCookie('adminToken');
         return res.redirect('/admin/admin-login')
     }
 })

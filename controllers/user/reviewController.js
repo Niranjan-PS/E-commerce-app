@@ -2,6 +2,7 @@ import { Review } from "../../model/reviewModel.js";
 import { Product } from "../../model/productModel.js";
 import { catchAsyncError } from "../../middlewares/catchAsync.js";
 import ErrorHandler from "../../middlewares/error.js";
+import HttpStatus from "../../helpers/httpStatus.js";
 
 // Add a review
 export const addReview = catchAsyncError(async (req, res, next) => {
@@ -18,14 +19,14 @@ export const addReview = catchAsyncError(async (req, res, next) => {
 
     // Validate input
     if (!productId || !rating || !comment) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: 'Product ID, rating, and comment are required'
       });
     }
 
     if (rating < 1 || rating > 5) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: 'Rating must be between 1 and 5'
       });
@@ -34,7 +35,7 @@ export const addReview = catchAsyncError(async (req, res, next) => {
     // Check if product exists
     const product = await Product.findById(productId);
     if (!product) {
-      return res.status(404).json({
+      return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: 'Product not found'
       });
@@ -47,13 +48,13 @@ export const addReview = catchAsyncError(async (req, res, next) => {
     });
 
     if (existingReview) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: 'You have already reviewed this product'
       });
     }
 
-    // Create new review
+   
     const review = new Review({
       user: userId,
       product: productId,
@@ -63,20 +64,16 @@ export const addReview = catchAsyncError(async (req, res, next) => {
 
     await review.save();
 
-    // Update product rating
-    const reviewStats = await Review.calculateAverageRating(productId);
-    await Product.findByIdAndUpdate(productId, {
-      rating: reviewStats.averageRating,
-      reviewCount: reviewStats.reviewCount
-    });
+    
+    await Product.updateProductRating(productId);
 
-    // Populate user info for response
+    
     await review.populate('user', 'name email');
 
     console.log('Review created with user:', review.user);
     console.log('Current user from req.user:', req.user);
 
-    res.status(201).json({
+    res.status(HttpStatus.CREATED).json({
       success: true,
       message: 'Review added successfully',
       review: {
@@ -92,38 +89,46 @@ export const addReview = catchAsyncError(async (req, res, next) => {
     });
   } catch (error) {
     console.error('Error adding review:', error);
-    return next(new ErrorHandler('Failed to add review', 500));
+    return next(new ErrorHandler('Failed to add review', HttpStatus.INTERNAL_SERVER_ERROR));
   }
 });
 
-// Get reviews for a product
+
 export const getProductReviews = catchAsyncError(async (req, res, next) => {
   try {
     const { productId } = req.params;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
+    const rating = parseInt(req.query.rating) || null; 
     const skip = (page - 1) * limit;
 
-    // Check if product exists
+    
     const product = await Product.findById(productId);
     if (!product) {
-      return res.status(404).json({
+      return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: 'Product not found'
       });
     }
 
-    // Get reviews with pagination
-    const reviews = await Review.find({
+    const reviewFilter = {
       product: productId,
       isApproved: true
-    })
+    };
+
+   
+    if (rating && rating >= 1 && rating <= 5) {
+      reviewFilter.rating = rating;
+    }
+
+   
+    const reviews = await Review.find(reviewFilter)
       .populate('user', 'name email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    // Ensure user names are properly formatted
+    
     const formattedReviews = reviews.map(review => ({
       _id: review._id,
       rating: review.rating,
@@ -135,14 +140,11 @@ export const getProductReviews = catchAsyncError(async (req, res, next) => {
       }
     }));
 
-    const totalReviews = await Review.countDocuments({
-      product: productId,
-      isApproved: true
-    });
+    const totalReviews = await Review.countDocuments(reviewFilter);
 
     const totalPages = Math.ceil(totalReviews / limit);
 
-    // Get rating distribution
+
     const ratingDistribution = await Review.aggregate([
       { $match: { product: product._id, isApproved: true } },
       { $group: { _id: '$rating', count: { $sum: 1 } } },
@@ -159,7 +161,10 @@ export const getProductReviews = catchAsyncError(async (req, res, next) => {
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1
       },
-      ratingDistribution
+      ratingDistribution,
+      filters: {
+        rating: rating
+      }
     });
   } catch (error) {
     console.error('Error fetching reviews:', error);
@@ -167,53 +172,49 @@ export const getProductReviews = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Update a review
+
 export const updateReview = catchAsyncError(async (req, res, next) => {
   try {
     const { reviewId } = req.params;
     const { rating, comment } = req.body;
     const userId = req.user._id;
 
-    // Find the review
+
     const review = await Review.findById(reviewId);
     if (!review) {
-      return res.status(404).json({
+      return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: 'Review not found'
       });
     }
 
-    // Check if user owns the review
+
     if (review.user.toString() !== userId.toString()) {
-      return res.status(403).json({
+      return res.status(HttpStatus.FORBIDDEN).json({
         success: false,
         message: 'You can only update your own reviews'
       });
     }
 
-    // Update review
+
     if (rating) review.rating = parseInt(rating);
     if (comment) review.comment = comment.trim();
 
     await review.save();
 
-    // Update product rating
-    const reviewStats = await Review.calculateAverageRating(review.product);
-    await Product.findByIdAndUpdate(review.product, {
-      rating: reviewStats.averageRating,
-      reviewCount: reviewStats.reviewCount
-    });
+    // Update product rating 
+    await Product.updateProductRating(review.product);
 
     await review.populate('user', 'name');
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: 'Review updated successfully',
       review
     });
   } catch (error) {
     console.error('Error updating review:', error);
-    return next(new ErrorHandler('Failed to update review', 500));
+    return next(new ErrorHandler('Failed to update review', HttpStatus.INTERNAL_SERVER_ERROR));
   }
 });
 
@@ -226,15 +227,15 @@ export const deleteReview = catchAsyncError(async (req, res, next) => {
     // Find the review
     const review = await Review.findById(reviewId);
     if (!review) {
-      return res.status(404).json({
+      return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: 'Review not found'
       });
     }
 
-    // Check if user owns the review
+    
     if (review.user.toString() !== userId.toString()) {
-      return res.status(403).json({
+      return res.status(HttpStatus.FORBIDDEN).json({
         success: false,
         message: 'You can only delete your own reviews'
       });
@@ -244,18 +245,14 @@ export const deleteReview = catchAsyncError(async (req, res, next) => {
     await Review.findByIdAndDelete(reviewId);
 
     // Update product rating
-    const reviewStats = await Review.calculateAverageRating(productId);
-    await Product.findByIdAndUpdate(productId, {
-      rating: reviewStats.averageRating,
-      reviewCount: reviewStats.reviewCount
-    });
+    await Product.updateProductRating(productId);
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: 'Review deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting review:', error);
-    return next(new ErrorHandler('Failed to delete review', 500));
+    return next(new ErrorHandler('Failed to delete review', HttpStatus.INTERNAL_SERVER_ERROR));
   }
 });

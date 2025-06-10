@@ -30,7 +30,7 @@ export const categoryInfo = catchAsyncError(async (req, res, next) => {
             });
         }
 
-        // Render the full page for non-AJAX requests
+       
         res.render("admin/category", {
             categories: categoryData,
             currentPage: page,
@@ -52,15 +52,11 @@ export const categoryInfo = catchAsyncError(async (req, res, next) => {
 });
 
 export const addCategory = catchAsyncError(async (req, res, next) => {
-    console.log("=== ADD CATEGORY DEBUG ===");
-    console.log("Request method:", req.method);
-    console.log("Content-Type:", req.headers['content-type']);
+  
     console.log("Request body:", req.body);
-    console.log("Request body keys:", Object.keys(req.body || {}));
-    console.log("Request body values:", Object.values(req.body || {}));
 
     try {
-        // Extract and validate name field
+        
         const name = req.body?.name;
         const description = req.body?.description || '';
 
@@ -97,7 +93,7 @@ export const addCategory = catchAsyncError(async (req, res, next) => {
             return res.redirect('/admin/category?error=Description+must+be+less+than+100+characters');
         }
 
-        // Check for existing category (case-insensitive)
+        
         const existingCategory = await Category.findOne({
             name: { $regex: new RegExp(`^${trimmedName}$`, 'i') }
         });
@@ -107,7 +103,7 @@ export const addCategory = catchAsyncError(async (req, res, next) => {
             return res.redirect('/admin/category?error=Category+already+exists');
         }
 
-        // Create new category
+       
         const newCategory = new Category({
             name: trimmedName,
             description: trimmedDescription
@@ -121,13 +117,13 @@ export const addCategory = catchAsyncError(async (req, res, next) => {
     } catch (error) {
         console.error("Error in addCategory:", error);
 
-        // Handle validation errors
+        
         if (error.name === 'ValidationError') {
             const errorMessage = Object.values(error.errors).map(err => err.message).join(', ');
             return res.redirect(`/admin/category?error=${encodeURIComponent(errorMessage)}`);
         }
 
-        // Handle duplicate key errors
+        
         if (error.code === 11000) {
             return res.redirect('/admin/category?error=Category+already+exists');
         }

@@ -23,9 +23,9 @@ app.use(session({
 }));
 
 
-// Enhanced global cache control middleware
+
 app.use((req, res, next) => {
-  // Comprehensive cache prevention
+  
   res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, private, max-age=0");
   res.set("Pragma", "no-cache");
   res.set("Expires", "-1");
@@ -34,7 +34,7 @@ app.use((req, res, next) => {
   res.setHeader('Last-Modified', new Date().toUTCString());
   res.setHeader('ETag', '');
 
-  // Security headers
+ 
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
@@ -66,10 +66,10 @@ app.use(express.static(path.join(__dirname, 'public'), {
   }
 }));
 
-app.use((req, res, next) => {
-  console.log("Incoming request body:", req.body);
-  next();
-});
+// app.use((req, res, next) => {
+//   console.log("Incoming request body:", req.body);
+//   next();
+// });
 
 app.use("/", userRoutes);
 app.use('/api/v1/user', userRoutes);

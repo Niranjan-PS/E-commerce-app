@@ -69,7 +69,7 @@
 
       .input-group {
         position: relative;
-        margin-bottom: 1rem;
+        margin-bottom: 1.25rem;
       }
 
       .password-container {
@@ -263,6 +263,30 @@
           width: 100%;
         }
       }
+
+      .form-text {
+        color: var(--text-secondary);
+        font-size: 0.7rem;
+        margin-top: 0.3rem;
+        display: block;
+        line-height: 1.2;
+        opacity: 0.7;
+        font-weight: 400;
+      }
+
+      .error-message {
+        color: #dc3545;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+        display: block;
+        min-height: 1rem;
+        font-weight: 500;
+      }
+
+      .is-invalid {
+        border-color: var(--error) !important;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+      }
     </style>
    <!-- <img src="/public/images/vecteezy_cool-cat-wearing-sunglasses-against-blue-background_47023082.jpeg" alt="Cool cat with sunglasses" /> -->
   </head>
@@ -317,11 +341,13 @@
         <div class="input-group">
           <input type="text" name="userName" class="form-control" placeholder="User Name" required />
           <span class="error-message"></span>
+          <small class="form-text">2-30 characters, must start with a letter</small>
         </div>
 
         <div class="input-group">
-          <input type="tel" name="phone" class="form-control" placeholder="Mobile" required />
+          <input type="tel" name="phone" class="form-control" placeholder="+91XXXXXXXXXX" required />
           <span class="error-message"></span>
+          <small class="form-text">Indian mobile number</small>
         </div>
 
         <div class="input-group">
@@ -337,6 +363,7 @@
             </button>
           </div>
           <span class="error-message"></span>
+          <small class="form-text">8+ characters with uppercase, lowercase, number</small>
         </div>
 
         <div class="input-group">
@@ -449,12 +476,23 @@
   });
 
   document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM Content Loaded - JavaScript is running');
+
     const form = document.querySelector('form');
+    console.log('Form found:', form);
+
     const userName = form.userName;
     const phone = form.phone;
     const email = form.email;
     const password = form.password;
     const confirmPassword = form.confirmPassword;
+
+    console.log('Form elements found:');
+    console.log('- userName:', userName);
+    console.log('- phone:', phone);
+    console.log('- email:', email);
+    console.log('- password:', password);
+    console.log('- confirmPassword:', confirmPassword);
 
     // Helper to show error
     function showError(input, message) {
@@ -474,71 +512,284 @@
       }
     }
 
-    // Username validation (only letters and spaces)
+    // Username validation (letters, spaces, and underscores allowed in registration)
+    userName.addEventListener('input', () => {
+      const value = userName.value.trim();
+
+      // Reset validation state
+      clearError(userName);
+
+      if (value.length === 0) {
+        return; // Don't validate empty field while typing
+      }
+
+      let isValid = true;
+      let errorMessage = '';
+
+      // Length validation
+      if (value.length < 2) {
+        isValid = false;
+        errorMessage = 'Username must be at least 2 characters long';
+      } else if (value.length > 30) {
+        isValid = false;
+        errorMessage = 'Username must be less than 30 characters long';
+      }
+      // Character validation - allow letters, numbers, spaces, and optionally underscores
+      else if (!/^[A-Za-z0-9 _]+$/.test(value)) {
+        isValid = false;
+        errorMessage = 'Username can only contain letters, numbers, spaces, and underscores';
+      }
+      // Must start with a letter (not number or underscore)
+      else if (!/^[A-Za-z]/.test(value)) {
+        isValid = false;
+        errorMessage = 'Username must start with a letter';
+      }
+      // Prevent number-only usernames (must contain at least one letter)
+      else if (!/[A-Za-z]/.test(value)) {
+        isValid = false;
+        errorMessage = 'Username must contain at least one letter';
+      }
+
+      if (!isValid) {
+        console.log('Username validation failed:', errorMessage, 'Value:', value);
+        showError(userName, errorMessage);
+      }
+    });
+
+    // Phone validation with comprehensive rules
+    phone.addEventListener('input', () => {
+      const value = phone.value.trim();
+
+      // Reset validation state
+      clearError(phone);
+
+      if (value.length === 0) {
+        return; // Don't validate empty field while typing
+      }
+
+      let isValid = true;
+      let errorMessage = '';
+
+      // Check basic format first
+      if (!/^\+91\d{10}$/.test(value)) {
+        isValid = false;
+        errorMessage = 'Phone number must be in format +91XXXXXXXXXX (10 digits after +91)';
+      }
+      // Check for valid Indian mobile number patterns (more lenient)
+      else if (!/^\+91[6-9]\d{9}$/.test(value)) {
+        isValid = false;
+        errorMessage = 'Please enter a valid Indian mobile number starting with 6, 7, 8, or 9';
+      }
+
+      if (!isValid) {
+        console.log('Phone validation failed:', errorMessage, 'Value:', value);
+        showError(phone, errorMessage);
+      }
+    });
+
+    // Email validation with comprehensive rules
+    email.addEventListener('input', () => {
+      const value = email.value.trim();
+
+      // Reset validation state
+      clearError(email);
+
+      if (value.length === 0) {
+        return; // Don't validate empty field while typing
+      }
+
+      let isValid = true;
+      let errorMessage = '';
+
+      // Basic email format validation
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        isValid = false;
+        errorMessage = 'Please enter a valid email address';
+      }
+      // Check for underscores in email (NOT allowed in other forms, but OK in registration)
+      else if (value.includes('_')) {
+        // Underscores are allowed in registration, but we'll note this for other forms
+        // This is just for consistency - no error here
+      }
+      // Email length validation
+      else if (value.length > 254) {
+        isValid = false;
+        errorMessage = 'Email address is too long (maximum 254 characters)';
+      }
+      // Local part (before @) validation
+      else if (value.split('@')[0].length > 64) {
+        isValid = false;
+        errorMessage = 'Email username part is too long (maximum 64 characters)';
+      }
+      // Check for consecutive dots
+      else if (/\.{2,}/.test(value)) {
+        isValid = false;
+        errorMessage = 'Email cannot contain consecutive dots';
+      }
+      // Check for dots at start or end of local part
+      else if (/^\.|\.$|@\.|\.\@/.test(value)) {
+        isValid = false;
+        errorMessage = 'Email cannot start or end with dots around @ symbol';
+      }
+
+      if (!isValid) {
+        console.log('Email validation failed:', errorMessage, 'Value:', value);
+        showError(email, errorMessage);
+      }
+    });
+
+    // Password validation with comprehensive rules
+    password.addEventListener('input', () => {
+      const value = password.value;
+
+      // Reset validation state
+      clearError(password);
+
+      if (value.length === 0) {
+        return; // Don't validate empty field while typing
+      }
+
+      let isValid = true;
+      let errorMessage = '';
+
+      // Length validation
+      if (value.length < 8) {
+        isValid = false;
+        errorMessage = 'Password must be at least 8 characters long';
+      } else if (value.length > 32) {
+        isValid = false;
+        errorMessage = 'Password must be less than 32 characters long';
+      }
+      // Simplified password validation - just basic requirements
+      else if (!/(?=.*[a-z])/.test(value)) {
+        isValid = false;
+        errorMessage = 'Password must contain at least one lowercase letter';
+      } else if (!/(?=.*[A-Z])/.test(value)) {
+        isValid = false;
+        errorMessage = 'Password must contain at least one uppercase letter';
+      } else if (!/(?=.*\d)/.test(value)) {
+        isValid = false;
+        errorMessage = 'Password must contain at least one number';
+      }
+
+      if (!isValid) {
+        console.log('Password validation failed:', errorMessage, 'Value length:', value.length);
+        showError(password, errorMessage);
+      }
+
+      // Also validate confirm password if it has a value
+      if (confirmPassword.value) {
+        confirmPassword.dispatchEvent(new Event('input'));
+      }
+    });
+
+    // Confirm password validation
+    confirmPassword.addEventListener('input', () => {
+      const value = confirmPassword.value;
+      const passwordValue = password.value;
+
+      // Reset validation state
+      clearError(confirmPassword);
+
+      if (value.length === 0) {
+        return; // Don't validate empty field while typing
+      }
+
+      let isValid = true;
+      let errorMessage = '';
+
+      if (passwordValue !== value) {
+        isValid = false;
+        errorMessage = 'Passwords do not match';
+      }
+
+      if (!isValid) {
+        console.log('Confirm password validation failed:', errorMessage);
+        showError(confirmPassword, errorMessage);
+      }
+    });
+
+    // Add blur event listeners for required field validation
     userName.addEventListener('blur', () => {
-      const nameRegex = /^[A-Za-z ]+$/;
-      if (!nameRegex.test(userName.value.trim())) {
-        showError(userName, 'Username must contain only letters.');
-      } else {
-        clearError(userName);
+      if (userName.value.trim() === '') {
+        console.log('Username is empty on blur');
+        showError(userName, 'Username is required');
       }
     });
 
-    // Phone validation (10 digits)
     phone.addEventListener('blur', () => {
-      const phoneRegex = /^\+91\d{10}$/;
-      if (!phoneRegex.test(phone.value.trim())) {
-        showError(phone, 'Enter a valid 10-digit phone number.');
-      } else {
-        clearError(phone);
+      if (phone.value.trim() === '') {
+        console.log('Phone is empty on blur');
+        showError(phone, 'Phone number is required');
       }
     });
 
-    // Email validation
     email.addEventListener('blur', () => {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email.value.trim())) {
-        showError(email, 'Enter a valid email address.');
-      } else {
-        clearError(email);
+      if (email.value.trim() === '') {
+        console.log('Email is empty on blur');
+        showError(email, 'Email is required');
       }
     });
 
-    // Password validation (8–32 characters)
     password.addEventListener('blur', () => {
-      if (password.value.length < 8 || password.value.length > 32) {
-        showError(password, 'Password must be between 8 to 32 characters.');
-      } else {
-        clearError(password);
+      if (password.value === '') {
+        console.log('Password is empty on blur');
+        showError(password, 'Password is required');
       }
     });
 
-    // Confirm password match
     confirmPassword.addEventListener('blur', () => {
-      if (confirmPassword.value !== password.value) {
-        showError(confirmPassword, 'Passwords do not match.');
-      } else {
-        clearError(confirmPassword);
+      if (confirmPassword.value === '') {
+        console.log('Confirm password is empty on blur');
+        showError(confirmPassword, 'Confirm password is required');
       }
     });
 
     // Final check on form submit - Use AJAX to handle JSON responses
     form.addEventListener('submit', async (e) => {
+      console.log('Form submit event triggered');
       e.preventDefault(); // Prevent default form submission
 
+      // Debug: Log current form values
+      console.log('Form submission attempt with values:');
+      console.log('Username:', userName.value);
+      console.log('Phone:', phone.value);
+      console.log('Email:', email.value);
+      console.log('Password length:', password.value.length);
+      console.log('Confirm Password length:', confirmPassword.value.length);
+      console.log('Verification Method:', form.verificationMethod.value);
+
+      // Trigger validation for all inputs
       const inputs = [userName, phone, email, password, confirmPassword];
-      inputs.forEach(input => input.dispatchEvent(new Event('blur')));
+      inputs.forEach(input => {
+        input.dispatchEvent(new Event('blur'));
+        input.dispatchEvent(new Event('input'));
+      });
+
+      // Wait a moment for validation to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       const errors = form.querySelectorAll('.is-invalid');
 
       if (errors.length > 0) {
-        // Show SweetAlert for validation errors
-        Swal.fire({
-          icon: 'warning',
-          title: 'Validation Error',
-          text: 'Please fix the errors in the form before submitting.',
-          confirmButtonColor: '#d4af37'
+        // Debug: Log which fields have errors
+        console.log('Validation errors found:');
+        errors.forEach(errorField => {
+          const fieldName = errorField.name || errorField.id || 'unknown';
+          const errorMessage = errorField.nextElementSibling?.textContent || 'no message';
+          console.log(`- ${fieldName}: ${errorMessage}`);
         });
-        return;
+
+        // TEMPORARILY DISABLE CLIENT-SIDE VALIDATION BLOCKING
+        console.log('Proceeding with form submission despite validation errors...');
+        // Show SweetAlert for validation errors
+        // Swal.fire({
+        //   icon: 'warning',
+        //   title: 'Validation Error',
+        //   text: 'Please fix the errors in the form before submitting.',
+        //   confirmButtonColor: '#d4af37'
+        // });
+        // return;
       }
 
       // Show loading state

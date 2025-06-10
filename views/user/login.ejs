@@ -9,6 +9,7 @@
     <title>Login</title>
 
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -282,30 +283,104 @@
             }
         }
 
-        // Client-side form validation
+        // Enhanced client-side form validation with SweetAlert
         function validateForm() {
-            let isValid = true;
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
 
             // Reset error messages
             document.getElementById('emailError').style.display = 'none';
             document.getElementById('passwordError').style.display = 'none';
 
-            // Email validation
-            const email = document.getElementById('email').value;
+            // Email validation with underscore check
+            if (!email) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Email Required',
+                    text: 'Please enter your email address',
+                    confirmButtonColor: '#6200ea'
+                });
+                return false;
+            }
+
+            // Check for underscores in email (not allowed in login)
+            if (email.includes('_')) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Email Format',
+                    text: 'Email addresses with underscores are not allowed in login. Please use your email without underscores.',
+                    confirmButtonColor: '#6200ea'
+                });
+                return false;
+            }
+
+            // Basic email format validation
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) {
-                document.getElementById('emailError').style.display = 'block';
-                isValid = false;
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Invalid Email Format',
+                    text: 'Please enter a valid email address',
+                    confirmButtonColor: '#6200ea'
+                });
+                return false;
+            }
+
+            // Email length validation
+            if (email.length > 254) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Email Too Long',
+                    text: 'Email address is too long (maximum 254 characters)',
+                    confirmButtonColor: '#6200ea'
+                });
+                return false;
+            }
+
+            // Check for consecutive dots in email
+            if (/\.{2,}/.test(email)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Invalid Email Format',
+                    text: 'Email cannot contain consecutive dots',
+                    confirmButtonColor: '#6200ea'
+                });
+                return false;
             }
 
             // Password validation
-            const password = document.getElementById('password').value;
-            if (password.length < 6) {
-                document.getElementById('passwordError').style.display = 'block';
-                isValid = false;
+            if (!password) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Password Required',
+                    text: 'Please enter your password',
+                    confirmButtonColor: '#6200ea'
+                });
+                return false;
             }
 
-            return isValid;
+            if (password.length < 6) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Password Too Short',
+                    text: 'Password must be at least 6 characters long',
+                    confirmButtonColor: '#6200ea'
+                });
+                return false;
+            }
+
+            // Check for spaces in password
+            if (/\s/.test(password)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Invalid Password Format',
+                    text: 'Password cannot contain spaces',
+                    confirmButtonColor: '#6200ea'
+                });
+                return false;
+            }
+
+            return true;
         }
 
         // Confirm login with SweetAlert2

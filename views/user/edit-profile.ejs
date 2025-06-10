@@ -385,6 +385,149 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <script>
     let profileCropper = null;
+
+    // Enhanced form validation for edit profile
+    document.addEventListener('DOMContentLoaded', function() {
+      const nameInput = document.getElementById('name');
+      const phoneInput = document.getElementById('phone');
+      const form = document.getElementById('editProfileForm');
+
+      // Name validation (no underscores allowed in profile)
+      nameInput.addEventListener('input', function() {
+        const value = this.value.trim();
+
+        if (value.length === 0) return;
+
+        // Check for underscores (not allowed in profile)
+        if (value.includes('_')) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Invalid Name Format',
+            text: 'Name cannot contain underscores. Please use only letters and spaces.',
+            confirmButtonColor: '#6200ea'
+          });
+          // Remove underscores
+          this.value = value.replace(/_/g, '');
+          return;
+        }
+
+        // Check for invalid characters
+        if (!/^[A-Za-z\s]+$/.test(value)) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Invalid Name Format',
+            text: 'Name can only contain letters and spaces.',
+            confirmButtonColor: '#6200ea'
+          });
+          // Remove invalid characters
+          this.value = value.replace(/[^A-Za-z\s]/g, '');
+          return;
+        }
+
+        // Check for multiple consecutive spaces
+        if (/\s{2,}/.test(value)) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Invalid Name Format',
+            text: 'Name cannot have multiple consecutive spaces.',
+            confirmButtonColor: '#6200ea'
+          });
+          // Replace multiple spaces with single space
+          this.value = value.replace(/\s{2,}/g, ' ');
+          return;
+        }
+      });
+
+      // Phone validation
+      phoneInput.addEventListener('input', function() {
+        const value = this.value.trim();
+
+        if (value.length === 0) return;
+
+        // Check for underscores (not allowed)
+        if (value.includes('_')) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Invalid Phone Format',
+            text: 'Phone number cannot contain underscores.',
+            confirmButtonColor: '#6200ea'
+          });
+          // Remove underscores
+          this.value = value.replace(/_/g, '');
+          return;
+        }
+
+        // Validate phone format
+        if (value && !/^\+91[6-9]\d{9}$/.test(value)) {
+          // Don't show error while typing, just on blur
+        }
+      });
+
+      phoneInput.addEventListener('blur', function() {
+        const value = this.value.trim();
+
+        if (value && !/^\+91[6-9]\d{9}$/.test(value)) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Invalid Phone Number',
+            text: 'Please enter a valid Indian mobile number in format +91XXXXXXXXXX',
+            confirmButtonColor: '#6200ea'
+          });
+        }
+      });
+
+      // Form submission validation
+      form.addEventListener('submit', function(e) {
+        const name = nameInput.value.trim();
+        const phone = phoneInput.value.trim();
+
+        // Validate name
+        if (!name) {
+          e.preventDefault();
+          Swal.fire({
+            icon: 'warning',
+            title: 'Name Required',
+            text: 'Please enter your full name',
+            confirmButtonColor: '#6200ea'
+          });
+          return;
+        }
+
+        if (name.includes('_')) {
+          e.preventDefault();
+          Swal.fire({
+            icon: 'error',
+            title: 'Invalid Name Format',
+            text: 'Name cannot contain underscores. Please use only letters and spaces.',
+            confirmButtonColor: '#6200ea'
+          });
+          return;
+        }
+
+        if (!/^[A-Za-z\s]+$/.test(name)) {
+          e.preventDefault();
+          Swal.fire({
+            icon: 'error',
+            title: 'Invalid Name Format',
+            text: 'Name can only contain letters and spaces.',
+            confirmButtonColor: '#6200ea'
+          });
+          return;
+        }
+
+        // Validate phone if provided
+        if (phone && !/^\+91[6-9]\d{9}$/.test(phone)) {
+          e.preventDefault();
+          Swal.fire({
+            icon: 'error',
+            title: 'Invalid Phone Number',
+            text: 'Please enter a valid Indian mobile number in format +91XXXXXXXXXX',
+            confirmButtonColor: '#6200ea'
+          });
+          return;
+        }
+      });
+    });
     let selectedProfileFile = null;
 
     // Profile image selection and cropping

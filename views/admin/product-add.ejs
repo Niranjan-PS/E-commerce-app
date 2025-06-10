@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
     <link rel="stylesheet" href="/css/admin.css">
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
     <style>
         .error-message {
             color: #dc3545;
@@ -121,6 +123,129 @@ input[type="checkbox"]:invalid ~ .error-message {
   display: block;
 }
 
+/* Validation feedback styles */
+.form-control.is-invalid {
+  border-color: #dc3545;
+  padding-right: calc(1.5em + 0.75rem);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right calc(0.375em + 0.1875rem) center;
+  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.form-control.is-valid {
+  border-color: #198754;
+  padding-right: calc(1.5em + 0.75rem);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='m2.3 6.73.94-.94 1.44 1.44L7.4 4.5l.94.94L4.66 9.17z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right calc(0.375em + 0.1875rem) center;
+  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.form-control.is-invalid:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.form-control.is-valid:focus {
+  border-color: #198754;
+  box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+}
+
+/* Individual Image Upload Styles */
+.image-upload-section {
+    margin-top: 15px;
+}
+
+.image-upload-slot {
+    position: relative;
+    width: 100%;
+    height: 150px;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.image-upload-slot:hover {
+    border-color: #007bff;
+    background: #f0f8ff;
+}
+
+.upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    cursor: pointer;
+    color: #6c757d;
+    transition: color 0.3s ease;
+}
+
+.upload-placeholder:hover {
+    color: #007bff;
+}
+
+.upload-placeholder i {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.upload-placeholder span {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.image-preview-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.image-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.remove-image-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.remove-image-btn:hover {
+    background: #c82333;
+    transform: scale(1.1);
+}
+
+.image-upload-slot.has-image {
+    border: 2px solid #28a745;
+    background: #f8fff8;
+}
+
+.image-upload-slot.required {
+    border-color: #dc3545;
+}
+
+.image-upload-slot.required .upload-placeholder {
+    color: #dc3545;
+}
 
     </style>
 </head>
@@ -224,14 +349,77 @@ input[type="checkbox"]:invalid ~ .error-message {
 
                             <div class="mb-4">
                                 <label for="images" class="form-label">Product Images (At least 3 images required)</label>
-                                <input class="form-control" type="file" id="images" name="images"
-                                       multiple accept="image/jpeg,image/png,image/jpg">
-                                <small class="form-text text-muted">Select images to crop and add. Only JPG and PNG formats are allowed.</small>
 
-                                <!-- Cropped Images Display -->
-                                <div class="cropped-images-container mt-3" id="croppedImagesContainer">
-                                    <div class="text-muted" id="noImagesText">No images added yet. Please select and crop at least 3 images.</div>
+                                <!-- Individual Image Upload Buttons -->
+                                <div class="image-upload-section">
+                                    <div class="row g-3">
+                                        <div class="col-md-3" id="imageSlot1">
+                                            <div class="image-upload-slot">
+                                                <input class="d-none" type="file" id="imageInput1" accept="image/jpeg,image/png,image/jpg">
+                                                <div class="upload-placeholder" onclick="selectImage(1)">
+                                                    <i class="fas fa-plus"></i>
+                                                    <span>Add Image 1</span>
+                                                </div>
+                                                <div class="image-preview-container" style="display: none;">
+                                                    <img class="image-preview" alt="Image 1">
+                                                    <button type="button" class="remove-image-btn" onclick="removeImage(1)">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3" id="imageSlot2">
+                                            <div class="image-upload-slot">
+                                                <input class="d-none" type="file" id="imageInput2" accept="image/jpeg,image/png,image/jpg">
+                                                <div class="upload-placeholder" onclick="selectImage(2)">
+                                                    <i class="fas fa-plus"></i>
+                                                    <span>Add Image 2</span>
+                                                </div>
+                                                <div class="image-preview-container" style="display: none;">
+                                                    <img class="image-preview" alt="Image 2">
+                                                    <button type="button" class="remove-image-btn" onclick="removeImage(2)">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3" id="imageSlot3">
+                                            <div class="image-upload-slot">
+                                                <input class="d-none" type="file" id="imageInput3" accept="image/jpeg,image/png,image/jpg">
+                                                <div class="upload-placeholder" onclick="selectImage(3)">
+                                                    <i class="fas fa-plus"></i>
+                                                    <span>Add Image 3</span>
+                                                </div>
+                                                <div class="image-preview-container" style="display: none;">
+                                                    <img class="image-preview" alt="Image 3">
+                                                    <button type="button" class="remove-image-btn" onclick="removeImage(3)">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3" id="imageSlot4">
+                                            <div class="image-upload-slot">
+                                                <input class="d-none" type="file" id="imageInput4" accept="image/jpeg,image/png,image/jpg">
+                                                <div class="upload-placeholder" onclick="selectImage(4)">
+                                                    <i class="fas fa-plus"></i>
+                                                    <span>Add Image 4 (Optional)</span>
+                                                </div>
+                                                <div class="image-preview-container" style="display: none;">
+                                                    <img class="image-preview" alt="Image 4">
+                                                    <button type="button" class="remove-image-btn" onclick="removeImage(4)">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
+
+                                <small class="form-text text-muted mt-2 d-block">
+                                    Click on each slot to add images individually. Only JPG and PNG formats are allowed.
+                                    At least 3 images are required.
+                                </small>
 
                                 <!-- Hidden input to store cropped image data -->
                                 <input type="hidden" id="croppedImagesData" name="croppedImagesData">
@@ -293,52 +481,68 @@ input[type="checkbox"]:invalid ~ .error-message {
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
         let cropper = null;
         let currentFile = null;
-        let currentFileIndex = 0;
-        let filesToProcess = [];
-        let croppedImages = [];
+        let currentSlot = 0;
+        let croppedImages = [null, null, null, null]; // Array to store images for each slot
 
-        // Image selection and cropping
-        document.getElementById('images').addEventListener('change', function(e) {
-            const files = Array.from(this.files);
+        // Individual image selection function
+        function selectImage(slotNumber) {
+            const input = document.getElementById(`imageInput${slotNumber}`);
+            input.click();
+        }
+
+
+
+        function handleImageSelection(slotNumber, file) {
+            if (!file) return;
+
             const errorElement = document.getElementById('images-error');
 
-            if (files.length === 0) {
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+            if (!allowedTypes.includes(file.type)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid File Type',
+                    text: 'Only JPG and PNG images are allowed',
+                    confirmButtonColor: '#dc3545'
+                });
                 return;
             }
 
-            // Validate file types
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-            for (let file of files) {
-                if (!allowedTypes.includes(file.type)) {
-                    errorElement.textContent = 'Only JPG and PNG images are allowed';
-                    return;
-                }
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'File Too Large',
+                    text: 'Image size must be less than 5MB',
+                    confirmButtonColor: '#dc3545'
+                });
+                return;
             }
 
             errorElement.textContent = '';
-            filesToProcess = files;
-            currentFileIndex = 0;
-            processNextImage();
-        });
+            currentFile = file;
+            currentSlot = slotNumber;
 
-        function processNextImage() {
-            if (currentFileIndex >= filesToProcess.length) {
-                // All images processed
-                filesToProcess = [];
-                document.getElementById('images').value = '';
-                updateCroppedImagesDisplay();
-                return;
-            }
+            // Show crop modal
+            showCropModal();
+        }
 
-            currentFile = filesToProcess[currentFileIndex];
+        function showCropModal() {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const cropImage = document.getElementById('cropImage');
                 cropImage.src = e.target.result;
+
+                // Update modal title
+                const modalTitle = document.getElementById('cropModalLabel');
+                modalTitle.innerHTML = `<i class="fas fa-crop me-2"></i>Crop Image ${currentSlot}`;
 
                 // Show crop modal
                 const cropModal = new bootstrap.Modal(document.getElementById('cropModal'));
@@ -395,11 +599,14 @@ input[type="checkbox"]:invalid ~ .error-message {
                     blob: blob,
                     dataUrl: canvas.toDataURL('image/jpeg', 0.9),
                     originalName: currentFile.name,
-                    index: croppedImages.length
+                    slot: currentSlot
                 };
 
-                croppedImages.push(croppedImage);
-                currentFileIndex++;
+                // Store image in the specific slot
+                croppedImages[currentSlot - 1] = croppedImage;
+
+                // Update the UI for this slot
+                updateImageSlot(currentSlot, croppedImage.dataUrl);
 
                 // Hide modal and destroy cropper
                 const cropModal = bootstrap.Modal.getInstance(document.getElementById('cropModal'));
@@ -410,51 +617,122 @@ input[type="checkbox"]:invalid ~ .error-message {
                     cropper = null;
                 }
 
-                // Process next image or finish
-                setTimeout(() => {
-                    processNextImage();
-                }, 300);
+                // Update hidden input with all cropped images
+                updateCroppedImagesData();
+
+                // Clear the file input
+                document.getElementById(`imageInput${currentSlot}`).value = '';
+
+                // Show success message
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Image Added!',
+                    text: `Image ${currentSlot} has been successfully added and cropped.`,
+                    timer: 2000,
+                    timerProgressBar: true,
+                    showConfirmButton: false
+                });
             }, 'image/jpeg', 0.9);
         }
 
-        function updateCroppedImagesDisplay() {
-            const container = document.getElementById('croppedImagesContainer');
-            const noImagesText = document.getElementById('noImagesText');
+        function updateImageSlot(slotNumber, dataUrl) {
+            const slot = document.getElementById(`imageSlot${slotNumber}`);
+            const uploadSlot = slot.querySelector('.image-upload-slot');
+            const placeholder = slot.querySelector('.upload-placeholder');
+            const previewContainer = slot.querySelector('.image-preview-container');
+            const previewImage = slot.querySelector('.image-preview');
 
-            if (croppedImages.length === 0) {
-                noImagesText.style.display = 'block';
-                container.innerHTML = '<div class="text-muted" id="noImagesText">No images added yet. Please select and crop at least 3 images.</div>';
-                document.getElementById('croppedImagesData').value = '';
-                return;
-            }
+            // Hide placeholder and show preview
+            placeholder.style.display = 'none';
+            previewContainer.style.display = 'block';
+            previewImage.src = dataUrl;
 
-            noImagesText.style.display = 'none';
-            container.innerHTML = '';
-
-            croppedImages.forEach((image, index) => {
-                const imageItem = document.createElement('div');
-                imageItem.className = 'cropped-image-item';
-                imageItem.innerHTML = `
-                    <img src="${image.dataUrl}" class="image-preview" alt="Cropped image ${index + 1}">
-                    <button type="button" class="remove-btn" onclick="removeCroppedImage(${index})">
-                        <i class="fas fa-times"></i>
-                    </button>
-                `;
-                container.appendChild(imageItem);
-            });
-
-            // Update hidden input with cropped images data
-            const imageDataArray = croppedImages.map(img => img.dataUrl);
-            document.getElementById('croppedImagesData').value = JSON.stringify(imageDataArray);
+            // Add visual feedback
+            uploadSlot.classList.add('has-image');
+            uploadSlot.classList.remove('required');
         }
 
-        function removeCroppedImage(index) {
-            croppedImages.splice(index, 1);
-            // Update indices
-            croppedImages.forEach((img, i) => {
-                img.index = i;
+        function removeImage(slotNumber) {
+            Swal.fire({
+                title: 'Remove Image?',
+                text: `Are you sure you want to remove image ${slotNumber}?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, remove it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Remove image from array
+                    croppedImages[slotNumber - 1] = null;
+
+                    // Update UI
+                    const slot = document.getElementById(`imageSlot${slotNumber}`);
+                    const uploadSlot = slot.querySelector('.image-upload-slot');
+                    const placeholder = slot.querySelector('.upload-placeholder');
+                    const previewContainer = slot.querySelector('.image-preview-container');
+
+                    // Show placeholder and hide preview
+                    placeholder.style.display = 'flex';
+                    previewContainer.style.display = 'none';
+
+                    // Remove visual feedback
+                    uploadSlot.classList.remove('has-image');
+
+                    // Update hidden input
+                    updateCroppedImagesData();
+
+                    // Clear file input
+                    document.getElementById(`imageInput${slotNumber}`).value = '';
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Image Removed!',
+                        text: `Image ${slotNumber} has been removed.`,
+                        timer: 1500,
+                        timerProgressBar: true,
+                        showConfirmButton: false
+                    });
+                }
             });
-            updateCroppedImagesDisplay();
+        }
+
+        function updateCroppedImagesData() {
+            // Filter out null values and get only the dataUrl
+            const imageDataArray = croppedImages
+                .filter(img => img !== null)
+                .map(img => img.dataUrl);
+
+            document.getElementById('croppedImagesData').value = JSON.stringify(imageDataArray);
+
+            // Update validation state
+            updateImageValidationState();
+        }
+
+        function updateImageValidationState() {
+            const imageCount = croppedImages.filter(img => img !== null).length;
+            const errorElement = document.getElementById('images-error');
+
+            // Clear previous error
+            errorElement.textContent = '';
+
+            // Update required state for first 3 slots
+            for (let i = 1; i <= 3; i++) {
+                const slot = document.getElementById(`imageSlot${i}`);
+                const uploadSlot = slot.querySelector('.image-upload-slot');
+
+                if (croppedImages[i - 1] === null) {
+                    uploadSlot.classList.add('required');
+                } else {
+                    uploadSlot.classList.remove('required');
+                }
+            }
+
+            // Show error if less than 3 images
+            if (imageCount < 3) {
+                errorElement.textContent = `Please add at least 3 images. Currently ${imageCount} image${imageCount !== 1 ? 's' : ''} added.`;
+            }
         }
 
         // Auto-calculate sale price based on regular price and discount
@@ -497,7 +775,7 @@ input[type="checkbox"]:invalid ~ .error-message {
             }
         }
 
-        // Add event listeners for auto-calculation
+        // Add event listeners for auto-calculation and image setup
         document.addEventListener('DOMContentLoaded', function() {
             const priceInput = document.getElementById('price');
             const discountInput = document.getElementById('discount');
@@ -518,11 +796,22 @@ input[type="checkbox"]:invalid ~ .error-message {
                     }
                 }
             });
+
+            // Initialize image validation state
+            updateImageValidationState();
+
+            // Set up individual image inputs
+            for (let i = 1; i <= 4; i++) {
+                const input = document.getElementById(`imageInput${i}`);
+                input.addEventListener('change', function(e) {
+                    handleImageSelection(i, e.target.files[0]);
+                });
+            }
         });
 
-        // Form validation
-        document.getElementById('productForm').addEventListener('submit', function(e) {
-            let isValid = true;
+        // Enhanced form validation with SweetAlert
+        document.getElementById('productForm').addEventListener('submit', async function(e) {
+            e.preventDefault(); // Always prevent default to handle validation first
 
             // Auto-calculate sale price before validation if needed
             calculateSalePrice();
@@ -531,87 +820,282 @@ input[type="checkbox"]:invalid ~ .error-message {
             const errorElements = document.querySelectorAll('.error-message');
             errorElements.forEach(el => el.textContent = '');
 
-    // Validate product name
-    const productName = document.getElementById('productName');
-    const productNameVal = productName.value.trim();
-    if (!productNameVal) {
-        document.getElementById('productName-error').textContent = 'Product name is required';
-        isValid = false;
-    } else if (!/^[A-Za-z\s]+$/.test(productNameVal)) {
-        document.getElementById('productName-error').textContent = 'Product name must contain only letters and spaces';
-        isValid = false;
-    } else if (productNameVal[0] !== productNameVal[0].toUpperCase()) {
-        document.getElementById('productName-error').textContent = 'Product name must start with a capital letter';
-        isValid = false;
-    }
+            // Validate all fields and collect errors
+            const validationErrors = await validateAllFields();
 
-    // Validate description
-    const description = document.getElementById('description');
-    const descriptionVal = description.value.trim();
-    if (!descriptionVal) {
-        document.getElementById('description-error').textContent = 'Description is required';
-        isValid = false;
-    } else if (!/^[A-Za-z\s]+$/.test(descriptionVal)) {
-        document.getElementById('description-error').textContent = 'Description must contain only letters and spaces';
-        isValid = false;
-    } else if (descriptionVal[0] !== descriptionVal[0].toUpperCase()) {
-        document.getElementById('description-error').textContent = 'Description must start with a capital letter';
-        isValid = false;
-    }
+            // If validation passes, show loading and submit
+            if (validationErrors.length === 0) {
+                // Show loading state
+                Swal.fire({
+                    title: 'Adding Product...',
+                    html: 'Please wait while we add your product.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
 
-    // Validate price
-    const price = document.getElementById('price');
-    const priceVal = price.value.trim();
-    if (!priceVal || isNaN(priceVal) || parseFloat(priceVal) <= 0) {
-        document.getElementById('price-error').textContent = 'Valid price is required';
-        isValid = false;
-    }
+                // Submit the form
+                this.submit();
+            } else {
+                // Show validation errors with SweetAlert
+                await showValidationErrors(validationErrors);
+            }
+        });
 
-    // Validate sale price
-    const salePrice = document.getElementById('salePrice');
-    const salePriceVal = salePrice.value.trim();
-    if (salePriceVal && (isNaN(salePriceVal) || parseFloat(salePriceVal) < 0)) {
-        document.getElementById('salePrice-error').textContent = 'Sale price must be a valid positive number';
-        isValid = false;
-    } else if (salePriceVal && priceVal && parseFloat(salePriceVal) >= parseFloat(priceVal)) {
-        document.getElementById('salePrice-error').textContent = 'Sale price must be less than regular price';
-        isValid = false;
-    }
+        // Comprehensive validation function
+        async function validateAllFields() {
+            const errors = [];
 
-    // Validate discount
-    const discount = document.getElementById('discount');
-    const discountVal = discount.value.trim();
-    if (discountVal && (isNaN(discountVal) || parseFloat(discountVal) < 0 || parseFloat(discountVal) > 100)) {
-        document.getElementById('discount-error').textContent = 'Discount must be between 0 and 100';
-        isValid = false;
-    }
+            // Product name validation
+            const productName = document.getElementById('productName');
+            const productNameVal = productName.value.trim();
 
-    // Validate quantity
-    const quantity = document.getElementById('quantity');
-    const quantityVal = quantity.value.trim();
-    if (!quantityVal || isNaN(quantityVal) || parseInt(quantityVal) < 0 || !Number.isInteger(Number(quantityVal))) {
-        document.getElementById('quantity-error').textContent = 'Valid quantity is required (non-negative integer)';
-        isValid = false;
-    }
+            if (!productNameVal) {
+                errors.push({ field: 'Product Name', message: 'Product name is required' });
+            } else if (productNameVal.length < 2) {
+                errors.push({ field: 'Product Name', message: 'Product name must be at least 2 characters' });
+            } else if (productNameVal.length > 50) {
+                errors.push({ field: 'Product Name', message: 'Product name must be less than 50 characters' });
+            } else if (/^\s+$/.test(productNameVal)) {
+                errors.push({ field: 'Product Name', message: 'Product name cannot contain only spaces' });
+            } else if (!/^[A-Za-z0-9\s-]+$/.test(productNameVal)) {
+                errors.push({ field: 'Product Name', message: 'Product name can only contain letters, numbers, spaces, and hyphens' });
+            } else if (!/^[A-Za-z]/.test(productNameVal)) {
+                errors.push({ field: 'Product Name', message: 'Product name must start with a letter' });
+            } else if (/\s{2,}/.test(productNameVal)) {
+                errors.push({ field: 'Product Name', message: 'Product name cannot have multiple consecutive spaces' });
+            } else if (productNameVal !== productNameVal.trim()) {
+                errors.push({ field: 'Product Name', message: 'Product name cannot start or end with spaces' });
+            } else {
+                // Check for duplicate product names via AJAX
+                try {
+                    const response = await fetch(`/admin/check-product-name?name=${encodeURIComponent(productNameVal)}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.exists) {
+                            errors.push({ field: 'Product Name', message: 'A product with this name already exists' });
+                        }
+                    }
+                } catch (error) {
+                    console.log('Could not check for duplicate product names:', error);
+                }
+            }
 
-    // Validate category
-    const category = document.getElementById('category');
-    if (!category.value) {
-        document.getElementById('category-error').textContent = 'Category is required';
-        isValid = false;
-    }
+            // Description validation
+            const description = document.getElementById('description');
+            const descriptionVal = description.value.trim();
+            if (!descriptionVal) {
+                errors.push({ field: 'Description', message: 'Description is required' });
+            } else if (descriptionVal.length < 10) {
+                errors.push({ field: 'Description', message: 'Description must be at least 10 characters long' });
+            } else if (descriptionVal.length > 500) {
+                errors.push({ field: 'Description', message: 'Description must be less than 500 characters' });
+            } else if (/^\s+$/.test(descriptionVal)) {
+                errors.push({ field: 'Description', message: 'Description cannot contain only spaces' });
+            }
 
-    // Validate cropped images
-    if (croppedImages.length < 3) {
-        document.getElementById('images-error').textContent = 'Please crop and add at least 3 images';
-        isValid = false;
-    } else {
-        document.getElementById('images-error').textContent = '';
-    }
+            // Price validation
+            const price = document.getElementById('price');
+            const priceVal = price.value.trim();
+            if (!priceVal) {
+                errors.push({ field: 'Price', message: 'Price is required' });
+            } else if (isNaN(priceVal) || parseFloat(priceVal) <= 0) {
+                errors.push({ field: 'Price', message: 'Price must be a valid positive number' });
+            } else if (parseFloat(priceVal) > 1000000) {
+                errors.push({ field: 'Price', message: 'Price cannot exceed ₹10,00,000' });
+            }
 
-    if (!isValid) {
-        e.preventDefault();
-    }
+            // Sale price validation
+            const salePrice = document.getElementById('salePrice');
+            const salePriceVal = salePrice.value.trim();
+            if (salePriceVal) {
+                if (isNaN(salePriceVal) || parseFloat(salePriceVal) < 0) {
+                    errors.push({ field: 'Sale Price', message: 'Sale price must be a valid positive number' });
+                } else if (priceVal && parseFloat(salePriceVal) >= parseFloat(priceVal)) {
+                    errors.push({ field: 'Sale Price', message: 'Sale price must be less than regular price' });
+                }
+            }
+
+            // Discount validation
+            const discount = document.getElementById('discount');
+            const discountVal = discount.value.trim();
+            if (discountVal) {
+                if (isNaN(discountVal) || parseFloat(discountVal) < 0 || parseFloat(discountVal) > 100) {
+                    errors.push({ field: 'Discount', message: 'Discount must be between 0 and 100' });
+                }
+            }
+
+            // Quantity validation
+            const quantity = document.getElementById('quantity');
+            const quantityVal = quantity.value.trim();
+            if (!quantityVal) {
+                errors.push({ field: 'Quantity', message: 'Quantity is required' });
+            } else if (isNaN(quantityVal) || parseInt(quantityVal) < 0 || !Number.isInteger(Number(quantityVal))) {
+                errors.push({ field: 'Quantity', message: 'Quantity must be a valid non-negative integer' });
+            } else if (parseInt(quantityVal) > 10000) {
+                errors.push({ field: 'Quantity', message: 'Quantity cannot exceed 10,000' });
+            }
+
+            // Category validation
+            const category = document.getElementById('category');
+            if (!category.value) {
+                errors.push({ field: 'Category', message: 'Category is required' });
+            }
+
+            // Images validation
+            const imageCount = croppedImages.filter(img => img !== null).length;
+            if (imageCount < 3) {
+                errors.push({ field: 'Images', message: `Please add at least 3 images. Currently ${imageCount} image${imageCount !== 1 ? 's' : ''} added.` });
+            }
+
+            return errors;
+        }
+
+        // Function to show validation errors with SweetAlert
+        async function showValidationErrors(errors) {
+            if (errors.length === 1) {
+                // Single error - show simple alert
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    text: `${errors[0].field}: ${errors[0].message}`,
+                    confirmButtonColor: '#dc3545',
+                    confirmButtonText: 'Fix Issue'
+                });
+            } else {
+                // Multiple errors - show detailed list
+                const errorList = errors.map(error => `• <strong>${error.field}:</strong> ${error.message}`).join('<br>');
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Multiple Validation Errors',
+                    html: `Please fix the following issues:<br><br>${errorList}`,
+                    confirmButtonColor: '#dc3545',
+                    confirmButtonText: 'Fix Issues',
+                    width: '600px'
+                });
+            }
+
+            // Focus on the first error field
+            if (errors.length > 0) {
+                const firstErrorField = errors[0].field.toLowerCase().replace(' ', '');
+                const fieldMap = {
+                    'productname': 'productName',
+                    'description': 'description',
+                    'price': 'price',
+                    'saleprice': 'salePrice',
+                    'discount': 'discount',
+                    'quantity': 'quantity',
+                    'category': 'category'
+                };
+
+                const fieldId = fieldMap[firstErrorField];
+                if (fieldId) {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        field.focus();
+                        field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            }
+        }
+
+// Real-time validation for product name
+document.addEventListener('DOMContentLoaded', function() {
+    const productNameInput = document.getElementById('productName');
+    const productNameError = document.getElementById('productName-error');
+
+    // Real-time validation for product name
+    productNameInput.addEventListener('input', function() {
+        const value = this.value;
+        const trimmedValue = value.trim();
+
+        // Reset styles
+        this.classList.remove('is-invalid', 'is-valid');
+        productNameError.textContent = '';
+
+        if (value.length === 0) {
+            return; // Don't show validation for empty field while typing
+        }
+
+        let isValid = true;
+        let errorMessage = '';
+
+        // Check various validation rules
+        if (trimmedValue.length < 2) {
+            isValid = false;
+            errorMessage = 'Must be at least 2 characters';
+        } else if (trimmedValue.length > 50) {
+            isValid = false;
+            errorMessage = 'Must be less than 50 characters';
+        } else if (/^\s+$/.test(value)) {
+            isValid = false;
+            errorMessage = 'Cannot contain only spaces';
+        } else if (!/^[A-Za-z0-9\s-]*$/.test(trimmedValue)) {
+            isValid = false;
+            errorMessage = 'Only letters, numbers, spaces, and hyphens allowed';
+        } else if (!/^[A-Za-z]/.test(trimmedValue)) {
+            isValid = false;
+            errorMessage = 'Must start with a letter';
+        } else if (/\s{2,}/.test(trimmedValue)) {
+            isValid = false;
+            errorMessage = 'Cannot have multiple consecutive spaces';
+        } else {
+            // Check for duplicates if we have existing product data
+            const existingProductNames = window.existingProducts || [];
+            if (existingProductNames.some(name => name.toLowerCase() === trimmedValue.toLowerCase())) {
+                isValid = false;
+                errorMessage = 'Product name already exists';
+            }
+        }
+
+        // Apply validation feedback
+        if (isValid) {
+            this.classList.add('is-valid');
+        } else {
+            this.classList.add('is-invalid');
+            productNameError.textContent = errorMessage;
+        }
+    });
+
+    // Debounced AJAX check for duplicate product names
+    let debounceTimer;
+    productNameInput.addEventListener('input', function() {
+        const value = this.value.trim();
+
+        if (value.length < 2) return;
+
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(async () => {
+            try {
+                const response = await fetch(`/admin/check-product-name?name=${encodeURIComponent(value)}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.exists) {
+                        this.classList.remove('is-valid');
+                        this.classList.add('is-invalid');
+                        productNameError.textContent = 'Product name already exists';
+                    } else if (this.classList.contains('is-invalid') && productNameError.textContent === 'Product name already exists') {
+                        // Clear the duplicate error if it was the only issue
+                        this.classList.remove('is-invalid');
+                        this.classList.add('is-valid');
+                        productNameError.textContent = '';
+                    }
+                }
+            } catch (error) {
+                console.log('Could not check for duplicate product names:', error);
+                // Fail silently for duplicate check
+            }
+        }, 500);
+    });
 });
 </script>
 
