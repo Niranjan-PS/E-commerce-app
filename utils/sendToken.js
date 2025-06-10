@@ -8,7 +8,7 @@ export const sendToken = (user, res, tokenName = 'userToken') => {
     sameSite: 'strict',
   };
 
-  res.cookie(tokenName, token, options); // ✅ sets cookie like adminToken
+  res.cookie(tokenName, token, options);
 
   
 };

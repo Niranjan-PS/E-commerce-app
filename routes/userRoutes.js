@@ -159,12 +159,14 @@ router.get('/google/callback', (req, res, next) => {
       console.error(' Google OAuth failed - no user returned:', info);
       return res.redirect('/login?error=Google authentication failed');
     }
+  
+
 
     console.log(' Google OAuth successful for user:', user.email);
 
     
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: '7d' });
-    res.cookie('token', token, {
+    res.cookie('userToken', token, {
       httpOnly: true,
       secure: false,
       maxAge: 7 * 24 * 60 * 60 * 1000 

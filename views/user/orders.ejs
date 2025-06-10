@@ -336,7 +336,13 @@
       box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
       color: white;
     }
-
+.btn-action.btn-warning-custom[disabled] {
+  /* Your desired styles for the disabled state */
+  background-color: #cccccc !important; /* Example: a lighter gray background */
+  color: #666666; /* Example: darker gray text */
+  cursor: not-allowed; /* Ensures the cursor indicates it's not clickable */
+  border-color: #bbbbbb; /* Example: lighter border */
+}
     .btn-danger-custom {
       background: linear-gradient(135deg, var(--danger-color), #e74c3c);
       color: white;
@@ -564,15 +570,27 @@
                 <i class="fas fa-times me-1"></i>Cancel Order
               </button>
             <% } %>
-
-            <% if (order.canRequestReturn) { %>
-              <% if (order.returnStatus === 'None' || order.returnStatus === 'Rejected') { %>
-                <button class="btn-action btn-warning-custom" onclick="showReturnModal('<%= order._id %>', '<%= order.orderNumber %>')">
-                  <i class="fas fa-undo me-1"></i>Request Return
-                </button>
-              <% } %>
-            <% } %>
-
+<% if (order.canRequestReturn) { %>
+  <% const isRejected = order.returnStatus === 'Rejected'; %>
+  <% if (order.returnStatus === 'None' || isRejected) { %>
+    <span
+      <% if (isRejected) { %>
+        class="d-inline-block"
+        tabindex="0"
+        title="Return is rejected"
+        data-bs-toggle="tooltip"
+        data-bs-placement="top"
+      <% } %>
+    >
+      <button
+        class="btn-action btn-warning-custom"
+        onclick="showReturnModal('<%= order._id %>', '<%= order.orderNumber %>')"
+        <%= isRejected ? 'disabled' : '' %>>
+        <i class="fas fa-undo me-1"></i>Request Return
+      </button>
+    </span>
+  <% } %>
+<% } %>
             <% if (order.returnStatus === 'Requested') { %>
               <span class="btn-action" style="background: #6c757d; color: white; cursor: default;">
                 <i class="fas fa-clock me-1"></i>Return Pending
@@ -718,7 +736,15 @@
       document.getElementById('cancelReason').value = '';
       new bootstrap.Modal(document.getElementById('cancelModal')).show();
     }
+document.addEventListener('DOMContentLoaded', function () {
+  // Select all elements that have the data-bs-toggle="tooltip" attribute
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
 
+  // Initialize each tooltip
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+});
     // Show return modal
     function showReturnModal(orderId, orderNumber) {
       currentOrderId = orderId;

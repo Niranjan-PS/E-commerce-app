@@ -326,28 +326,28 @@
                 }) %>
               </small>
             </div>
-            <div class="col-md-2">
-              <h6 class="mb-1">Customer</h6>
-              <p class="mb-0"><%= order.user.name %></p>
-              <small class="text-muted"><%= order.user.email %></small>
-            </div>
-            <div class="col-md-2">
-              <h6 class="mb-1">Amount</h6>
-              <p class="mb-0 fw-bold">₹<%= order.totalAmount.toFixed(2) %></p>
-              <small class="text-muted"><%= order.items.length %> item(s)</small>
-            </div>
-            <div class="col-md-2">
-              <div class="d-flex align-items-center">
-                <span class="status-badge status-<%= order.orderStatus.toLowerCase() %>">
-                  <%= order.orderStatus %>
-                </span>
-                <% if (order.returnStatus && order.returnStatus !== 'None') { %>
-                  <span class="return-badge return-<%= order.returnStatus.toLowerCase() %>">
-                    <%= order.returnStatus %>
-                  </span>
-                <% } %>
-              </div>
-            </div>
+         <div class="col-md-2">
+  <h6 class="mb-1">Customer</h6>
+  <p class="mb-0"><%= order.user?.name || 'Guest User' %></p>
+  <small class="text-muted"><%= order.user?.email || 'No email provided' %></small>
+</div>
+<div class="col-md-2">
+  <h6 class="mb-1">Amount</h6>
+  <p class="mb-0 fw-bold">₹<%= order.totalAmount?.toFixed(2) || '0.00' %></p>
+  <small class="text-muted"><%= order.items?.length || 0 %> item(s)</small>
+</div>
+<div class="col-md-2">
+  <div class="d-flex align-items-center">
+    <span class="status-badge status-<%= order.orderStatus?.toLowerCase() || 'unknown' %>">
+      <%= order.orderStatus || 'Unknown' %>
+    </span>
+    <% if (order.returnStatus && order.returnStatus !== 'None') { %>
+      <span class="return-badge return-<%= order.returnStatus.toLowerCase() %>">
+        <%= order.returnStatus %>
+      </span>
+    <% } %>
+  </div>
+</div>
             <div class="col-md-4 text-end">
               <a href="/admin/orders/<%= order._id %>" class="action-btn btn-view">
                 <i class="fas fa-eye me-1"></i>View Details
