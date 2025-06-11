@@ -31,7 +31,6 @@ export const loadAddAddress = catchAsyncError(async (req, res, next) => {
   }
 });
 
-
 export const addAddress = catchAsyncError(async (req, res, next) => {
   try {
     const {
@@ -48,24 +47,30 @@ export const addAddress = catchAsyncError(async (req, res, next) => {
       isDefault
     } = req.body;
 
-    
+   
     if (!title || !fullName || !phone || !street || !city || !state || !zipCode) {
-      return res.redirect('/addresses/add?error=All required fields must be filled');
+      return res.status(400).json({ 
+        success: false,
+        message: 'All required fields must be filled'
+      });
     }
 
-    // Validate phone number
     const phoneRegex = /^\+91\d{10}$/;
     if (!phoneRegex.test(phone.trim())) {
-      return res.redirect('/addresses/add?error=Invalid phone number format. Use +91XXXXXXXXXX');
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid phone number format. Use +91XXXXXXXXXX'
+      });
     }
 
-    // Validate ZIP code
     const zipRegex = /^\d{6}$/;
     if (!zipRegex.test(zipCode.trim())) {
-      return res.redirect('/addresses/add?error=ZIP code must be 6 digits');
+      return res.status(400).json({ 
+        success: false,
+        message: 'ZIP code must be 6 digits'
+      });
     }
 
-    
     const existingAddresses = await Address.find({ user: req.user._id, isActive: true });
     const shouldBeDefault = existingAddresses.length === 0 || isDefault === 'on';
 
@@ -86,14 +91,27 @@ export const addAddress = catchAsyncError(async (req, res, next) => {
 
     await newAddress.save();
 
-    res.redirect('/addresses?message=Address added successfully');
+    
+    return res.status(201).json({
+      success: true,
+      message: 'Address added successfully!',
+      address: newAddress
+    });
+
   } catch (error) {
     console.error("Error adding address:", error);
     if (error.name === 'ValidationError') {
       const errorMessage = Object.values(error.errors)[0].message;
-      return res.redirect(`/addresses/add?error=${errorMessage}`);
+      return res.status(400).json({ 
+        success: false,
+        message: errorMessage
+      });
     }
-    return res.redirect('/addresses/add?error=Failed to add address');
+   
+    return res.status(500).json({ 
+      success: false,
+      message: 'Failed to add this address due to a server error.'
+    });
   }
 });
 
