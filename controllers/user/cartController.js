@@ -237,7 +237,7 @@ export const clearCart = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Get cart count (for header display)
+// cart count 
 export const getCartCount = catchAsyncError(async (req, res, next) => {
   try {
     const cart = await Cart.findOne({ user: req.user._id });
@@ -257,7 +257,7 @@ export const getCartCount = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Validate cart items against current product status
+
 async function validateCartItems(cart) {
   if (!cart.items || cart.items.length === 0) {
     return cart;
@@ -270,34 +270,34 @@ async function validateCartItems(cart) {
     const item = cart.items[i];
     const product = item.product;
 
-    // Check if product is still available
+    
     if (!product || product.isBlocked || product.isDeleted || product.status !== "Available") {
       itemsToRemove.push(item.product._id);
       hasChanges = true;
       continue;
     }
 
-    // Check if category is still listed
+    
     if (!product.category || !product.category.isListed) {
       itemsToRemove.push(item.product._id);
       hasChanges = true;
       continue;
     }
 
-    // Check if quantity exceeds available stock
+   
     if (item.quantity > product.quantity) {
       if (product.quantity > 0) {
-        // Reduce quantity to available stock
+        
         item.quantity = product.quantity;
         hasChanges = true;
       } else {
-        // Remove item if out of stock
+       
         itemsToRemove.push(item.product._id);
         hasChanges = true;
       }
     }
 
-    // Update prices if they have changed
+    
     if (item.price !== product.price || item.salePrice !== product.salePrice) {
       item.price = product.price;
       item.salePrice = product.salePrice;
@@ -305,12 +305,12 @@ async function validateCartItems(cart) {
     }
   }
 
-  // Remove invalid items
+ 
   itemsToRemove.forEach(productId => {
     cart.removeItem(productId);
   });
 
-  // Save changes if any
+ 
   if (hasChanges) {
     await cart.save();
   }
