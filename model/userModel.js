@@ -125,7 +125,7 @@ return verificationCode
 userSchema.methods.generateToken = function () {
     return jwt.sign(
         {
-            id: this._id,
+            userId: this._id,
             isAdmin: this.isAdmin
         },
         process.env.JWT_SECRET_KEY,

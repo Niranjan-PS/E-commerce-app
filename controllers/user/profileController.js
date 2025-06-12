@@ -16,9 +16,13 @@ const __dirname = path.dirname(__filename);
 
 export const viewProfile = catchAsyncError(async (req, res, next) => {
   try {
+    if (!req.user || !req.user._id) {
+      return res.redirect('/login?error=Please login to access your profile');
+    }
+
     const user = await User.findById(req.user._id);
     if (!user) {
-      return next(new ErrorHandler("User not found", 404));
+      return res.redirect('/login?error=User not found');
     }
 
     let wallet = await Wallet.findOne({ userId: user._id });
@@ -46,7 +50,7 @@ export const viewProfile = catchAsyncError(async (req, res, next) => {
     });
   } catch (error) {
     console.error("Error loading profile:", error);
-    return next(new ErrorHandler("Failed to load profile", 500));
+    return res.redirect('/login?error=Failed to load profile');
   }
 });
 

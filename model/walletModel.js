@@ -4,7 +4,6 @@ export const TransactionSchema = new mongoose.Schema({
   transactionId: {
     type: String,
     required: true,
-    unique: true,
   },
   description: {
     type: String,
