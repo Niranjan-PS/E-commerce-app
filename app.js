@@ -66,11 +66,6 @@ app.use(express.static(path.join(__dirname, 'public'), {
   }
 }));
 
-// app.use((req, res, next) => {
-//   console.log("Incoming request body:", req.body);
-//   next();
-// });
-
 app.use("/", userRoutes);
 app.use('/api/v1/user', userRoutes);
 app.use('/admin', adminRoutes);

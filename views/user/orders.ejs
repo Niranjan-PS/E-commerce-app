@@ -209,9 +209,19 @@
       color: #004085;
     }
 
+    .status-packed {
+      background-color: #fff3e0;
+      color: #f57c00;
+    }
+
     .status-shipped {
       background-color: #e2e3e5;
       color: #383d41;
+    }
+
+    .status-out-for-delivery {
+      background-color: #e8eaf6;
+      color: #3f51b5;
     }
 
     .status-delivered {
@@ -443,6 +453,12 @@
           <li class="nav-item">
             <a class="nav-link" href="/shop">Shop</a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="/orders">Orders</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/profile">Profile</a>
+          </li>
         </ul>
         <div class="navbar-icons">
           <a href="/wishlist" class="text-white me-3">
@@ -459,8 +475,9 @@
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
               <li><a class="dropdown-item" href="/profile">My Profile</a></li>
+              <li><a class="dropdown-item" href="/orders">Order History</a></li>
+              <li><a class="dropdown-item" href="/wallet">My Wallet</a></li>
               <li><a class="dropdown-item" href="/addresses">My Addresses</a></li>
-              <li><a class="dropdown-item" href="/orders">My Orders</a></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="/logout">Logout</a></li>
             </ul>

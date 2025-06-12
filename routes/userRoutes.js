@@ -13,11 +13,7 @@ import {
   loadHomePage,
   loadShopPage,
   getProductDetails,pagenotFound} from "../controllers/user/userController.js"
-import {
-  createDummyCoupons,
-  validateCoupon,
-  getActiveCoupons
-} from "../controllers/admin/couponController.js";
+
 import {
   addReview,
   getProductReviews,
@@ -65,8 +61,6 @@ import {
 } from "../controllers/user/wishlistController.js";
 import {
   getCheckout,
-  applyCoupon,
-  removeCoupon,
   placeOrder,
   getOrderSuccess
 } from "../controllers/user/checkoutController.js";
@@ -75,12 +69,16 @@ import {
   getUserOrders,
   cancelOrder,
   returnOrder,
+  cancelOrderItem,
+  returnOrderItem,
+  requestIndividualItemReturn,
   downloadInvoice,
   markOrderDelivered
 } from "../controllers/user/orderController.js";
-import { profileUpload, processProfileImage } from "../helpers/multer.js";
+import { profileUpload, processProfileImage, formDataUpload } from "../helpers/multer.js";
 import { isAuthenticated } from "../middlewares/auth.js";
 import { getUserProductList } from "../controllers/user/userProductController.js";
+import {getWalletDetails} from "../controllers/user/walletController.js"
 import passport from "../passport.js";
 
 const router = express.Router();
@@ -91,7 +89,7 @@ const setNoCacheHeaders = (req, res, next) => {
   res.set("Expires", "0");
   res.setHeader('Surrogate-Control', 'no-store');
   res.setHeader('Vary', 'User-Agent');
-  // Removed Clear-Site-Data header as it was causing unnecessary cache clearing
+  
   next();
 };
 
@@ -124,13 +122,9 @@ router.get("/shop", isAuthenticated, loadShopPage);
 router.get("/product/:id", isAuthenticated, getProductDetails);
 router.get("/logout", isAuthenticated, logout);
 
-// User status check route (for real-time blocking)
+
 router.get("/check-status", checkUserStatus);
 
-// Coupon routes
-router.post("/create-dummy-coupons", createDummyCoupons);
-router.post("/validate-coupon", isAuthenticated, validateCoupon);
-router.get("/coupons", isAuthenticated, getActiveCoupons);
 
 // Review routes
 router.post("/reviews", isAuthenticated, addReview);
@@ -197,9 +191,9 @@ router.post("/reset-password/:token", resetPassword);
 // Address routes
 router.get("/addresses", isAuthenticated, getAddresses);
 router.get("/addresses/add", isAuthenticated, loadAddAddress);
-router.post("/addresses/add", isAuthenticated, addAddress);
+router.post("/addresses/add", isAuthenticated, formDataUpload.none(), addAddress);
 router.get("/addresses/edit/:id", isAuthenticated, loadEditAddress);
-router.post("/addresses/edit/:id", isAuthenticated, updateAddress);
+router.post("/addresses/edit/:id", isAuthenticated, formDataUpload.none(), updateAddress);
 router.delete("/addresses/:id", isAuthenticated, deleteAddress);
 router.post("/addresses/:id/default", isAuthenticated, setDefaultAddress);
 router.get("/api/addresses", isAuthenticated, getAddressesForCheckout);
@@ -222,8 +216,6 @@ router.post("/wishlist/move-to-cart/:productId", isAuthenticated, moveToCart);
 
 // Checkout routes
 router.get("/checkout", isAuthenticated, getCheckout);
-router.post("/checkout/apply-coupon", isAuthenticated, applyCoupon);
-router.post("/checkout/remove-coupon", isAuthenticated, removeCoupon);
 router.post("/checkout/place-order", isAuthenticated, placeOrder);
 router.get("/order-success/:orderId", isAuthenticated, getOrderSuccess);
 
@@ -232,8 +224,13 @@ router.get("/orders", isAuthenticated, getUserOrders);
 router.get("/orders/:orderId", isAuthenticated, getOrderDetails);
 router.post("/orders/:orderId/cancel", isAuthenticated, cancelOrder);
 router.post("/orders/:orderId/return", isAuthenticated, returnOrder);
+router.post("/orders/:orderId/items/:itemId/cancel", isAuthenticated, cancelOrderItem);
+router.post("/orders/:orderId/items/:itemId/return", isAuthenticated, returnOrderItem);
+router.post("/orders/:orderId/items/:itemId/return-individual", isAuthenticated, requestIndividualItemReturn);
 router.get("/orders/:orderId/invoice", isAuthenticated, downloadInvoice);
-router.post("/orders/:orderId/mark-delivered", isAuthenticated, markOrderDelivered); 
+router.post("/orders/:orderId/mark-delivered", isAuthenticated, markOrderDelivered);
+
+router.get('/wallet', isAuthenticated, getWalletDetails);
 
 router.get("/pageNotFound", pagenotFound);
 

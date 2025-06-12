@@ -63,10 +63,10 @@ export const addToCart = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Get or create cart
+    
     const cart = await Cart.getOrCreateCart(req.user._id);
 
-    // Check if adding this quantity would exceed stock
+   
     const existingItem = cart.getItem(productId);
     const currentQuantityInCart = existingItem ? existingItem.quantity : 0;
     const requestedQuantity = parseInt(quantity);
@@ -79,11 +79,11 @@ export const addToCart = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Add item to cart
+   
     cart.addItem(product, requestedQuantity);
     await cart.save();
 
-    // Remove from wishlist if exists
+    
     const wishlist = await Wishlist.findOne({ user: req.user._id });
     if (wishlist && wishlist.hasProduct(productId)) {
       wishlist.removeItem(productId);
@@ -114,12 +114,11 @@ export const addToCart = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Update cart item quantity
+
 export const updateCartQuantity = catchAsyncError(async (req, res, next) => {
   try {
     const { productId, quantity } = req.body;
 
-    // Validate product and stock
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(HttpStatus.NOT_FOUND).json({
@@ -135,7 +134,7 @@ export const updateCartQuantity = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Get cart
+    
     const cart = await Cart.findOne({ user: req.user._id });
     if (!cart) {
       return res.status(HttpStatus.NOT_FOUND).json({
@@ -144,7 +143,7 @@ export const updateCartQuantity = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Update quantity
+    
     cart.updateItemQuantity(productId, parseInt(quantity));
     await cart.save();
 
@@ -173,12 +172,12 @@ export const updateCartQuantity = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Remove item from cart
+
 export const removeFromCart = catchAsyncError(async (req, res, next) => {
   try {
     const { productId } = req.params;
 
-    // Get cart
+    
     const cart = await Cart.findOne({ user: req.user._id });
     if (!cart) {
       return res.status(HttpStatus.NOT_FOUND).json({
@@ -187,7 +186,7 @@ export const removeFromCart = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Remove item
+   
     cart.removeItem(productId);
     await cart.save();
 
@@ -237,7 +236,7 @@ export const clearCart = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// cart count 
+
 export const getCartCount = catchAsyncError(async (req, res, next) => {
   try {
     const cart = await Cart.findOne({ user: req.user._id });

@@ -17,6 +17,9 @@
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       padding: 2rem 0;
+      position: relative;
+      bottom: 862px;
+      right: 50px;
       margin-bottom: 2rem;
     }
 
@@ -25,6 +28,8 @@
       border-radius: 15px;
       padding: 2rem;
       margin-bottom: 2rem;
+      position: relative;
+      bottom: 881px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
@@ -381,7 +386,7 @@
                 
                 <div class="row g-3">
                   <div class="col-6 col-md-3">
-                    <small class="text-muted d-block">Quantity:</small>
+                    <small class="text-muted d-block">Total Quantity:</small>
                     <div class="fw-bold"><%= item.quantity || 0 %></div>
                   </div>
                   <div class="col-6 col-md-3">
@@ -401,6 +406,83 @@
                     </div>
                   </div>
                 </div>
+
+                <!-- Item Status Details -->
+                <% if (item.cancelledQuantity > 0 || item.returnedQuantity > 0) { %>
+                  <div class="row g-3 mt-2 pt-2 border-top">
+                    <% if (item.cancelledQuantity > 0) { %>
+                      <div class="col-6 col-md-3">
+                        <small class="text-muted d-block">Cancelled Qty:</small>
+                        <div class="fw-bold text-danger"><%= item.cancelledQuantity %></div>
+                      </div>
+                    <% } %>
+                    <% if (item.returnedQuantity > 0) { %>
+                      <div class="col-6 col-md-3">
+                        <small class="text-muted d-block">Returned Qty:</small>
+                        <div class="fw-bold text-warning"><%= item.returnedQuantity %></div>
+                      </div>
+                    <% } %>
+                    <%
+                      const activeQuantity = (item.quantity || 0) - (item.cancelledQuantity || 0) - (item.returnedQuantity || 0);
+                    %>
+                    <% if (activeQuantity > 0) { %>
+                      <div class="col-6 col-md-3">
+                        <small class="text-muted d-block">Active Qty:</small>
+                        <div class="fw-bold text-success"><%= activeQuantity %></div>
+                      </div>
+                    <% } %>
+                  </div>
+                <% } %>
+
+                <!-- Individual Item Return Status (NEW) -->
+                <% if (item.itemReturnStatus && item.itemReturnStatus !== 'None') { %>
+                  <div class="row g-3 mt-2 pt-2 border-top">
+                    <div class="col-12">
+                      <small class="text-muted d-block">Individual Return Status:</small>
+                      <div class="fw-bold text-<%=
+                        item.itemReturnStatus === 'Requested' ? 'warning' :
+                        item.itemReturnStatus === 'Approved' ? 'success' :
+                        item.itemReturnStatus === 'Completed' ? 'info' :
+                        item.itemReturnStatus === 'Rejected' ? 'danger' : 'muted'
+                      %>">
+                        <%= item.itemReturnStatus %>
+                        <% if (item.itemReturnRequestedAt) { %>
+                          <small class="text-muted">
+                            (Requested: <%= new Date(item.itemReturnRequestedAt).toLocaleDateString('en-IN') %>)
+                          </small>
+                        <% } %>
+                      </div>
+
+                      <% if (item.itemReturnReason) { %>
+                        <div class="mt-2">
+                          <small class="text-muted d-block">Return Reason:</small>
+                          <div class="small"><%= item.itemReturnReason %></div>
+                        </div>
+                      <% } %>
+
+                      <% if (item.adminItemReturnNotes) { %>
+                        <div class="mt-2">
+                          <small class="text-muted d-block">Admin Notes:</small>
+                          <div class="small"><%= item.adminItemReturnNotes %></div>
+                        </div>
+                      <% } %>
+
+                      <!-- Individual Item Return Actions -->
+                      <% if (item.itemReturnStatus === 'Requested') { %>
+                        <div class="mt-3">
+                          <button class="btn btn-sm btn-success me-2"
+                                  onclick="handleIndividualItemReturn('<%= order._id %>', '<%= item._id %>', '<%= item.productName %>', 'approve')">
+                            <i class="fas fa-check me-1"></i>Approve Return
+                          </button>
+                          <button class="btn btn-sm btn-danger"
+                                  onclick="handleIndividualItemReturn('<%= order._id %>', '<%= item._id %>', '<%= item.productName %>', 'reject')">
+                            <i class="fas fa-times me-1"></i>Reject Return
+                          </button>
+                        </div>
+                      <% } %>
+                    </div>
+                  </div>
+                <% } %>
               </div>
             </div>
           <% }); %>
@@ -414,7 +496,7 @@
 
       <!-- Action Buttons -->
       <div class="detail-card text-center">
-        <% if (order.orderStatus && ['Pending', 'Confirmed', 'Processing', 'Shipped'].includes(order.orderStatus)) { %>
+        <% if (order.orderStatus && ['Pending', 'Confirmed', 'Processing', 'Packed', 'Shipped', 'Out for Delivery'].includes(order.orderStatus)) { %>
           <button class="action-btn btn-status" onclick="showStatusModal('<%= order._id %>', '<%= order.orderNumber %>', '<%= order.orderStatus %>')">
             <i class="fas fa-edit me-2"></i>Update Order Status
           </button>
@@ -444,7 +526,9 @@
                 <option value="Pending">Pending</option>
                 <option value="Confirmed">Confirmed</option>
                 <option value="Processing">Processing</option>
+                <option value="Packed">Packed</option>
                 <option value="Shipped">Shipped</option>
+                <option value="Out for Delivery">Out for Delivery</option>
                 <option value="Delivered">Delivered</option>
                 <option value="Cancelled">Cancelled</option>
               </select>
@@ -605,6 +689,78 @@
 
         bootstrap.Modal.getInstance(document.getElementById('returnModal')).hide();
       });
+
+      // Handle individual item return (NEW)
+      function handleIndividualItemReturn(orderId, itemId, itemName, action) {
+        const actionText = action === 'approve' ? 'approve' : 'reject';
+        const actionTitle = action === 'approve' ? 'Approve Return' : 'Reject Return';
+
+        Swal.fire({
+          title: actionTitle,
+          text: `Are you sure you want to ${actionText} the return request for "${itemName}"?`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: action === 'approve' ? '#28a745' : '#dc3545',
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: `Yes, ${actionText}`,
+          cancelButtonText: 'Cancel',
+          input: 'textarea',
+          inputPlaceholder: 'Add admin notes (optional)...',
+          inputAttributes: {
+            'aria-label': 'Admin notes'
+          }
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            const adminNotes = result.value || '';
+
+            try {
+              const response = await fetch(`/admin/orders/${orderId}/items/${itemId}/return`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  action: action,
+                  adminNotes: adminNotes
+                })
+              });
+
+              const responseData = await response.json();
+
+              if (responseData.success) {
+                let message = responseData.message;
+                if (action === 'approve' && responseData.refundAmount) {
+                  message += `\nRefund amount: ₹${responseData.refundAmount.toFixed(2)}`;
+                }
+
+                Swal.fire({
+                  icon: 'success',
+                  title: actionTitle + ' Successful',
+                  text: message,
+                  confirmButtonColor: '#28a745'
+                }).then(() => {
+                  location.reload();
+                });
+              } else {
+                Swal.fire({
+                  icon: 'error',
+                  title: 'Action Failed',
+                  text: responseData.message,
+                  confirmButtonColor: '#dc3545'
+                });
+              }
+            } catch (error) {
+              console.error('Error processing individual item return:', error);
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to process the return request. Please try again.',
+                confirmButtonColor: '#dc3545'
+              });
+            }
+          }
+        });
+      }
     </script>
   </div>
 </body>

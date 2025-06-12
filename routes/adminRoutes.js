@@ -24,6 +24,7 @@ import {
   getAdminOrderDetails,
   updateOrderStatus,
   handleReturnRequest,
+  handleIndividualItemReturn,
   getReturnRequests
 } from "../controllers/admin/adminOrderController.js";
 
@@ -36,7 +37,7 @@ import {
 } from "../controllers/admin/inventoryController.js";
 
 
-
+//admin
 router.get('/admin-login',loadLogin)
 router.post('/admin-login',adminLogin)
 router.get('/logout', isAdminAuthenticated, adminLogout)
@@ -44,25 +45,12 @@ router.get('/', isAdminAuthenticated, loadAdminDashboard)
 router.get('/dashboard', isAdminAuthenticated, (req, res) => {
   res.render('dashboard');
 });
+
+//customers or users
 router.get("/users", isAdminAuthenticated, customerInfo)
-
-// router.get('/blockUser', isAdminAuthenticated, async (req, res) => {
-//   const userId = req.query.id;
-
-//   if (!userId) return res.status(400).send("User ID is required");
-
-//   try {
-//     await User.findByIdAndUpdate(userId, { isBlocked: true });
-//     res.redirect('/admin/users');
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).send("Invalid User ID");
-//   }
-// });
 router.patch('/blockUser', isAdminAuthenticated, async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.query.id, { isBlocked: true });
-    // Note: User will be automatically logged out when they make their next request due to middleware check
     res.status(200).json({ success: true, message: 'User blocked successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to block user' });
@@ -78,23 +66,15 @@ router.patch('/unblockUser', isAdminAuthenticated, async (req, res) => {
   }
 });
 
+//category
 router.get("/category", isAdminAuthenticated, categoryInfo)
-
 router.post("/addCategory", isAdminAuthenticated, addCategory)
 router.patch('/category/toggle/:id', isAdminAuthenticated, toggleCategoryStatus);
 router.get("/editCategory", isAdminAuthenticated, getEditCategory)
 router.post("/editCategory/:id", isAdminAuthenticated, EditCategory)
 router.post('/deleteCategory', isAdminAuthenticated, deleteCategory);
 
-
-
-
-
-
-
-
 //product
-
 router.get('/add-products', isAdminAuthenticated, async (req, res) => {
   try {
     const cat = await Category.find({});
@@ -125,14 +105,15 @@ router.post(
   editProduct
 );
 
-// Order management routes
+// Order
 router.get('/orders', isAdminAuthenticated, getAdminOrders);
 router.get('/orders/:orderId', isAdminAuthenticated, getAdminOrderDetails);
 router.post('/orders/:orderId/status', isAdminAuthenticated, updateOrderStatus);
 router.post('/orders/:orderId/return', isAdminAuthenticated, handleReturnRequest);
+router.post('/orders/:orderId/items/:itemId/return', isAdminAuthenticated, handleIndividualItemReturn);
 router.get('/return-requests', isAdminAuthenticated, getReturnRequests);
 
-// Inventory management routes
+//inventory
 router.get('/inventory', isAdminAuthenticated, getInventoryDashboard);
 router.post('/inventory/:productId/stock', isAdminAuthenticated, updateStock);
 router.post('/inventory/bulk-update', isAdminAuthenticated, bulkUpdateStock);

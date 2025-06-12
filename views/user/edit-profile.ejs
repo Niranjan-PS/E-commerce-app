@@ -245,7 +245,7 @@
         </div>
       <% } %>
 
-      <form action="/profile/edit" method="POST" enctype="multipart/form-data" id="editProfileForm">
+      <form id="editProfileForm" data-action="/profile/edit" enctype="multipart/form-data">
         <!-- Profile Image Section -->
         <div class="profile-image-section">
           <div id="currentImageContainer">
@@ -330,7 +330,7 @@
 
         <!-- Action Buttons -->
         <div class="action-buttons">
-          <button type="submit" class="btn btn-primary">
+          <button type="button" class="btn btn-primary" id="saveProfileBtn" onclick="saveProfile()">
             <i class="fas fa-save me-2"></i>Save Changes
           </button>
           <a href="/profile" class="btn btn-secondary">
@@ -392,49 +392,67 @@
       const phoneInput = document.getElementById('phone');
       const form = document.getElementById('editProfileForm');
 
-      // Name validation (no underscores allowed in profile)
+      // Enhanced name validation (less intrusive)
       nameInput.addEventListener('input', function() {
-        const value = this.value.trim();
+        const value = this.value;
+        let cleanValue = value;
 
-        if (value.length === 0) return;
-
-        // Check for underscores (not allowed in profile)
+        // Remove underscores silently
         if (value.includes('_')) {
+          cleanValue = value.replace(/_/g, '');
+          this.value = cleanValue;
+          // Show brief warning
           Swal.fire({
-            icon: 'error',
-            title: 'Invalid Name Format',
-            text: 'Name cannot contain underscores. Please use only letters and spaces.',
-            confirmButtonColor: '#6200ea'
+            icon: 'warning',
+            title: 'Invalid Character',
+            text: 'Underscores removed. Name can only contain letters and spaces.',
+            confirmButtonColor: '#6200ea',
+            timer: 2000,
+            showConfirmButton: false
           });
-          // Remove underscores
-          this.value = value.replace(/_/g, '');
-          return;
         }
 
-        // Check for invalid characters
-        if (!/^[A-Za-z\s]+$/.test(value)) {
+        // Remove numbers and special characters silently
+        const filteredValue = cleanValue.replace(/[^A-Za-z\s]/g, '');
+        if (filteredValue !== cleanValue) {
+          this.value = filteredValue;
+          // Show brief warning
           Swal.fire({
-            icon: 'error',
-            title: 'Invalid Name Format',
-            text: 'Name can only contain letters and spaces.',
-            confirmButtonColor: '#6200ea'
+            icon: 'warning',
+            title: 'Invalid Characters',
+            text: 'Only letters and spaces are allowed in names.',
+            confirmButtonColor: '#6200ea',
+            timer: 2000,
+            showConfirmButton: false
           });
-          // Remove invalid characters
-          this.value = value.replace(/[^A-Za-z\s]/g, '');
-          return;
         }
 
-        // Check for multiple consecutive spaces
-        if (/\s{2,}/.test(value)) {
+        // Fix multiple consecutive spaces
+        const finalValue = this.value.replace(/\s{2,}/g, ' ');
+        if (finalValue !== this.value) {
+          this.value = finalValue;
+          // Show brief warning
           Swal.fire({
-            icon: 'error',
-            title: 'Invalid Name Format',
-            text: 'Name cannot have multiple consecutive spaces.',
-            confirmButtonColor: '#6200ea'
+            icon: 'warning',
+            title: 'Spacing Fixed',
+            text: 'Multiple spaces reduced to single spaces.',
+            confirmButtonColor: '#6200ea',
+            timer: 1500,
+            showConfirmButton: false
           });
-          // Replace multiple spaces with single space
-          this.value = value.replace(/\s{2,}/g, ' ');
-          return;
+        }
+
+        // Check for only spaces
+        if (this.value.trim().length === 0 && this.value.length > 0) {
+          this.value = '';
+          Swal.fire({
+            icon: 'warning',
+            title: 'Invalid Input',
+            text: 'Name cannot be only spaces.',
+            confirmButtonColor: '#6200ea',
+            timer: 2000,
+            showConfirmButton: false
+          });
         }
       });
 
@@ -476,14 +494,14 @@
         }
       });
 
-      // Form submission validation
-      form.addEventListener('submit', function(e) {
+      // Save profile function
+      window.saveProfile = async function() {
+        console.log('Save profile function called!');
         const name = nameInput.value.trim();
         const phone = phoneInput.value.trim();
 
-        // Validate name
+        // Enhanced validation for name
         if (!name) {
-          e.preventDefault();
           Swal.fire({
             icon: 'warning',
             title: 'Name Required',
@@ -493,8 +511,17 @@
           return;
         }
 
+        if (name.trim().length === 0) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Invalid Name Format',
+            text: 'Name cannot be only spaces.',
+            confirmButtonColor: '#6200ea'
+          });
+          return;
+        }
+
         if (name.includes('_')) {
-          e.preventDefault();
           Swal.fire({
             icon: 'error',
             title: 'Invalid Name Format',
@@ -504,8 +531,27 @@
           return;
         }
 
+        if (/^\d+$/.test(name.trim())) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Invalid Name Format',
+            text: 'Name cannot be only numbers. Please include at least one letter.',
+            confirmButtonColor: '#6200ea'
+          });
+          return;
+        }
+
+        if (!/[a-zA-Z]/.test(name)) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Invalid Name Format',
+            text: 'Name must contain at least one letter.',
+            confirmButtonColor: '#6200ea'
+          });
+          return;
+        }
+
         if (!/^[A-Za-z\s]+$/.test(name)) {
-          e.preventDefault();
           Swal.fire({
             icon: 'error',
             title: 'Invalid Name Format',
@@ -515,9 +561,18 @@
           return;
         }
 
+        if (/\s{2,}/.test(name)) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Invalid Name Format',
+            text: 'Name cannot have multiple consecutive spaces.',
+            confirmButtonColor: '#6200ea'
+          });
+          return;
+        }
+
         // Validate phone if provided
         if (phone && !/^\+91[6-9]\d{9}$/.test(phone)) {
-          e.preventDefault();
           Swal.fire({
             icon: 'error',
             title: 'Invalid Phone Number',
@@ -526,7 +581,62 @@
           });
           return;
         }
-      });
+
+        // If all validations pass, submit the form via AJAX
+        try {
+          const formData = new FormData(form);
+          const actionUrl = form.getAttribute('data-action');
+          const response = await fetch(actionUrl, {
+            method: 'POST',
+            body: formData
+          });
+
+          // Check if response is JSON
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const result = await response.json();
+
+            if (result.success) {
+              Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: result.message || 'Profile updated successfully',
+                confirmButtonColor: '#6200ea'
+              }).then(() => {
+                window.location.href = '/profile';
+              });
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Validation Error',
+                text: result.message,
+                confirmButtonColor: '#6200ea'
+              });
+            }
+          } else {
+            // Handle non-JSON response (redirect)
+            const text = await response.text();
+            if (response.redirected || text.includes('<!DOCTYPE html>')) {
+              window.location.href = '/profile';
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Unexpected response from server',
+                confirmButtonColor: '#6200ea'
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error updating profile:', error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to update profile. Please try again.',
+            confirmButtonColor: '#6200ea'
+          });
+        }
+      };
     });
     let selectedProfileFile = null;
 

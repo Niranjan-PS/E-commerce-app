@@ -31,8 +31,62 @@ export const loadAddAddress = catchAsyncError(async (req, res, next) => {
   }
 });
 
+
+const validateAddressField = (value, fieldName, isRequired = true) => {
+  if (!value || value.trim().length === 0) {
+    if (isRequired) {
+      return `${fieldName} is required`;
+    }
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+
+  
+  if (trimmedValue.length === 0) {
+    return `${fieldName} cannot be only spaces`;
+  }
+
+ 
+  if (trimmedValue.includes('_')) {
+    return `${fieldName} cannot contain underscores`;
+  }
+
+
+  if (['title', 'fullName', 'city', 'state', 'country'].includes(fieldName.toLowerCase().replace(' ', ''))) {
+   
+    if (/^\d+$/.test(trimmedValue)) {
+      return `${fieldName} cannot be only numbers`;
+    }
+
+   
+    if (!/[a-zA-Z]/.test(trimmedValue)) {
+      return `${fieldName} must contain at least one letter`;
+    }
+
+    
+    if (['fullName', 'city', 'state', 'country'].includes(fieldName.toLowerCase().replace(' ', ''))) {
+      if (!/^[a-zA-Z\s.-]+$/.test(trimmedValue)) {
+        return `${fieldName} can only contain letters, spaces, dots, and hyphens`;
+      }
+    }
+  }
+
+  
+  if (['street', 'landmark'].includes(fieldName.toLowerCase())) {
+    if (!/[a-zA-Z]/.test(trimmedValue)) {
+      return `${fieldName} must contain at least one letter`;
+    }
+  }
+
+  return null; 
+};
+
 export const addAddress = catchAsyncError(async (req, res, next) => {
   try {
+    
+    
+    console.log('Request body:', req.body);
     const {
       title,
       fullName,
@@ -47,11 +101,57 @@ export const addAddress = catchAsyncError(async (req, res, next) => {
       isDefault
     } = req.body;
 
-   
-    if (!title || !fullName || !phone || !street || !city || !state || !zipCode) {
-      return res.status(400).json({ 
+    console.log('Extracted fields:', {
+      title, fullName, phone, street, landmark, city, state, zipCode, country, addressType, isDefault
+    });
+
+    
+    const validationErrors = [];
+
+    
+    const requiredFields = [
+      { value: title, name: 'Address Title' },
+      { value: fullName, name: 'Full Name' },
+      { value: phone, name: 'Phone' },
+      { value: street, name: 'Street' },
+      { value: city, name: 'City' },
+      { value: state, name: 'State' },
+      { value: zipCode, name: 'ZIP Code' }
+    ];
+
+    for (const field of requiredFields) {
+      if (!field.value || field.value.trim().length === 0) {
+        validationErrors.push(`${field.name} is required`);
+      } else {
+        const error = validateAddressField(field.value, field.name, true);
+        if (error) {
+          validationErrors.push(error);
+        }
+      }
+    }
+
+    
+    if (landmark) {
+      const landmarkError = validateAddressField(landmark, 'Landmark', false);
+      if (landmarkError) {
+        validationErrors.push(landmarkError);
+      }
+    }
+
+    if (country) {
+      const countryError = validateAddressField(country, 'Country', false);
+      if (countryError) {
+        validationErrors.push(countryError);
+      }
+    }
+
+    console.log('Validation errors found:', validationErrors);
+
+    if (validationErrors.length > 0) {
+      console.log('Returning validation error:', validationErrors[0]);
+      return res.status(400).json({
         success: false,
-        message: 'All required fields must be filled'
+        message: validationErrors[0] 
       });
     }
 
@@ -71,10 +171,14 @@ export const addAddress = catchAsyncError(async (req, res, next) => {
       });
     }
 
+    console.log('Checking existing addresses...');
     const existingAddresses = await Address.find({ user: req.user._id, isActive: true });
-    const shouldBeDefault = existingAddresses.length === 0 || isDefault === 'on';
+    console.log('Existing addresses count:', existingAddresses.length);
 
-    const newAddress = new Address({
+    const shouldBeDefault = existingAddresses.length === 0 || isDefault === 'on';
+    console.log('Should be default:', shouldBeDefault);
+
+    const addressData = {
       user: req.user._id,
       title: title.trim(),
       fullName: fullName.trim(),
@@ -87,9 +191,14 @@ export const addAddress = catchAsyncError(async (req, res, next) => {
       country: country ? country.trim() : 'India',
       addressType: addressType || 'Home',
       isDefault: shouldBeDefault
-    });
+    };
 
+    console.log('Creating address with data:', addressData);
+    const newAddress = new Address(addressData);
+
+    console.log('Saving address to database...');
     await newAddress.save();
+    console.log('Address saved successfully:', newAddress._id);
 
     
     return res.status(201).json({
@@ -135,7 +244,7 @@ export const loadEditAddress = catchAsyncError(async (req, res, next) => {
       error: req.query.error || null
     });
   } catch (error) {
-    console.error("Error loading edit address page:", error);
+    console.error("Error loading edit :", error);
     return res.redirect('/addresses?error=Failed to load address');
   }
 });
@@ -143,6 +252,8 @@ export const loadEditAddress = catchAsyncError(async (req, res, next) => {
 
 export const updateAddress = catchAsyncError(async (req, res, next) => {
   try {
+   
+
     const { id } = req.params;
     const {
       title,
@@ -158,31 +269,81 @@ export const updateAddress = catchAsyncError(async (req, res, next) => {
       isDefault
     } = req.body;
 
-    const address = await Address.findOne({ 
-      _id: id, 
-      user: req.user._id, 
-      isActive: true 
+   
+
+    const address = await Address.findOne({
+      _id: id,
+      user: req.user._id,
+      isActive: true
     });
 
     if (!address) {
       return res.redirect('/addresses?error=Address not found');
     }
 
-   
-    if (!title || !fullName || !phone || !street || !city || !state || !zipCode) {
-      return res.redirect(`/addresses/edit/${id}?error=All required fields must be filled`);
+    // Enhanced field validation
+    const validationErrors = [];
+
+    // Validate required fields
+    const requiredFields = [
+      { value: title, name: 'Address Title' },
+      { value: fullName, name: 'Full Name' },
+      { value: phone, name: 'Phone' },
+      { value: street, name: 'Street' },
+      { value: city, name: 'City' },
+      { value: state, name: 'State' },
+      { value: zipCode, name: 'ZIP Code' }
+    ];
+
+    for (const field of requiredFields) {
+      if (!field.value || field.value.trim().length === 0) {
+        validationErrors.push(`${field.name} is required`);
+      } else {
+        const error = validateAddressField(field.value, field.name, true);
+        if (error) {
+          validationErrors.push(error);
+        }
+      }
     }
 
-    
+   
+    if (landmark) {
+      const landmarkError = validateAddressField(landmark, 'Landmark', false);
+      if (landmarkError) {
+        validationErrors.push(landmarkError);
+      }
+    }
+
+    if (country) {
+      const countryError = validateAddressField(country, 'Country', false);
+      if (countryError) {
+        validationErrors.push(countryError);
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: validationErrors[0]
+      });
+    }
+
+
     const phoneRegex = /^\+91\d{10}$/;
     if (!phoneRegex.test(phone.trim())) {
-      return res.redirect(`/addresses/edit/${id}?error=Invalid phone number format. Use +91XXXXXXXXXX`);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid phone number format. Use +91XXXXXXXXXX'
+      });
     }
 
-   
+
     const zipRegex = /^\d{6}$/;
     if (!zipRegex.test(zipCode.trim())) {
-      return res.redirect(`/addresses/edit/${id}?error=ZIP code must be 6 digits`);
+      return res.status(400).json({
+        success: false,
+        message: 'ZIP code must be 6 digits'
+      });
     }
 
     
@@ -200,14 +361,23 @@ export const updateAddress = catchAsyncError(async (req, res, next) => {
 
     await address.save();
 
-    res.redirect('/addresses?message=Address updated successfully');
+    res.status(200).json({
+      success: true,
+      message: 'Address updated successfully'
+    });
   } catch (error) {
     console.error("Error updating address:", error);
     if (error.name === 'ValidationError') {
       const errorMessage = Object.values(error.errors)[0].message;
-      return res.redirect(`/addresses/edit/${req.params.id}?error=${errorMessage}`);
+      return res.status(400).json({
+        success: false,
+        message: errorMessage
+      });
     }
-    return res.redirect(`/addresses/edit/${req.params.id}?error=Failed to update address`);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update address due to a server error'
+    });
   }
 });
 
@@ -294,7 +464,7 @@ export const setDefaultAddress = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Get addresses for checkout (API endpoint)
+// Get addresses
 export const getAddressesForCheckout = catchAsyncError(async (req, res, next) => {
   try {
     const addresses = await Address.getUserAddresses(req.user._id);

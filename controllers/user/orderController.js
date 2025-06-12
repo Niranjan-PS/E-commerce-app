@@ -4,6 +4,7 @@ import { catchAsyncError } from "../../middlewares/catchAsync.js";
 import ErrorHandler from "../../middlewares/error.js";
 import PDFDocument from 'pdfkit';
 import { updateStockOnOrder } from "../admin/inventoryController.js";
+import { addReturnAmountToWallet } from './walletController.js'; // Add this import
 
 
 export const getOrderDetails = catchAsyncError(async (req, res, next) => {
@@ -53,7 +54,6 @@ export const getUserOrders = catchAsyncError(async (req, res, next) => {
     let totalOrders;
 
     if (search) {
-      // Search orders by order number or product name
       orders = await Order.searchOrders(req.user._id, search, { page, limit });
       totalOrders = await Order.countDocuments({
         user: req.user._id,
@@ -80,7 +80,7 @@ export const getUserOrders = catchAsyncError(async (req, res, next) => {
 
     const totalPages = Math.ceil(totalOrders / limit);
 
-    // Add return eligibility to each order (call methods before converting to object)
+    
     const ordersWithEligibility = orders.map(order => {
       const canBeCancelled = order.canBeCancelled();
       const canRequestReturn = order.canRequestReturn();
@@ -108,13 +108,13 @@ export const getUserOrders = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Cancel order (full or partial)
+
 export const cancelOrder = catchAsyncError(async (req, res, next) => {
   try {
     const { orderId } = req.params;
-    const { reason, items } = req.body; // items: [{ productId, quantity }]
+    const { reason, items } = req.body; 
 
-    // Get order
+    
     const order = await Order.findOne({
       _id: orderId,
       user: req.user._id
@@ -127,7 +127,7 @@ export const cancelOrder = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Check if order can be cancelled
+    
     if (!order.canBeCancelled()) {
       return res.status(400).json({
         success: false,
@@ -138,8 +138,8 @@ export const cancelOrder = catchAsyncError(async (req, res, next) => {
     let isFullCancellation = true;
     let totalRefundAmount = 0;
 
-    // If no specific items provided, cancel all items (full cancellation)
-    const itemsToCancel = items.length > 0 ? items : order.items.map(item => ({
+    //full cancellation
+    const itemsToCancel = items && items.length > 0 ? items : order.items.map(item => ({
       productId: item.product._id.toString(),
       quantity: item.quantity - item.cancelledQuantity
     }));
@@ -160,10 +160,10 @@ export const cancelOrder = catchAsyncError(async (req, res, next) => {
       );
 
       if (cancelQuantity > 0) {
-        // Update item quantities
+        
         orderItem.cancelledQuantity += cancelQuantity;
 
-        // Update item status
+        
         if (orderItem.cancelledQuantity >= orderItem.quantity) {
           orderItem.itemStatus = 'Cancelled';
         } else {
@@ -171,25 +171,25 @@ export const cancelOrder = catchAsyncError(async (req, res, next) => {
           isFullCancellation = false;
         }
 
-        // Calculate refund amount
         const itemPrice = orderItem.salePrice || orderItem.price;
         totalRefundAmount += itemPrice * cancelQuantity;
 
-        // Restore stock using inventory system
         await Product.findByIdAndUpdate(
           orderItem.product._id,
           { $inc: { quantity: cancelQuantity } }
         );
       }
 
-      // Check if any items are still active
       if (orderItem.quantity > orderItem.cancelledQuantity) {
         isFullCancellation = false;
       }
     }
 
-    // Update order status
-    if (isFullCancellation) {
+    const allItemsInactive = order.items.every(item =>
+      item.quantity === (item.cancelledQuantity + item.returnedQuantity)
+    );
+
+    if (allItemsInactive) {
       order.orderStatus = 'Cancelled';
       order.cancelledAt = new Date();
     }
@@ -197,11 +197,20 @@ export const cancelOrder = catchAsyncError(async (req, res, next) => {
     order.cancellationReason = reason;
     await order.save();
 
+    if (totalRefundAmount > 0) {
+      await addReturnAmountToWallet(
+        req.user._id,
+        totalRefundAmount,
+        order._id 
+      );
+    }
+   
+
     res.status(200).json({
       success: true,
-      message: isFullCancellation ? 'Order cancelled successfully' : 'Items cancelled successfully',
+      message: allItemsInactive ? 'Order cancelled successfully' : 'Items cancelled successfully',
       refundAmount: totalRefundAmount,
-      isFullCancellation
+      isFullCancellation: allItemsInactive
     });
 
   } catch (error) {
@@ -217,7 +226,7 @@ export const cancelOrder = catchAsyncError(async (req, res, next) => {
 export const returnOrder = catchAsyncError(async (req, res, next) => {
   try {
     const { orderId } = req.params;
-    const { reason } = req.body;
+    const { reason, items } = req.body;
 
     if (!reason || reason.trim() === '') {
       return res.status(400).json({
@@ -239,7 +248,7 @@ export const returnOrder = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Check if order can request return
+   
     if (!order.canRequestReturn()) {
       let message = 'Return request cannot be submitted.';
 
@@ -263,17 +272,42 @@ export const returnOrder = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Calculate potential refund amount for display
+    
+    const itemsToReturn = items && items.length > 0 ? items : order.items.map(item => ({
+      productId: item.product._id.toString(),
+      quantity: item.quantity - item.cancelledQuantity - item.returnedQuantity
+    })).filter(item => item.quantity > 0);
+
+   
     let totalRefundAmount = 0;
-    for (const item of order.items) {
-      const activeQuantity = item.quantity - item.cancelledQuantity - item.returnedQuantity;
-      if (activeQuantity > 0) {
-        const itemPrice = item.salePrice || item.price;
-        totalRefundAmount += itemPrice * activeQuantity;
+    let hasValidItems = false;
+
+    for (const returnItem of itemsToReturn) {
+      const orderItem = order.items.find(item =>
+        item.product._id.toString() === returnItem.productId
+      );
+
+      if (!orderItem) {
+        continue;
+      }
+
+      const availableQuantity = orderItem.quantity - orderItem.cancelledQuantity - orderItem.returnedQuantity;
+      const returnQuantity = Math.min(returnItem.quantity, availableQuantity);
+
+      if (returnQuantity > 0) {
+        hasValidItems = true;
+        const itemPrice = orderItem.salePrice || orderItem.price;
+        totalRefundAmount += itemPrice * returnQuantity;
       }
     }
 
-    // Update order with return request
+    if (!hasValidItems) {
+      return res.status(400).json({
+        success: false,
+        message: 'No eligible items found for return'
+      });
+    }
+
     order.returnReason = reason.trim();
     order.returnStatus = 'Requested';
     order.returnRequestedAt = new Date();
@@ -295,12 +329,12 @@ export const returnOrder = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Generate and download invoice PDF
+// download invoice PDF
 export const downloadInvoice = catchAsyncError(async (req, res, next) => {
   try {
     const { orderId } = req.params;
 
-    // Get order details
+    
     const order = await Order.findOne({
       _id: orderId,
       user: req.user._id
@@ -433,12 +467,10 @@ export const downloadInvoice = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Test function to mark order as delivered (for testing return functionality)
+
 export const markOrderDelivered = catchAsyncError(async (req, res, next) => {
   try {
     const { orderId } = req.params;
-
-    // Get order
     const order = await Order.findOne({
       _id: orderId,
       user: req.user._id
@@ -451,7 +483,7 @@ export const markOrderDelivered = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Update order to delivered status
+    
     order.orderStatus = 'Delivered';
     order.deliveredAt = new Date();
     order.paymentStatus = 'Paid';
@@ -469,4 +501,346 @@ export const markOrderDelivered = catchAsyncError(async (req, res, next) => {
       message: 'Failed to mark order as delivered'
     });
   }
+});
+
+
+export const cancelOrderItem = catchAsyncError(async (req, res, next) => {
+  try {
+    const { orderId, itemId } = req.params;
+    const { reason, quantity } = req.body;
+
+    const order = await Order.findOne({
+      _id: orderId,
+      user: req.user._id
+    }).populate('items.product');
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    
+    if (!order.canBeCancelled()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Order cannot be cancelled at this stage'
+      });
+    }
+
+  
+    const orderItem = order.items.id(itemId);
+    if (!orderItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Item not found in order'
+      });
+    }
+
+    const availableQuantity = orderItem.quantity - orderItem.cancelledQuantity;
+    const cancelQuantity = quantity ? Math.min(quantity, availableQuantity) : availableQuantity;
+
+    if (cancelQuantity <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No quantity available to cancel for this item'
+      });
+    }
+
+    
+    orderItem.cancelledQuantity += cancelQuantity;
+    if (orderItem.cancelledQuantity >= orderItem.quantity) {
+      orderItem.itemStatus = 'Cancelled';
+    } else {
+      orderItem.itemStatus = 'Partially Cancelled';
+    }
+
+    const itemPrice = orderItem.salePrice || orderItem.price;
+    const refundAmount = itemPrice * cancelQuantity;
+
+  
+    await Product.findByIdAndUpdate(
+      orderItem.product._id,
+      { $inc: { quantity: cancelQuantity } }
+    );
+
+    
+    const allItemsInactive = order.items.every(item =>
+      item.quantity === (item.cancelledQuantity + item.returnedQuantity)
+    );
+
+    
+    if (allItemsInactive) {
+      order.orderStatus = 'Cancelled';
+      order.cancelledAt = new Date();
+    }
+
+    if (reason) {
+      order.cancellationReason = reason;
+    }
+
+    await order.save();
+
+    
+    if (refundAmount > 0) {
+      await addReturnAmountToWallet(
+        req.user._id,
+        refundAmount,
+        order._id
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `${cancelQuantity} item(s) cancelled successfully`,
+      refundAmount: refundAmount,
+      cancelledQuantity: cancelQuantity,
+      itemStatus: orderItem.itemStatus
+    });
+
+  } catch (error) {
+    console.error("Error cancelling item:", error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to cancel item'
+    });
+  }
+});
+
+
+export const returnOrderItem = catchAsyncError(async (req, res, next) => {
+  try {
+    const { orderId, itemId } = req.params;
+    const { reason, quantity } = req.body;
+
+    if (!reason || reason.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Return reason is required'
+      });
+    }
+
+   
+    const order = await Order.findOne({
+      _id: orderId,
+      user: req.user._id
+    }).populate('items.product');
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    
+    if (!order.canRequestReturn()) {
+      let message = 'Return request cannot be submitted.';
+
+      if (order.orderStatus !== 'Delivered') {
+        message = 'Returns can only be requested for delivered orders.';
+      } else if (!order.deliveredAt) {
+        message = 'Order delivery date not found.';
+      } else if ((Date.now() - order.deliveredAt.getTime()) > (7 * 24 * 60 * 60 * 1000)) {
+        message = 'Return window has expired. Returns must be requested within 7 days of delivery.';
+      }
+
+      return res.status(400).json({
+        success: false,
+        message: message
+      });
+    }
+
+    const orderItem = order.items.id(itemId);
+    if (!orderItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Item not found in order'
+      });
+    }
+
+    const availableQuantity = orderItem.quantity - orderItem.cancelledQuantity - orderItem.returnedQuantity;
+    const returnQuantity = quantity ? Math.min(quantity, availableQuantity) : availableQuantity;
+
+    if (returnQuantity <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No quantity available to return for this item'
+      });
+    }
+
+  
+    const itemPrice = orderItem.salePrice || orderItem.price;
+    const estimatedRefund = itemPrice * returnQuantity;
+
+    // Update order with return request (only if not already requested)
+    if (order.returnStatus === 'None') {
+      order.returnReason = reason.trim();
+      order.returnStatus = 'Requested';
+      order.returnRequestedAt = new Date();
+      await order.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Return request submitted successfully for the item. Your request is pending admin approval.',
+      estimatedRefundAmount: estimatedRefund,
+      returnQuantity: returnQuantity,
+      itemName: orderItem.productName
+    });
+
+  } catch (error) {
+    console.error("Error processing item return:", error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to process return request'
+    });
+  }
+});
+
+// Request return for individual item (NEW FUNCTION - doesn't modify existing logic)
+export const requestIndividualItemReturn = catchAsyncError(async (req, res, next) => {
+  try {
+    const { orderId, itemId } = req.params;
+    const { reason, quantity } = req.body;
+
+    if (!reason || reason.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Return reason is required'
+      });
+    }
+
+    
+    const order = await Order.findOne({
+      _id: orderId,
+      user: req.user._id
+    }).populate('items.product');
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+   
+    const orderItem = order.items.id(itemId);
+    if (!orderItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Item not found in order'
+      });
+    }
+
+    
+    if (!order.canItemRequestReturn(itemId)) {
+      let message = 'Return request cannot be submitted for this item.';
+
+      if (order.orderStatus !== 'Delivered') {
+        message = 'Returns can only be requested for delivered orders.';
+      } else if (!order.deliveredAt) {
+        message = 'Order delivery date not found.';
+      } else if ((Date.now() - order.deliveredAt.getTime()) > (7 * 24 * 60 * 60 * 1000)) {
+        message = 'Return window has expired. Returns must be requested within 7 days of delivery.';
+      } else if (orderItem.itemReturnStatus === 'Requested') {
+        message = 'Return request is already pending for this item.';
+      } else if (orderItem.itemReturnStatus === 'Approved') {
+        message = 'Return has already been approved for this item.';
+      } else if (orderItem.itemReturnStatus === 'Completed') {
+        message = 'Return has already been completed for this item.';
+      }
+
+      return res.status(400).json({
+        success: false,
+        message: message
+      });
+    }
+
+    const availableQuantity = order.getItemReturnableQuantity(itemId);
+    const returnQuantity = quantity ? Math.min(quantity, availableQuantity) : availableQuantity;
+
+    if (returnQuantity <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No quantity available to return for this item'
+      });
+    }
+
+    
+    const itemPrice = orderItem.salePrice || orderItem.price;
+    const estimatedRefund = itemPrice * returnQuantity;
+
+   
+    orderItem.itemReturnStatus = 'Requested';
+    orderItem.itemReturnReason = reason.trim();
+    orderItem.itemReturnRequestedAt = new Date();
+
+    await order.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Return request submitted successfully for ${orderItem.productName}. Your request is pending admin approval.`,
+      estimatedRefundAmount: estimatedRefund,
+      returnQuantity: returnQuantity,
+      itemName: orderItem.productName
+    });
+
+  } catch (error) {
+    console.error("Error processing individual item return:", error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to process return request'
+    });
+  }
+});
+
+export const completeReturnAndCreditWallet = catchAsyncError(async (req, res, next) => {
+    const { orderId } = req.params;
+
+    
+    const order = await Order.findOne({
+        _id: orderId,
+        
+    }).populate('items.product');
+
+    if (!order) {
+        return res.status(404).json({
+            success: false,
+            message: 'Order not found'
+        });
+    }
+
+    
+    if (order.returnStatus !== 'Approved' && order.returnStatus !== 'Requested') {
+        return res.status(400).json({
+            success: false,
+            message: 'Return is not approved or already completed'
+        });
+    }
+
+   
+    let totalRefundAmount = 0;
+    for (const item of order.items) {
+        const activeQuantity = item.quantity - item.cancelledQuantity - item.returnedQuantity;
+        if (activeQuantity > 0) {
+            const itemPrice = item.salePrice || item.price;
+            totalRefundAmount += itemPrice * activeQuantity;
+        }
+    }
+
+   
+    order.returnStatus = 'Completed';
+    order.returnCompletedAt = new Date();
+    await order.save();
+
+   
+    await addReturnAmountToWallet(order.user, totalRefundAmount, order._id);
+
+    res.status(200).json({
+        success: true,
+        message: 'Return completed and wallet credited',
+        refundAmount: totalRefundAmount
+    });
 });

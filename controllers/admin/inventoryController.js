@@ -1,6 +1,7 @@
 import { Product } from "../../model/productModel.js";
 import { Category } from "../../model/categoryModel.js";
 import { Order } from "../../model/orderModel.js";
+import { User } from "../../model/userModel.js";
 import { catchAsyncError } from "../../middlewares/catchAsync.js";
 import ErrorHandler from "../../middlewares/error.js";
 
@@ -24,8 +25,8 @@ export const getInventoryDashboard = catchAsyncError(async (req, res, next) => {
     if (search) {
       query.$or = [
         { productName: new RegExp(search, 'i') },
-        { description: new RegExp(search, 'i') },
-        { brand: new RegExp(search, 'i') }
+        { description: new RegExp(search, 'i') }
+       
       ];
     }
 
@@ -160,7 +161,7 @@ export const updateStock = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Handle null/undefined current quantity
+   
     const currentQuantity = product.quantity || 0;
     const inputQuantity = parseInt(quantity) || 0;
     let newQuantity;
@@ -210,7 +211,7 @@ export const updateStock = catchAsyncError(async (req, res, next) => {
 // Bulk stock update
 export const bulkUpdateStock = catchAsyncError(async (req, res, next) => {
   try {
-    const { updates } = req.body; // Array of { productId, quantity, action }
+    const { updates } = req.body; 
 
     if (!updates || !Array.isArray(updates) || updates.length === 0) {
       return res.status(400).json({
@@ -237,7 +238,7 @@ export const bulkUpdateStock = catchAsyncError(async (req, res, next) => {
           continue;
         }
 
-        // Handle null/undefined current quantity
+        
         const currentQuantity = product.quantity || 0;
         const inputQuantity = parseInt(quantity) || 0;
         let newQuantity;
@@ -362,10 +363,25 @@ export const getStockMovements = catchAsyncError(async (req, res, next) => {
 
     // Search functionality
     if (search) {
+      // First get users that match the search term
+      const matchingUsers = await User.find({
+        $or: [
+          { name: new RegExp(search, 'i') },
+          { email: new RegExp(search, 'i') }
+        ]
+      }).select('_id');
+
+      const userIds = matchingUsers.map(user => user._id);
+
       query.$or = [
         { orderNumber: new RegExp(search, 'i') },
         { 'items.productName': new RegExp(search, 'i') }
       ];
+
+      // Only add user search if we found matching users
+      if (userIds.length > 0) {
+        query.$or.push({ user: { $in: userIds } });
+      }
     }
 
     // Movement type filter

@@ -348,13 +348,27 @@
                 <% if (request.user.phone) { %>
                   <br><small class="text-muted"><%= request.user.phone %></small>
                 <% } %>
+                <!-- Return Type Badge -->
+                <div class="mt-1">
+                  <% if (request.returnType === 'individual') { %>
+                    <span class="badge bg-info">Individual Item</span>
+                  <% } else { %>
+                    <span class="badge bg-warning">Full Order</span>
+                  <% } %>
+                </div>
               </div>
             </div>
 
             <div class="col-md-2">
-              <h6 class="mb-1">Amount</h6>
-              <p class="mb-0 fw-bold">₹<%= (request.totalAmount || 0).toFixed(2) %></p>
-              <small class="text-muted"><%= request.items.length %> item(s)</small>
+              <% if (request.returnType === 'individual' && request.returnItem) { %>
+                <h6 class="mb-1">Item Return</h6>
+                <p class="mb-0 fw-bold"><%= request.returnItem.productName %></p>
+                <small class="text-muted">Qty: <%= request.returnItem.quantity - request.returnItem.cancelledQuantity - request.returnItem.returnedQuantity %></small>
+              <% } else { %>
+                <h6 class="mb-1">Amount</h6>
+                <p class="mb-0 fw-bold">₹<%= (request.totalAmount || 0).toFixed(2) %></p>
+                <small class="text-muted"><%= request.items.length %> item(s)</small>
+              <% } %>
             </div>
 
             <div class="col-md-2">
@@ -376,12 +390,21 @@
               <a href="/admin/orders/<%= request._id %>" class="action-btn btn-view">
                 <i class="fas fa-eye me-1"></i>View
               </a>
-              <button class="action-btn btn-approve" onclick="handleReturn('<%= request._id %>', '<%= request.orderNumber %>', 'approve')">
-                <i class="fas fa-check me-1"></i>Approve
-              </button>
-              <button class="action-btn btn-reject" onclick="handleReturn('<%= request._id %>', '<%= request.orderNumber %>', 'reject')">
-                <i class="fas fa-times me-1"></i>Reject
-              </button>
+              <% if (request.returnType === 'individual' && request.returnItem) { %>
+                <button class="action-btn btn-approve" onclick="handleIndividualReturn('<%= request._id %>', '<%= request.returnItem._id %>', '<%= request.orderNumber %>', '<%= request.returnItem.productName %>', 'approve')">
+                  <i class="fas fa-check me-1"></i>Approve
+                </button>
+                <button class="action-btn btn-reject" onclick="handleIndividualReturn('<%= request._id %>', '<%= request.returnItem._id %>', '<%= request.orderNumber %>', '<%= request.returnItem.productName %>', 'reject')">
+                  <i class="fas fa-times me-1"></i>Reject
+                </button>
+              <% } else { %>
+                <button class="action-btn btn-approve" onclick="handleReturn('<%= request._id %>', '<%= request.orderNumber %>', 'approve')">
+                  <i class="fas fa-check me-1"></i>Approve
+                </button>
+                <button class="action-btn btn-reject" onclick="handleReturn('<%= request._id %>', '<%= request.orderNumber %>', 'reject')">
+                  <i class="fas fa-times me-1"></i>Reject
+                </button>
+              <% } %>
             </div>
           </div>
 
@@ -554,6 +577,78 @@
 
       bootstrap.Modal.getInstance(document.getElementById('returnActionModal')).hide();
     });
+
+    // Handle individual item return (NEW FUNCTION)
+    function handleIndividualReturn(orderId, itemId, orderNumber, itemName, action) {
+      const actionText = action === 'approve' ? 'approve' : 'reject';
+      const actionTitle = action === 'approve' ? 'Approve Return' : 'Reject Return';
+
+      Swal.fire({
+        title: actionTitle,
+        text: `Are you sure you want to ${actionText} the return request for "${itemName}" in order ${orderNumber}?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: action === 'approve' ? '#28a745' : '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: `Yes, ${actionText}`,
+        cancelButtonText: 'Cancel',
+        input: 'textarea',
+        inputPlaceholder: 'Add admin notes (optional)...',
+        inputAttributes: {
+          'aria-label': 'Admin notes'
+        }
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          const adminNotes = result.value || '';
+
+          try {
+            const response = await fetch(`/admin/orders/${orderId}/items/${itemId}/return`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                action: action,
+                adminNotes: adminNotes
+              })
+            });
+
+            const responseData = await response.json();
+
+            if (responseData.success) {
+              let message = responseData.message;
+              if (action === 'approve' && responseData.refundAmount) {
+                message += `\nRefund amount: ₹${responseData.refundAmount.toFixed(2)}`;
+              }
+
+              Swal.fire({
+                icon: 'success',
+                title: actionTitle + ' Successful',
+                text: message,
+                confirmButtonColor: '#28a745'
+              }).then(() => {
+                location.reload();
+              });
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Action Failed',
+                text: responseData.message,
+                confirmButtonColor: '#dc3545'
+              });
+            }
+          } catch (error) {
+            console.error('Error processing individual item return:', error);
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'Failed to process the return request. Please try again.',
+              confirmButtonColor: '#dc3545'
+            });
+          }
+        }
+      });
+    }
   </script>
     </div> <!-- End container -->
   </div> <!-- End main-content -->

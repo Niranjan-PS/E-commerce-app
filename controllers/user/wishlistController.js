@@ -144,7 +144,7 @@ export const clearWishlist = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Get wishlist count (for header display)
+
 export const getWishlistCount = catchAsyncError(async (req, res, next) => {
   try {
     const wishlist = await Wishlist.findOne({ user: req.user._id });
@@ -164,13 +164,11 @@ export const getWishlistCount = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Move item from wishlist to cart
+
 export const moveToCart = catchAsyncError(async (req, res, next) => {
   try {
     const { productId } = req.params;
     
-    // This will be handled by the cart controller's addToCart function
-    // which already removes items from wishlist when added to cart
     res.status(200).json({
       success: true,
       message: 'Use cart add endpoint to move item to cart'
@@ -185,7 +183,7 @@ export const moveToCart = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Validate wishlist items against current product status
+
 async function validateWishlistItems(wishlist) {
   if (!wishlist.items || wishlist.items.length === 0) {
     return wishlist;
@@ -198,14 +196,14 @@ async function validateWishlistItems(wishlist) {
     const item = wishlist.items[i];
     const product = item.product;
 
-    // Check if product is still available
+    
     if (!product || product.isBlocked || product.isDeleted || product.status !== "Available") {
       itemsToRemove.push(item.product._id);
       hasChanges = true;
       continue;
     }
 
-    // Check if category is still listed
+   
     if (!product.category || !product.category.isListed) {
       itemsToRemove.push(item.product._id);
       hasChanges = true;
@@ -213,12 +211,11 @@ async function validateWishlistItems(wishlist) {
     }
   }
 
-  // Remove invalid items
   itemsToRemove.forEach(productId => {
     wishlist.removeItem(productId);
   });
 
-  // Save changes if any
+  
   if (hasChanges) {
     await wishlist.save();
   }

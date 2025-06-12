@@ -1,4 +1,6 @@
 import { User } from "../../model/userModel.js";
+import { Wallet } from "../../model/walletModel.js";
+import { Order } from "../../model/orderModel.js";
 import { catchAsyncError } from "../../middlewares/catchAsync.js";
 import ErrorHandler from "../../middlewares/error.js";
 import { sendEmail } from "../../utils/sendEmail.js";
@@ -19,8 +21,26 @@ export const viewProfile = catchAsyncError(async (req, res, next) => {
       return next(new ErrorHandler("User not found", 404));
     }
 
+    let wallet = await Wallet.findOne({ userId: user._id });
+    if (!wallet) {
+      wallet = new Wallet({
+        userId: user._id,
+        balance: 0,
+        transactions: []
+      });
+      await wallet.save();
+      console.log(`New wallet created for user: ${user._id}`);
+    }
+
+    const recentOrders = await Order.find({ user: user._id })
+      .sort({ orderDate: -1 })
+      .limit(3)
+      .select('orderNumber orderDate totalAmount orderStatus');
+
     res.render("user/profile", {
       user,
+      wallet,
+      recentOrders,
       message: req.query.message || null,
       error: req.query.error || null
     });
@@ -30,7 +50,7 @@ export const viewProfile = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Load Edit Profile Page
+
 export const loadEditProfile = catchAsyncError(async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
@@ -49,7 +69,58 @@ export const loadEditProfile = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Update Profile
+
+const validateProfileField = (value, fieldName, isRequired = true) => {
+  if (!value || value.trim().length === 0) {
+    if (isRequired) {
+      return `${fieldName} is required`;
+    }
+    return null; 
+  }
+
+  const trimmedValue = value.trim();
+
+  if (trimmedValue.length === 0) {
+    return `${fieldName} cannot be only spaces`;
+  }
+
+  if (trimmedValue.includes('_')) {
+    return `${fieldName} cannot contain underscores`;
+  }
+
+  if (fieldName.toLowerCase() === 'name') {
+    if (/^\d+$/.test(trimmedValue)) {
+      return `${fieldName} cannot be only numbers`;
+    }
+
+    if (!/[a-zA-Z]/.test(trimmedValue)) {
+      return `${fieldName} must contain at least one letter`;
+    }
+
+    if (!/^[a-zA-Z\s]+$/.test(trimmedValue)) {
+      return `${fieldName} can only contain letters and spaces`;
+    }
+
+    if (/\s{2,}/.test(trimmedValue)) {
+      return `${fieldName} cannot have multiple consecutive spaces`;
+    }
+  }
+
+  if (['street', 'city', 'state', 'country'].includes(fieldName.toLowerCase())) {
+    if (!/[a-zA-Z]/.test(trimmedValue)) {
+      return `${fieldName} must contain at least one letter`;
+    }
+
+    if (['city', 'state', 'country'].includes(fieldName.toLowerCase())) {
+      if (!/^[a-zA-Z\s.-]+$/.test(trimmedValue)) {
+        return `${fieldName} can only contain letters, spaces, dots, and hyphens`;
+      }
+    }
+  }
+
+  return null; 
+};
+
 export const updateProfile = catchAsyncError(async (req, res, next) => {
   try {
     const { name, phone, street, city, state, zipCode, country } = req.body;
@@ -59,20 +130,65 @@ export const updateProfile = catchAsyncError(async (req, res, next) => {
       return next(new ErrorHandler("User not found", 404));
     }
 
-    // Validate phone number if provided
+    const validationErrors = [];
+
+    const nameError = validateProfileField(name, 'Name', true);
+    if (nameError) {
+      validationErrors.push(nameError);
+    }
+
+
+    if (street) {
+      const streetError = validateProfileField(street, 'Street', false);
+      if (streetError) {
+        validationErrors.push(streetError);
+      }
+    }
+
+    if (city) {
+      const cityError = validateProfileField(city, 'City', false);
+      if (cityError) {
+        validationErrors.push(cityError);
+      }
+    }
+
+    if (state) {
+      const stateError = validateProfileField(state, 'State', false);
+      if (stateError) {
+        validationErrors.push(stateError);
+      }
+    }
+
+    if (country) {
+      const countryError = validateProfileField(country, 'Country', false);
+      if (countryError) {
+        validationErrors.push(countryError);
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: validationErrors[0]
+      });
+    }
+
     if (phone && phone.trim()) {
       const cleanPhone = phone.trim().replace(/\s|-/g, "");
       const phoneRegex = /^\+91\d{10}$/;
       if (!phoneRegex.test(cleanPhone)) {
-        return res.redirect('/profile/edit?error=Invalid phone number format. Use +91XXXXXXXXXX');
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid phone number format. Use +91XXXXXXXXXX'
+        });
       }
       user.phone = cleanPhone;
     }
 
-    // Update basic info
+   
     if (name && name.trim()) user.name = name.trim();
 
-    // Update address
+    
     user.address = {
       street: street ? street.trim() : user.address?.street || null,
       city: city ? city.trim() : user.address?.city || null,
@@ -81,45 +197,40 @@ export const updateProfile = catchAsyncError(async (req, res, next) => {
       country: country ? country.trim() : user.address?.country || null
     };
 
-    // Handle profile image upload (cropped or traditional)
     if (req.body.croppedImageData) {
       try {
-        // Handle cropped image
+       
         const base64Data = req.body.croppedImageData;
         const base64Image = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
         const imageBuffer = Buffer.from(base64Image, 'base64');
 
-        // Generate unique filename
         const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
         const filename = `profile-cropped-${uniqueSuffix}.jpg`;
 
-        // Define upload path
+        
         const uploadPath = path.join(__dirname, "../../public/uploads/profile-images");
         const filePath = path.join(uploadPath, filename);
 
-        // Ensure directory exists
         if (!fs.existsSync(uploadPath)) {
           fs.mkdirSync(uploadPath, { recursive: true });
         }
 
-        // Delete old profile image if exists
         if (user.profileImage) {
           const oldImagePath = path.join(uploadPath, user.profileImage);
           fs.unlink(oldImagePath, (err) => {
             if (err) console.log("Error deleting old profile image:", err);
           });
         }
-
-        // Save cropped image
         fs.writeFileSync(filePath, imageBuffer);
         user.profileImage = filename;
       } catch (error) {
         console.error('Error processing cropped profile image:', error);
-        return res.redirect('/profile/edit?error=Error+processing+profile+image');
+        return res.status(500).json({
+          success: false,
+          message: 'Error processing profile image'
+        });
       }
     } else if (req.file) {
-      // Handle traditional file upload
-      // Delete old profile image if exists
       if (user.profileImage) {
         const oldImagePath = path.join(__dirname, "../../public/uploads/profile-images", user.profileImage);
         fs.unlink(oldImagePath, (err) => {
@@ -131,14 +242,20 @@ export const updateProfile = catchAsyncError(async (req, res, next) => {
 
     await user.save();
 
-    res.redirect('/profile?message=Profile updated successfully');
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully'
+    });
   } catch (error) {
     console.error("Error updating profile:", error);
-    return res.redirect('/profile/edit?error=Failed to update profile');
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update profile'
+    });
   }
 });
 
-// Request Email Change
+
 export const requestEmailChange = catchAsyncError(async (req, res, next) => {
   try {
     const { newEmail } = req.body;
@@ -155,7 +272,7 @@ export const requestEmailChange = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Check if email already exists
+    
     const existingUser = await User.findOne({
       email: newEmail.trim().toLowerCase(),
       _id: { $ne: user._id }
@@ -168,12 +285,12 @@ export const requestEmailChange = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Generate verification token
+  
     const verificationToken = user.generateEmailVerificationToken();
     user.pendingEmail = newEmail.trim().toLowerCase();
     await user.save();
 
-    // Send verification email
+  
     const verificationUrl = `${req.protocol}://${req.get("host")}/profile/verify-email/${verificationToken}`;
 
     const message = `
@@ -205,7 +322,7 @@ export const requestEmailChange = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Verify Email Change
+
 export const verifyEmailChange = catchAsyncError(async (req, res, next) => {
   try {
     const { token } = req.params;
@@ -238,7 +355,7 @@ export const verifyEmailChange = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Load Change Password Page
+// Change Password Page
 export const loadChangePassword = catchAsyncError(async (req, res, next) => {
   try {
     res.render("user/change-password", {
@@ -291,7 +408,7 @@ export const changePassword = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Load Forgot Password Page
+
 export const loadForgotPassword = catchAsyncError(async (req, res, next) => {
   try {
     res.render("user/forgot-password", {

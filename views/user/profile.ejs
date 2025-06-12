@@ -128,6 +128,33 @@
       justify-content: center;
       margin-top: 2rem;
     }
+    .order-summary {
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .order-summary:hover {
+      background-color: #e9ecef;
+      transition: background-color 0.3s;
+    }
+
+    .order-number {
+      font-weight: 600;
+      color: #6200ea;
+    }
+
+    .order-date {
+      font-size: 0.85rem;
+      color: #6c757d;
+    }
+
+    .order-amount {
+      font-weight: 600;
+      color: #28a745;
+    }
+
     @media (max-width: 768px) {
       .profile-container {
         margin: 1rem;
@@ -155,8 +182,12 @@
             <a class="nav-link" href="/shop">Shop</a>
           </li>
           <li class="nav-item">
+            <a class="nav-link" href="/orders">Orders</a>
+          </li>
+          <li class="nav-item">
             <a class="nav-link active" href="/profile">Profile</a>
           </li>
+
         </ul>
         <div class="navbar-icons">
           <div class="dropdown">
@@ -165,6 +196,9 @@
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
               <li><a class="dropdown-item" href="/profile">My Profile</a></li>
+              <li><a class="dropdown-item" href="/orders">Order History</a></li>
+              <li><a class="dropdown-item" href="/wallet">My Wallet</a></li>
+              <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="#" onclick="confirmLogout(event)">Logout</a></li>
             </ul>
           </div>
@@ -225,6 +259,36 @@
         </div>
       </div>
 
+      <!-- Wallet Information (NEW) -->
+      <div class="info-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h5 style="margin: 0;"><i class="fas fa-wallet me-2"></i>Wallet Information</h5>
+          <a href="/wallet" class="btn btn-outline-primary btn-sm" style="border-radius: 20px; padding: 0.4rem 1rem;">
+            <i class="fas fa-eye me-1"></i>View Wallet
+          </a>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Current Balance</span>
+          <span class="info-value">
+            <span class="fw-bold text-success" style="font-size: 1.1rem;">
+              ₹<%= wallet ? wallet.balance.toFixed(2) : '0.00' %>
+            </span>
+          </span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Total Transactions</span>
+          <span class="info-value">
+            <%= wallet ? wallet.transactions.length : 0 %> transactions
+          </span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Wallet Management</span>
+          <span class="info-value">
+            <a href="/wallet" class="text-primary">View transaction history</a>
+          </span>
+        </div>
+      </div>
+
       <!-- Address Information -->
       <div class="info-section">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -252,6 +316,60 @@
         </div>
       </div>
 
+      <!-- Order History Summary -->
+      <div class="info-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h5 style="margin: 0;"><i class="fas fa-shopping-bag me-2"></i>Order History</h5>
+          <a href="/orders" class="btn btn-outline-primary btn-sm" style="border-radius: 20px; padding: 0.4rem 1rem;">
+            <i class="fas fa-eye me-1"></i>View All Orders
+          </a>
+        </div>
+        <% if (recentOrders && recentOrders.length > 0) { %>
+          <% recentOrders.forEach(order => { %>
+            <div class="order-summary">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="order-number">Order #<%= order.orderNumber %></div>
+                  <div class="order-date"><%= new Date(order.orderDate).toLocaleDateString('en-IN', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  }) %></div>
+                </div>
+                <div class="text-end">
+                  <div class="order-amount">₹<%= order.totalAmount.toFixed(2) %></div>
+                  <span class="badge bg-<%=
+                    order.orderStatus === 'Delivered' ? 'success' :
+                    order.orderStatus === 'Cancelled' ? 'danger' :
+                    order.orderStatus === 'Returned' ? 'warning' :
+                    order.orderStatus === 'Pending' ? 'secondary' :
+                    order.orderStatus === 'Processing' ? 'info' :
+                    order.orderStatus === 'Packed' ? 'warning' :
+                    order.orderStatus === 'Shipped' ? 'primary' :
+                    order.orderStatus === 'Out for Delivery' ? 'info' : 'primary'
+                  %>">
+                    <%= order.orderStatus %>
+                  </span>
+                </div>
+              </div>
+            </div>
+          <% }); %>
+          <div class="text-center mt-3">
+            <a href="/orders" class="text-primary">
+              <i class="fas fa-arrow-right me-1"></i>View all orders
+            </a>
+          </div>
+        <% } else { %>
+          <div class="text-center py-3">
+            <i class="fas fa-shopping-bag fa-2x text-muted mb-2"></i>
+            <p class="text-muted mb-2">No orders yet</p>
+            <a href="/shop" class="btn btn-outline-primary btn-sm">
+              <i class="fas fa-shopping-cart me-1"></i>Start Shopping
+            </a>
+          </div>
+        <% } %>
+      </div>
+
       <!-- Action Buttons -->
       <div class="action-buttons">
         <a href="/profile/edit" class="btn btn-primary">
@@ -259,6 +377,12 @@
         </a>
         <a href="/profile/change-password" class="btn btn-outline-primary">
           <i class="fas fa-lock me-2"></i>Change Password
+        </a>
+        <a href="/orders" class="btn btn-outline-primary">
+          <i class="fas fa-shopping-bag me-2"></i>Order History
+        </a>
+         <a href="/wallet" class="btn btn-primary">
+          <i class="fas fa-wallet me-2"></i>My Wallet
         </a>
       </div>
     </div>

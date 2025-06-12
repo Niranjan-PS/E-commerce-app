@@ -145,4 +145,7 @@ export const processProfileImage = (req, res, next) => {
     });
 };
 
+// Simple multer configuration for forms without file uploads (like address forms)
+export const formDataUpload = multer();
+
 // Export the Multer instance

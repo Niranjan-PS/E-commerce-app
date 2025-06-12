@@ -136,10 +136,6 @@ const addProducts = async (req, res) => {
 };
 
 
-
-
-
-
 export const getProductList = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;

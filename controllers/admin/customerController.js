@@ -34,7 +34,7 @@ export const customerInfo = catchAsyncError(async (req, res, next) => {
       User.countDocuments(query)
     ]);
 
-    // Get actual statistics from the entire user collection (not filtered by search/status)
+    // Get actual statistics from the entire user collection 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -56,7 +56,7 @@ export const customerInfo = catchAsyncError(async (req, res, next) => {
     const totalPages = Math.ceil(total / limit);
     const currentPage = Math.min(Math.max(page, 1), totalPages);
 
-    // Check if this is an AJAX request
+    
     const isAjax = req.headers['x-requested-with'] === 'XMLHttpRequest' || req.headers.accept?.includes('application/json');
 
     if (isAjax) {
@@ -84,7 +84,7 @@ export const customerInfo = catchAsyncError(async (req, res, next) => {
       search,
       status,
       message: userData.length === 0 ? "No users found." : null,
-      // Pass actual statistics from entire collection
+      
       userStats: {
         totalUsers,
         activeUsers,

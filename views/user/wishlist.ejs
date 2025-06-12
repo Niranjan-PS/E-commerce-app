@@ -309,6 +309,19 @@
             <i class="fas fa-shopping-cart"></i>
             <span class="badge bg-danger" id="cartCount">0</span>
           </a>
+
+           <a href="/wallet" class="text-white me-3">
+          <i class="fas fa-wallet"></i>
+          <% if (typeof user !== 'undefined' && user && user.walletBalance !== undefined) { %>
+            <span class="badge bg-danger"><%= user.walletBalance.toLocaleString('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0, maximumFractionDigits: 0 }) %></span>
+          <% } else if (typeof wallet !== 'undefined' && wallet && wallet.balance !== undefined) { %>
+            <span class="badge bg-danger"><%= wallet.balance.toLocaleString('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0, maximumFractionDigits: 0 }) %></span>
+          <% } else { %>
+            <span class="badge bg-danger">₹0</span>
+          <% } %>
+        </a>
+
+      
           <div class="dropdown">
             <a href="#" class="dropdown-toggle text-white" role="button" data-bs-toggle="dropdown">
               <i class="fas fa-user-circle"></i>

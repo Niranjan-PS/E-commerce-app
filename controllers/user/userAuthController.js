@@ -11,6 +11,8 @@ import { sendEmail } from "../../utils/sendEmail.js";
 import { sendToken } from '../../utils/sendToken.js';
 import HttpStatus from '../../helpers/httpStatus.js';
 
+import { Wallet } from '../../model/walletModel.js';
+
 const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
 
 export const register = catchAsyncError(async (req, res, next) => {
@@ -101,6 +103,8 @@ console.log("Cleaned phone:", phone);
 
     const user = await User.create(userData);
 
+await User.create({ ...userData });
+await Wallet.create({ userId: user._id, balance: 0, transactions: [] });
 
     const verificationCode = user.generateVerificationCode();
     console.log(`Generated verification code: ${verificationCode} for user: ${name || email}`);
@@ -431,6 +435,7 @@ export const login = catchAsyncError(async (req, res, next) => {
     });
   }
 
+// After creating a new user:
   sendToken(user, res);
     
  
@@ -524,6 +529,7 @@ export const resetPassword = catchAsyncError(async(req,res,next) => {
   user.resetPasswordExpire = undefined
   await user.save()
 
+  
   sendToken(user,res)
   res.redirect('/login')
 })
@@ -531,7 +537,7 @@ export const resetPassword = catchAsyncError(async(req,res,next) => {
 
 export const checkUserStatus = catchAsyncError(async (req, res, next) => {
   try {
-    console.log("User status check route hit");
+    
     const token = req.cookies.userToken || req.cookies.adminToken
 
     if (!token) {
@@ -567,7 +573,7 @@ export const checkUserStatus = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    console.log(" User Info:", user.email, "| isAdmin:", user.isAdmin);
+   
 
     if (user.isAdmin) {
       return res.status(200).json({

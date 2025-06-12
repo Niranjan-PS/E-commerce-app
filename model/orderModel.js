@@ -58,6 +58,36 @@ const orderItemSchema = new mongoose.Schema({
     type: String,
     enum: ['Active', 'Cancelled', 'Returned', 'Partially Cancelled', 'Partially Returned'],
     default: 'Active'
+  },
+  // Individual item return fields
+  itemReturnStatus: {
+    type: String,
+    enum: ['None', 'Requested', 'Approved', 'Rejected', 'Completed'],
+    default: 'None'
+  },
+  itemReturnReason: {
+    type: String,
+    default: null
+  },
+  itemReturnRequestedAt: {
+    type: Date,
+    default: null
+  },
+  itemReturnApprovedAt: {
+    type: Date,
+    default: null
+  },
+  itemReturnRejectedAt: {
+    type: Date,
+    default: null
+  },
+  itemReturnCompletedAt: {
+    type: Date,
+    default: null
+  },
+  adminItemReturnNotes: {
+    type: String,
+    default: null
   }
 });
 
@@ -160,8 +190,8 @@ const orderSchema = new mongoose.Schema({
  
   orderStatus: {
     type: String,
-    enum: ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Returned'],
-    default: 'Pending'
+    enum: ['Pending', 'Confirmed', 'Processing', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Returned'],
+    default: 'Processing'
   },
 
   
@@ -251,21 +281,78 @@ orderSchema.pre('save', async function(next) {
 
 // Instance methods
 orderSchema.methods.canBeCancelled = function() {
-  return ['Pending', 'Confirmed'].includes(this.orderStatus);
+  return ['Pending', 'Confirmed', 'Processing', 'Packed'].includes(this.orderStatus);
 };
 
 orderSchema.methods.canBeReturned = function() {
   return this.orderStatus === 'Delivered' &&
          this.deliveredAt &&
-         (Date.now() - this.deliveredAt.getTime()) <= (7 * 24 * 60 * 60 * 1000) && 
-         this.returnStatus === 'None'; 
+         (Date.now() - this.deliveredAt.getTime()) <= (7 * 24 * 60 * 60 * 1000) &&
+         this.returnStatus === 'None';
 };
 
 orderSchema.methods.canRequestReturn = function() {
   return this.orderStatus === 'Delivered' &&
          this.deliveredAt &&
-         (Date.now() - this.deliveredAt.getTime()) <= (7 * 24 * 60 * 60 * 1000) && 
-         ['None', 'Rejected'].includes(this.returnStatus); 
+         (Date.now() - this.deliveredAt.getTime()) <= (7 * 24 * 60 * 60 * 1000) &&
+         ['None', 'Rejected'].includes(this.returnStatus);
+};
+
+// Item-level methods
+orderSchema.methods.canItemBeCancelled = function(itemId) {
+  if (!this.canBeCancelled()) return false;
+
+  const item = this.items.id(itemId);
+  if (!item) return false;
+
+  return (item.quantity - item.cancelledQuantity) > 0;
+};
+
+orderSchema.methods.canItemBeReturned = function(itemId) {
+  if (!this.canRequestReturn()) return false;
+
+  const item = this.items.id(itemId);
+  if (!item) return false;
+
+  return (item.quantity - item.cancelledQuantity - item.returnedQuantity) > 0;
+};
+
+orderSchema.methods.getItemAvailableQuantity = function(itemId, action = 'cancel') {
+  const item = this.items.id(itemId);
+  if (!item) return 0;
+
+  if (action === 'cancel') {
+    return item.quantity - item.cancelledQuantity;
+  } else if (action === 'return') {
+    return item.quantity - item.cancelledQuantity - item.returnedQuantity;
+  }
+
+  return 0;
+};
+
+// Individual item return methods
+orderSchema.methods.canItemRequestReturn = function(itemId) {
+  // Check if order is delivered and within return window
+  if (this.orderStatus !== 'Delivered') return false;
+  if (!this.deliveredAt) return false;
+  if ((Date.now() - this.deliveredAt.getTime()) > (7 * 24 * 60 * 60 * 1000)) return false;
+
+  const item = this.items.id(itemId);
+  if (!item) return false;
+
+  // Check if item has available quantity for return
+  const availableQuantity = item.quantity - item.cancelledQuantity - item.returnedQuantity;
+  if (availableQuantity <= 0) return false;
+
+  // Check if item return is not already requested/approved/completed
+  return ['None', 'Rejected'].includes(item.itemReturnStatus);
+};
+
+orderSchema.methods.getItemReturnableQuantity = function(itemId) {
+  const item = this.items.id(itemId);
+  if (!item) return 0;
+
+  return item.quantity - item.cancelledQuantity - item.returnedQuantity;
 };
 
 orderSchema.methods.updateStatus = function(newStatus) {

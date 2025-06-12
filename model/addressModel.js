@@ -10,13 +10,61 @@ const addressSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-    maxLength: [50, "Address title cannot exceed 50 characters"]
+    maxLength: [50, "Address title cannot exceed 50 characters"],
+    validate: {
+      validator: function(v) {
+        // Check for only spaces
+        if (!v || v.trim().length === 0) {
+          return false;
+        }
+        // Check for underscores
+        if (v.includes('_')) {
+          return false;
+        }
+        // Check for only numbers
+        if (/^\d+$/.test(v.trim())) {
+          return false;
+        }
+        // Must contain at least one alphabetic character
+        if (!/[a-zA-Z]/.test(v)) {
+          return false;
+        }
+        return true;
+      },
+      message: "Address title must contain at least one letter, cannot be only spaces, numbers, or contain underscores"
+    }
   },
   fullName: {
     type: String,
     required: true,
     trim: true,
-    maxLength: [100, "Full name cannot exceed 100 characters"]
+    maxLength: [100, "Full name cannot exceed 100 characters"],
+    validate: {
+      validator: function(v) {
+        // Check for only spaces
+        if (!v || v.trim().length === 0) {
+          return false;
+        }
+        // Check for underscores
+        if (v.includes('_')) {
+          return false;
+        }
+        // Check for only numbers
+        if (/^\d+$/.test(v.trim())) {
+          return false;
+        }
+        // Must contain at least one alphabetic character
+        if (!/[a-zA-Z]/.test(v)) {
+          return false;
+        }
+        // Check for valid name format (letters, spaces, dots, hyphens only)
+        if (!/^[a-zA-Z\s.-]+$/.test(v.trim())) {
+          return false;
+        }
+        return true;
+      },
+      message: "Full name must contain only letters, spaces, dots, and hyphens. Cannot be only spaces, numbers, or contain underscores"
+    }
   },
   phone: {
     type: String,
@@ -33,25 +81,113 @@ const addressSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-    maxLength: [200, "Street address cannot exceed 200 characters"]
+    maxLength: [200, "Street address cannot exceed 200 characters"],
+    validate: {
+      validator: function(v) {
+        // Check for only spaces
+        if (!v || v.trim().length === 0) {
+          return false;
+        }
+        // Check for underscores
+        if (v.includes('_')) {
+          return false;
+        }
+        // Must contain at least one alphabetic character
+        if (!/[a-zA-Z]/.test(v)) {
+          return false;
+        }
+        return true;
+      },
+      message: "Street address must contain at least one letter, cannot be only spaces or contain underscores"
+    }
   },
   landmark: {
     type: String,
     trim: true,
     maxLength: [100, "Landmark cannot exceed 100 characters"],
-    default: null
+    default: null,
+    validate: {
+      validator: function(v) {
+        // Landmark is optional, so if empty or null, it's valid
+        if (!v || v.trim().length === 0) {
+          return true;
+        }
+        // Check for underscores
+        if (v.includes('_')) {
+          return false;
+        }
+        // If provided, must contain at least one alphabetic character
+        if (!/[a-zA-Z]/.test(v)) {
+          return false;
+        }
+        return true;
+      },
+      message: "Landmark must contain at least one letter and cannot contain underscores"
+    }
   },
   city: {
     type: String,
     required: true,
     trim: true,
-    maxLength: [50, "City name cannot exceed 50 characters"]
+    maxLength: [50, "City name cannot exceed 50 characters"],
+    validate: {
+      validator: function(v) {
+        // Check for only spaces
+        if (!v || v.trim().length === 0) {
+          return false;
+        }
+        // Check for underscores
+        if (v.includes('_')) {
+          return false;
+        }
+        // Check for only numbers
+        if (/^\d+$/.test(v.trim())) {
+          return false;
+        }
+        // Must contain at least one alphabetic character
+        if (!/[a-zA-Z]/.test(v)) {
+          return false;
+        }
+        // City names should only contain letters, spaces, dots, hyphens
+        if (!/^[a-zA-Z\s.-]+$/.test(v.trim())) {
+          return false;
+        }
+        return true;
+      },
+      message: "City name must contain only letters, spaces, dots, and hyphens. Cannot be only spaces, numbers, or contain underscores"
+    }
   },
   state: {
     type: String,
     required: true,
     trim: true,
-    maxLength: [50, "State name cannot exceed 50 characters"]
+    maxLength: [50, "State name cannot exceed 50 characters"],
+    validate: {
+      validator: function(v) {
+        // Check for only spaces
+        if (!v || v.trim().length === 0) {
+          return false;
+        }
+        // Check for underscores
+        if (v.includes('_')) {
+          return false;
+        }
+        // Check for only numbers
+        if (/^\d+$/.test(v.trim())) {
+          return false;
+        }
+        // Must contain at least one alphabetic character
+        if (!/[a-zA-Z]/.test(v)) {
+          return false;
+        }
+        // State names should only contain letters, spaces, dots, hyphens
+        if (!/^[a-zA-Z\s.-]+$/.test(v.trim())) {
+          return false;
+        }
+        return true;
+      },
+      message: "State name must contain only letters, spaces, dots, and hyphens. Cannot be only spaces, numbers, or contain underscores"
+    }
   },
   zipCode: {
     type: String,
@@ -69,7 +205,33 @@ const addressSchema = new mongoose.Schema({
     required: true,
     trim: true,
     default: "India",
-    maxLength: [50, "Country name cannot exceed 50 characters"]
+    maxLength: [50, "Country name cannot exceed 50 characters"],
+    validate: {
+      validator: function(v) {
+        // Check for only spaces
+        if (!v || v.trim().length === 0) {
+          return false;
+        }
+        // Check for underscores
+        if (v.includes('_')) {
+          return false;
+        }
+        // Check for only numbers
+        if (/^\d+$/.test(v.trim())) {
+          return false;
+        }
+        // Must contain at least one alphabetic character
+        if (!/[a-zA-Z]/.test(v)) {
+          return false;
+        }
+        // Country names should only contain letters, spaces, dots, hyphens
+        if (!/^[a-zA-Z\s.-]+$/.test(v.trim())) {
+          return false;
+        }
+        return true;
+      },
+      message: "Country name must contain only letters, spaces, dots, and hyphens. Cannot be only spaces, numbers, or contain underscores"
+    }
   },
   addressType: {
     type: String,

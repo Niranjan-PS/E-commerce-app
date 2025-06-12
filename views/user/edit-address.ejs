@@ -191,7 +191,7 @@
         </div>
       <% } %>
 
-      <form action="/addresses/edit/<%= address._id %>" method="POST" id="editAddressForm">
+      <form id="editAddressForm" data-action="/addresses/edit/<%= address._id %>">
         <!-- Address Title & Type -->
         <div class="form-section">
           <h5><i class="fas fa-tag me-2"></i>Address Details</h5>
@@ -272,7 +272,7 @@
 
         <!-- Action Buttons -->
         <div class="action-buttons">
-          <button type="submit" class="btn btn-primary">
+          <button type="button" class="btn btn-primary" id="updateAddressBtn" onclick="updateAddress()">
             <i class="fas fa-save me-2"></i>Update Address
           </button>
           <a href="/addresses" class="btn btn-secondary">
@@ -287,179 +287,170 @@
   <!-- SweetAlert2 JS -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
-    // Phone number formatting
-    document.getElementById('phone').addEventListener('input', function(e) {
-      let value = e.target.value.replace(/\D/g, '');
-      if (value.length > 0 && !value.startsWith('91')) {
-        if (value.length <= 10) {
-          value = '91' + value;
-        }
-      }
-      if (value.length > 12) {
-        value = value.substring(0, 12);
-      }
-      e.target.value = value.length > 0 ? '+' + value : '';
-    });
+    // Global update address function
+    window.updateAddress = async function() {
+      console.log('Update address function called!');
 
-    // ZIP code validation
-    document.getElementById('zipCode').addEventListener('input', function(e) {
-      e.target.value = e.target.value.replace(/\D/g, '').substring(0, 6);
-    });
-
-    // Enhanced form validation with underscore checks
-    document.addEventListener('DOMContentLoaded', function() {
+      // Get form and input values
       const form = document.getElementById('editAddressForm');
-      const titleInput = document.getElementById('title');
-      const nameInput = document.getElementById('name');
-      const phoneInput = document.getElementById('phone');
-      const streetInput = document.getElementById('street');
-      const cityInput = document.getElementById('city');
-      const stateInput = document.getElementById('state');
-      const zipCodeInput = document.getElementById('zipCode');
+      const title = document.getElementById('title').value.trim();
+      const fullName = document.getElementById('fullName').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const street = document.getElementById('street').value.trim();
+      const city = document.getElementById('city').value.trim();
+      const state = document.getElementById('state').value.trim();
+      const zipCode = document.getElementById('zipCode').value.trim();
 
-      // Title validation (no underscores)
-      titleInput.addEventListener('input', function() {
-        const value = this.value.trim();
+      // Basic validation
+      if (!title) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Missing Information',
+          text: 'Please enter an address title',
+          confirmButtonColor: '#6200ea'
+        });
+        return;
+      }
 
-        if (value.includes('_')) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Invalid Title Format',
-            text: 'Address title cannot contain underscores. Please use letters, numbers, and spaces only.',
-            confirmButtonColor: '#6200ea'
-          });
-          this.value = value.replace(/_/g, '');
+      if (!fullName) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Missing Information',
+          text: 'Please enter your full name',
+          confirmButtonColor: '#6200ea'
+        });
+        return;
+      }
+
+      if (!phone) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Missing Information',
+          text: 'Please enter your phone number',
+          confirmButtonColor: '#6200ea'
+        });
+        return;
+      }
+
+      if (!street) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Missing Information',
+          text: 'Please enter street address',
+          confirmButtonColor: '#6200ea'
+        });
+        return;
+      }
+
+      if (!city) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Missing Information',
+          text: 'Please enter city',
+          confirmButtonColor: '#6200ea'
+        });
+        return;
+      }
+
+      if (!state) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Missing Information',
+          text: 'Please enter state',
+          confirmButtonColor: '#6200ea'
+        });
+        return;
+      }
+
+      if (!zipCode) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Missing Information',
+          text: 'Please enter ZIP code',
+          confirmButtonColor: '#6200ea'
+        });
+        return;
+      }
+
+      // AJAX submission
+      try {
+        const formData = new FormData(form);
+        const actionUrl = form.getAttribute('data-action');
+
+        console.log('FormData contents:');
+        for (let [key, value] of formData.entries()) {
+          console.log(key, ':', value);
         }
-      });
 
-      // Name validation (no underscores)
-      nameInput.addEventListener('input', function() {
-        const value = this.value.trim();
+        console.log('Sending request to', actionUrl);
+        const response = await fetch(actionUrl, {
+          method: 'POST',
+          body: formData
+        });
 
-        if (value.includes('_')) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Invalid Name Format',
-            text: 'Name cannot contain underscores. Please use only letters and spaces.',
-            confirmButtonColor: '#6200ea'
-          });
-          this.value = value.replace(/_/g, '');
-        }
-      });
+        console.log('Response received:', response.status);
 
-      // Street validation (no underscores)
-      streetInput.addEventListener('input', function() {
-        const value = this.value.trim();
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const result = await response.json();
+          console.log('JSON result:', result);
 
-        if (value.includes('_')) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Invalid Address Format',
-            text: 'Street address cannot contain underscores. Please use letters, numbers, spaces, and common punctuation only.',
-            confirmButtonColor: '#6200ea'
-          });
-          this.value = value.replace(/_/g, '');
-        }
-      });
-
-      // City validation (no underscores)
-      cityInput.addEventListener('input', function() {
-        const value = this.value.trim();
-
-        if (value.includes('_')) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Invalid City Format',
-            text: 'City name cannot contain underscores. Please use only letters and spaces.',
-            confirmButtonColor: '#6200ea'
-          });
-          this.value = value.replace(/_/g, '');
-        }
-      });
-
-      // State validation (no underscores)
-      stateInput.addEventListener('input', function() {
-        const value = this.value.trim();
-
-        if (value.includes('_')) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Invalid State Format',
-            text: 'State name cannot contain underscores. Please use only letters and spaces.',
-            confirmButtonColor: '#6200ea'
-          });
-          this.value = value.replace(/_/g, '');
-        }
-      });
-
-      // Form submission validation
-      form.addEventListener('submit', function(e) {
-        const phone = phoneInput.value.trim();
-        const zipCode = zipCodeInput.value.trim();
-        const title = titleInput.value.trim();
-        const name = nameInput.value.trim();
-        const street = streetInput.value.trim();
-        const city = cityInput.value.trim();
-        const state = stateInput.value.trim();
-
-        // Check for underscores in any field
-        const fieldsToCheck = [
-          { value: title, name: 'Address title' },
-          { value: name, name: 'Name' },
-          { value: street, name: 'Street address' },
-          { value: city, name: 'City' },
-          { value: state, name: 'State' }
-        ];
-
-        for (let field of fieldsToCheck) {
-          if (field.value.includes('_')) {
-            e.preventDefault();
+          if (result.success) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Success!',
+              text: result.message || 'Address updated successfully',
+              confirmButtonColor: '#6200ea'
+            }).then(() => {
+              window.location.href = '/addresses';
+            });
+          } else {
             Swal.fire({
               icon: 'error',
-              title: 'Invalid Format',
-              text: `${field.name} cannot contain underscores. Please remove them and try again.`,
+              title: 'Validation Error',
+              text: result.message,
               confirmButtonColor: '#6200ea'
             });
-            return;
           }
+        } else {
+          window.location.href = '/addresses';
         }
+      } catch (error) {
+        console.error('Error updating address:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Network Error',
+          text: 'Failed to update address. Please check your connection and try again.',
+          confirmButtonColor: '#6200ea'
+        });
+      }
+    };
 
-        // Validate phone number
-        if (!/^\+91[6-9]\d{9}$/.test(phone)) {
-          e.preventDefault();
-          Swal.fire({
-            icon: 'error',
-            title: 'Invalid Phone Number',
-            text: 'Please enter a valid Indian mobile number in format +91XXXXXXXXXX',
-            confirmButtonColor: '#6200ea'
-          });
-          return;
-        }
+    // Phone number formatting
+    document.addEventListener('DOMContentLoaded', function() {
+      const phoneInput = document.getElementById('phone');
+      if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+          let value = e.target.value.replace(/\D/g, '');
+          if (value.length > 0 && !value.startsWith('91')) {
+            if (value.length <= 10) {
+              value = '91' + value;
+            }
+          }
+          if (value.length > 12) {
+            value = value.substring(0, 12);
+          }
+          e.target.value = value.length > 0 ? '+' + value : '';
+        });
+      }
 
-        // Validate ZIP code
-        if (!/^\d{6}$/.test(zipCode)) {
-          e.preventDefault();
-          Swal.fire({
-            icon: 'error',
-            title: 'Invalid ZIP Code',
-            text: 'Please enter a valid 6-digit ZIP code',
-            confirmButtonColor: '#6200ea'
-          });
-          return;
-        }
-
-        // Validate required fields
-        if (!title || !name || !street || !city || !state) {
-          e.preventDefault();
-          Swal.fire({
-            icon: 'warning',
-            title: 'Missing Information',
-            text: 'Please fill in all required fields',
-            confirmButtonColor: '#6200ea'
-          });
-          return;
-        }
-      });
+      // ZIP code validation
+      const zipCodeInput = document.getElementById('zipCode');
+      if (zipCodeInput) {
+        zipCodeInput.addEventListener('input', function(e) {
+          e.target.value = e.target.value.replace(/\D/g, '').substring(0, 6);
+        });
+      }
     });
   </script>
 </body>
