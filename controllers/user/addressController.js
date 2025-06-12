@@ -171,12 +171,12 @@ export const addAddress = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    console.log('Checking existing addresses...');
+    
     const existingAddresses = await Address.find({ user: req.user._id, isActive: true });
-    console.log('Existing addresses count:', existingAddresses.length);
+    
 
     const shouldBeDefault = existingAddresses.length === 0 || isDefault === 'on';
-    console.log('Should be default:', shouldBeDefault);
+  
 
     const addressData = {
       user: req.user._id,
@@ -281,10 +281,9 @@ export const updateAddress = catchAsyncError(async (req, res, next) => {
       return res.redirect('/addresses?error=Address not found');
     }
 
-    // Enhanced field validation
     const validationErrors = [];
 
-    // Validate required fields
+    
     const requiredFields = [
       { value: title, name: 'Address Title' },
       { value: fullName, name: 'Full Name' },
@@ -464,7 +463,7 @@ export const setDefaultAddress = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Get addresses
+
 export const getAddressesForCheckout = catchAsyncError(async (req, res, next) => {
   try {
     const addresses = await Address.getUserAddresses(req.user._id);

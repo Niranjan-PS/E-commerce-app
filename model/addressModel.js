@@ -13,19 +13,19 @@ const addressSchema = new mongoose.Schema({
     maxLength: [50, "Address title cannot exceed 50 characters"],
     validate: {
       validator: function(v) {
-        // Check for only spaces
+        
         if (!v || v.trim().length === 0) {
           return false;
         }
-        // Check for underscores
+        
         if (v.includes('_')) {
           return false;
         }
-        // Check for only numbers
+        
         if (/^\d+$/.test(v.trim())) {
           return false;
         }
-        // Must contain at least one alphabetic character
+        
         if (!/[a-zA-Z]/.test(v)) {
           return false;
         }
@@ -41,23 +41,23 @@ const addressSchema = new mongoose.Schema({
     maxLength: [100, "Full name cannot exceed 100 characters"],
     validate: {
       validator: function(v) {
-        // Check for only spaces
+      
         if (!v || v.trim().length === 0) {
           return false;
         }
-        // Check for underscores
+       
         if (v.includes('_')) {
           return false;
         }
-        // Check for only numbers
+       
         if (/^\d+$/.test(v.trim())) {
           return false;
         }
-        // Must contain at least one alphabetic character
+        
         if (!/[a-zA-Z]/.test(v)) {
           return false;
         }
-        // Check for valid name format (letters, spaces, dots, hyphens only)
+        
         if (!/^[a-zA-Z\s.-]+$/.test(v.trim())) {
           return false;
         }
@@ -84,15 +84,15 @@ const addressSchema = new mongoose.Schema({
     maxLength: [200, "Street address cannot exceed 200 characters"],
     validate: {
       validator: function(v) {
-        // Check for only spaces
+        
         if (!v || v.trim().length === 0) {
           return false;
         }
-        // Check for underscores
+        
         if (v.includes('_')) {
           return false;
         }
-        // Must contain at least one alphabetic character
+        
         if (!/[a-zA-Z]/.test(v)) {
           return false;
         }
@@ -108,15 +108,15 @@ const addressSchema = new mongoose.Schema({
     default: null,
     validate: {
       validator: function(v) {
-        // Landmark is optional, so if empty or null, it's valid
+        
         if (!v || v.trim().length === 0) {
           return true;
         }
-        // Check for underscores
+        
         if (v.includes('_')) {
           return false;
         }
-        // If provided, must contain at least one alphabetic character
+        
         if (!/[a-zA-Z]/.test(v)) {
           return false;
         }
@@ -132,23 +132,23 @@ const addressSchema = new mongoose.Schema({
     maxLength: [50, "City name cannot exceed 50 characters"],
     validate: {
       validator: function(v) {
-        // Check for only spaces
+       
         if (!v || v.trim().length === 0) {
           return false;
         }
-        // Check for underscores
+        
         if (v.includes('_')) {
           return false;
         }
-        // Check for only numbers
+        
         if (/^\d+$/.test(v.trim())) {
           return false;
         }
-        // Must contain at least one alphabetic character
+        
         if (!/[a-zA-Z]/.test(v)) {
           return false;
         }
-        // City names should only contain letters, spaces, dots, hyphens
+        
         if (!/^[a-zA-Z\s.-]+$/.test(v.trim())) {
           return false;
         }
@@ -164,23 +164,23 @@ const addressSchema = new mongoose.Schema({
     maxLength: [50, "State name cannot exceed 50 characters"],
     validate: {
       validator: function(v) {
-        // Check for only spaces
+        
         if (!v || v.trim().length === 0) {
           return false;
         }
-        // Check for underscores
+        
         if (v.includes('_')) {
           return false;
         }
-        // Check for only numbers
+       
         if (/^\d+$/.test(v.trim())) {
           return false;
         }
-        // Must contain at least one alphabetic character
+        
         if (!/[a-zA-Z]/.test(v)) {
           return false;
         }
-        // State names should only contain letters, spaces, dots, hyphens
+        
         if (!/^[a-zA-Z\s.-]+$/.test(v.trim())) {
           return false;
         }
@@ -208,23 +208,23 @@ const addressSchema = new mongoose.Schema({
     maxLength: [50, "Country name cannot exceed 50 characters"],
     validate: {
       validator: function(v) {
-        // Check for only spaces
+       
         if (!v || v.trim().length === 0) {
           return false;
         }
-        // Check for underscores
+        
         if (v.includes('_')) {
           return false;
         }
-        // Check for only numbers
+        
         if (/^\d+$/.test(v.trim())) {
           return false;
         }
-        // Must contain at least one alphabetic character
+        
         if (!/[a-zA-Z]/.test(v)) {
           return false;
         }
-        // Country names should only contain letters, spaces, dots, hyphens
+       
         if (!/^[a-zA-Z\s.-]+$/.test(v.trim())) {
           return false;
         }
@@ -250,14 +250,14 @@ const addressSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for faster queries
+
 addressSchema.index({ user: 1, isActive: 1 });
 addressSchema.index({ user: 1, isDefault: 1 });
 
-// Ensure only one default address per user
+
 addressSchema.pre('save', async function(next) {
   if (this.isDefault && this.isModified('isDefault')) {
-    // Remove default flag from other addresses of the same user
+   
     await this.constructor.updateMany(
       { user: this.user, _id: { $ne: this._id } },
       { isDefault: false }
@@ -266,7 +266,7 @@ addressSchema.pre('save', async function(next) {
   next();
 });
 
-// Virtual for formatted address
+
 addressSchema.virtual('formattedAddress').get(function() {
   const parts = [
     this.street,
@@ -280,17 +280,17 @@ addressSchema.virtual('formattedAddress').get(function() {
   return parts.join(', ');
 });
 
-// Method to get short address
+
 addressSchema.methods.getShortAddress = function() {
   return `${this.street}, ${this.city}, ${this.state} - ${this.zipCode}`;
 };
 
-// Static method to get user's default address
+
 addressSchema.statics.getDefaultAddress = function(userId) {
   return this.findOne({ user: userId, isDefault: true, isActive: true });
 };
 
-// Static method to get all active addresses for a user
+
 addressSchema.statics.getUserAddresses = function(userId) {
   return this.find({ user: userId, isActive: true }).sort({ isDefault: -1, createdAt: -1 });
 };
