@@ -46,7 +46,7 @@ const productSchema = new Schema({
     min: 0,
     max: 5,
     set: function(val) {
-      return Math.round(val * 10) / 10; // Round to 1 decimal place
+      return Math.round(val * 10) / 10; 
     }
   },
   ratingCount: {
@@ -102,7 +102,7 @@ const productSchema = new Schema({
   }
 }, { timestamps: true });
 
-// Static method to soft delete a product
+
 productSchema.statics.softDelete = async function(productId) {
   return this.findByIdAndUpdate(
     productId,
@@ -111,7 +111,7 @@ productSchema.statics.softDelete = async function(productId) {
   );
 };
 
-// Static method to restore a soft-deleted product
+
 productSchema.statics.restoreDeleted = async function(productId) {
   return this.findByIdAndUpdate(
     productId,
@@ -120,25 +120,25 @@ productSchema.statics.restoreDeleted = async function(productId) {
   );
 };
 
-// Static method to find soft-deleted products
+
 productSchema.statics.findDeleted = async function() {
   return this.find({ isDeleted: true }, null, { includeDeleted: true }).populate('category');
 };
 
-// Static method to find a product by ID including soft-deleted ones
+
 productSchema.statics.findByIdWithDeleted = async function(productId) {
-  // Use includeDeleted option to bypass middleware
+ 
   return this.findOne({ _id: productId }, null, { includeDeleted: true });
 };
 
-// Static method to calculate and update product rating
+
 productSchema.statics.updateProductRating = async function(productId) {
   const Review = mongoose.model('Review');
 
-  // Get review stats
+
   const reviewStats = await Review.calculateAverageRating(productId);
 
-  // Get direct ratings from product
+  
   const product = await this.findById(productId);
   if (!product) return null;
 
@@ -146,38 +146,38 @@ productSchema.statics.updateProductRating = async function(productId) {
   const directRatingSum = directRatings.reduce((sum, r) => sum + r.rating, 0);
   const directRatingCount = directRatings.length;
 
-  // Combine review ratings and direct ratings
+  
   const totalRatingSum = (reviewStats.averageRating * reviewStats.reviewCount) + directRatingSum;
   const totalRatingCount = reviewStats.reviewCount + directRatingCount;
 
   const averageRating = totalRatingCount > 0 ? totalRatingSum / totalRatingCount : 0;
 
-  // Update product with new ratings
+ 
   return this.findByIdAndUpdate(productId, {
     averageRating: Math.round(averageRating * 10) / 10,
     ratingCount: totalRatingCount,
-    rating: Math.round(averageRating * 10) / 10, // Keep existing rating field for backward compatibility
+    rating: Math.round(averageRating * 10) / 10, 
     reviewCount: reviewStats.reviewCount
   }, { new: true });
 };
 
-// Query middleware to exclude soft-deleted products by default
+
 productSchema.pre('find', function() {
-  // Skip middleware if includeDeleted option is set
+
   if (!this.getOptions().includeDeleted) {
     this.where({ isDeleted: { $ne: true } });
   }
 });
 
 productSchema.pre('findOne', function() {
-  // Skip middleware if includeDeleted option is set
+  
   if (!this.getOptions().includeDeleted) {
     this.where({ isDeleted: { $ne: true } });
   }
 });
 
 productSchema.pre('countDocuments', function() {
-  // Skip middleware if includeDeleted option is set
+  
   if (!this.getOptions().includeDeleted) {
     this.where({ isDeleted: { $ne: true } });
   }

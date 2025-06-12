@@ -58,17 +58,17 @@ const cartSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for faster queries
+
 cartSchema.index({ user: 1 });
 cartSchema.index({ 'items.product': 1 });
 
-// Constants for cart limits
+
 export const CART_LIMITS = {
   MAX_QUANTITY_PER_PRODUCT: 10,
   MAX_ITEMS_IN_CART: 50
 };
 
-// Method to calculate cart totals
+
 cartSchema.methods.calculateTotals = function() {
   let totalItems = 0;
   let totalPrice = 0;
@@ -94,17 +94,17 @@ cartSchema.methods.calculateTotals = function() {
   };
 };
 
-// Method to add item to cart
+
 cartSchema.methods.addItem = function(productData, quantity = 1) {
   const existingItemIndex = this.items.findIndex(
     item => item.product.toString() === productData._id.toString()
   );
 
   if (existingItemIndex > -1) {
-    // Item exists, update quantity
+    
     const newQuantity = this.items[existingItemIndex].quantity + quantity;
     
-    // Check quantity limits
+    
     if (newQuantity > CART_LIMITS.MAX_QUANTITY_PER_PRODUCT) {
       throw new Error(`Maximum ${CART_LIMITS.MAX_QUANTITY_PER_PRODUCT} items allowed per product`);
     }
@@ -117,7 +117,7 @@ cartSchema.methods.addItem = function(productData, quantity = 1) {
     this.items[existingItemIndex].price = productData.price;
     this.items[existingItemIndex].salePrice = productData.salePrice;
   } else {
-    // New item, add to cart
+   
     if (this.items.length >= CART_LIMITS.MAX_ITEMS_IN_CART) {
       throw new Error(`Maximum ${CART_LIMITS.MAX_ITEMS_IN_CART} different items allowed in cart`);
     }
@@ -153,7 +153,7 @@ cartSchema.methods.updateItemQuantity = function(productId, quantity) {
   }
 
   if (quantity <= 0) {
-    // Remove item if quantity is 0 or negative
+    // Remove item 
     this.items.splice(itemIndex, 1);
   } else {
     if (quantity > CART_LIMITS.MAX_QUANTITY_PER_PRODUCT) {
@@ -219,7 +219,7 @@ cartSchema.statics.getOrCreateCart = async function(userId) {
   return cart;
 };
 
-// Pre-save middleware to update totals
+
 cartSchema.pre('save', function(next) {
   if (this.isModified('items')) {
     this.calculateTotals();

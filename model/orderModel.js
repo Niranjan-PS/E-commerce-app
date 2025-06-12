@@ -59,7 +59,7 @@ const orderItemSchema = new mongoose.Schema({
     enum: ['Active', 'Cancelled', 'Returned', 'Partially Cancelled', 'Partially Returned'],
     default: 'Active'
   },
-  // Individual item return fields
+  
   itemReturnStatus: {
     type: String,
     enum: ['None', 'Requested', 'Approved', 'Rejected', 'Completed'],
@@ -235,7 +235,7 @@ const orderSchema = new mongoose.Schema({
     default: null
   },
 
-  // Return Information
+  
   returnReason: {
     type: String,
     default: null
@@ -269,7 +269,7 @@ const orderSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Generate order number
+
 orderSchema.pre('save', async function(next) {
   if (this.isNew && !this.orderNumber) {
     const timestamp = Date.now().toString();
@@ -279,7 +279,7 @@ orderSchema.pre('save', async function(next) {
   next();
 });
 
-// Instance methods
+
 orderSchema.methods.canBeCancelled = function() {
   return ['Pending', 'Confirmed', 'Processing', 'Packed'].includes(this.orderStatus);
 };
@@ -298,7 +298,6 @@ orderSchema.methods.canRequestReturn = function() {
          ['None', 'Rejected'].includes(this.returnStatus);
 };
 
-// Item-level methods
 orderSchema.methods.canItemBeCancelled = function(itemId) {
   if (!this.canBeCancelled()) return false;
 
@@ -330,9 +329,9 @@ orderSchema.methods.getItemAvailableQuantity = function(itemId, action = 'cancel
   return 0;
 };
 
-// Individual item return methods
+
 orderSchema.methods.canItemRequestReturn = function(itemId) {
-  // Check if order is delivered and within return window
+ 
   if (this.orderStatus !== 'Delivered') return false;
   if (!this.deliveredAt) return false;
   if ((Date.now() - this.deliveredAt.getTime()) > (7 * 24 * 60 * 60 * 1000)) return false;
@@ -340,11 +339,10 @@ orderSchema.methods.canItemRequestReturn = function(itemId) {
   const item = this.items.id(itemId);
   if (!item) return false;
 
-  // Check if item has available quantity for return
+ 
   const availableQuantity = item.quantity - item.cancelledQuantity - item.returnedQuantity;
   if (availableQuantity <= 0) return false;
 
-  // Check if item return is not already requested/approved/completed
   return ['None', 'Rejected'].includes(item.itemReturnStatus);
 };
 
@@ -406,7 +404,7 @@ orderSchema.statics.getOrderStats = function(userId) {
   ]);
 };
 
-// Search orders by order number or product name
+// Search orders 
 orderSchema.statics.searchOrders = function(userId, searchQuery, options = {}) {
   const { page = 1, limit = 10 } = options;
   const skip = (page - 1) * limit;
@@ -426,7 +424,7 @@ orderSchema.statics.searchOrders = function(userId, searchQuery, options = {}) {
   .limit(limit);
 };
 
-// Indexes for better performance
+// Indexes 
 orderSchema.index({ user: 1, orderDate: -1 });
 orderSchema.index({ orderNumber: 1 });
 orderSchema.index({ orderStatus: 1 });

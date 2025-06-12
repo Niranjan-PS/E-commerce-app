@@ -28,11 +28,11 @@ const wishlistSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for faster queries
+
 wishlistSchema.index({ user: 1 });
 wishlistSchema.index({ 'items.product': 1 });
 
-// Method to add item to wishlist
+
 wishlistSchema.methods.addItem = function(productId) {
   const existingItem = this.items.find(
     item => item.product.toString() === productId.toString()
@@ -46,7 +46,7 @@ wishlistSchema.methods.addItem = function(productId) {
   return this;
 };
 
-// Method to remove item from wishlist
+
 wishlistSchema.methods.removeItem = function(productId) {
   const itemIndex = this.items.findIndex(
     item => item.product.toString() === productId.toString()
@@ -60,21 +60,21 @@ wishlistSchema.methods.removeItem = function(productId) {
   return this;
 };
 
-// Method to check if product is in wishlist
+
 wishlistSchema.methods.hasProduct = function(productId) {
   return this.items.some(
     item => item.product.toString() === productId.toString()
   );
 };
 
-// Method to clear wishlist
+
 wishlistSchema.methods.clearWishlist = function() {
   this.items = [];
   this.totalItems = 0;
   return this;
 };
 
-// Static method to get or create wishlist for user
+
 wishlistSchema.statics.getOrCreateWishlist = async function(userId) {
   let wishlist = await this.findOne({ user: userId }).populate({
     path: 'items.product',

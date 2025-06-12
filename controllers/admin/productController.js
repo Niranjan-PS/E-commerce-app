@@ -145,8 +145,7 @@ export const getProductList = async (req, res) => {
     const category = req.query.category || '';
     const minPrice = parseFloat(req.query.minPrice) || 0;
     const maxPrice = parseFloat(req.query.maxPrice) || Number.MAX_VALUE;
-
-
+    
     const filter = {};
 
     if (search) {

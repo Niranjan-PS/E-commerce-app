@@ -1,4 +1,4 @@
-// backend/controllers/walletController.js
+
 
 import { Wallet } from "../../model/walletModel.js" 
 import { User } from '../../model/userModel.js';

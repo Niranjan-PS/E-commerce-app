@@ -4,12 +4,12 @@ import { Category } from "../../model/categoryModel.js";
 import { catchAsyncError } from "../../middlewares/catchAsync.js";
 import ErrorHandler from "../../middlewares/error.js";
 
-// Get wishlist page
+
 export const getWishlist = catchAsyncError(async (req, res, next) => {
   try {
     const wishlist = await Wishlist.getOrCreateWishlist(req.user._id);
     
-    // Validate wishlist items against current product status
+   
     await validateWishlistItems(wishlist);
     
     res.render("user/wishlist", {
@@ -23,12 +23,11 @@ export const getWishlist = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Add product to wishlist
 export const addToWishlist = catchAsyncError(async (req, res, next) => {
   try {
     const { productId } = req.body;
     
-    // Validate product
+    
     const product = await Product.findById(productId).populate('category');
     if (!product) {
       return res.status(404).json({
@@ -37,7 +36,7 @@ export const addToWishlist = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Check if product or category is blocked/unlisted
+    
     if (product.isBlocked || product.isDeleted || product.status !== "Available") {
       return res.status(400).json({
         success: false,
@@ -52,10 +51,10 @@ export const addToWishlist = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Get or create wishlist
+  
     const wishlist = await Wishlist.getOrCreateWishlist(req.user._id);
     
-    // Check if product is already in wishlist
+   
     if (wishlist.hasProduct(productId)) {
       return res.status(400).json({
         success: false,
@@ -63,7 +62,7 @@ export const addToWishlist = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Add item to wishlist
+    
     wishlist.addItem(productId);
     await wishlist.save();
 
@@ -82,12 +81,11 @@ export const addToWishlist = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Remove item from wishlist
+
 export const removeFromWishlist = catchAsyncError(async (req, res, next) => {
   try {
     const { productId } = req.params;
     
-    // Get wishlist
     const wishlist = await Wishlist.findOne({ user: req.user._id });
     if (!wishlist) {
       return res.status(404).json({
@@ -96,7 +94,7 @@ export const removeFromWishlist = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Remove item
+    
     wishlist.removeItem(productId);
     await wishlist.save();
 
@@ -115,7 +113,7 @@ export const removeFromWishlist = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Clear entire wishlist
+
 export const clearWishlist = catchAsyncError(async (req, res, next) => {
   try {
     const wishlist = await Wishlist.findOne({ user: req.user._id });
