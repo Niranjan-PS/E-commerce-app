@@ -117,7 +117,7 @@ userSchema.methods.generateVerificationCode = function(){
     }
     const verificationCode=generateRandomFiveDigitNumber()
     this.verificationCode=verificationCode
-    this.verificationCodeExpire = new Date(Date.now() + 30*1000) // 30 seconds
+    this.verificationCodeExpire = new Date(Date.now() + 30*1000) 
 
 return verificationCode
 }
@@ -154,7 +154,7 @@ userSchema.methods.generateEmailVerificationToken = function() {
         .update(verificationToken)
         .digest("hex")
 
-    this.emailVerificationExpire = Date.now() + 15*60*1000 // 15 minutes
+    this.emailVerificationExpire = Date.now() + 15*60*1000 
     return verificationToken
 }
 
