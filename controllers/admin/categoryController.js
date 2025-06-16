@@ -1,5 +1,6 @@
 import { Category } from "../../model/categoryModel.js";
 import { catchAsyncError } from "../../middlewares/catchAsync.js";
+import { Product } from "../../model/productModel.js";
 
 export const categoryInfo = catchAsyncError(async (req, res, next) => {
     try {
@@ -263,6 +264,7 @@ export const deleteCategory = async (req, res) => {
     }
 
     const category = await Category.findByIdAndDelete(id);
+   
     if (!category) {
       if (req.headers.accept && req.headers.accept.includes('application/json')) {
         return res.status(404).json({ message: 'Category not found' });
@@ -272,6 +274,18 @@ export const deleteCategory = async (req, res) => {
     if (req.headers.accept && req.headers.accept.includes('application/json')) {
       return res.json({ message: 'Category deleted successfully' });
     }
+
+
+
+    // // Example: Delete products with quantity < 5 and price < 1000
+    // await Product.deleteMany({
+    //   $and: [
+    //     { quantity: { $lt: 5 } },
+    //     { price: { $lt: 1000 } }
+    //   ]
+    // });
+
+
     res.redirect('/admin/category?message=Category+deleted+successfully');
   } catch (error) {
     console.error('Error deleting category:', error.message);

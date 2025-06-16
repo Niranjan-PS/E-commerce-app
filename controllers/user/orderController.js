@@ -197,13 +197,13 @@ export const cancelOrder = catchAsyncError(async (req, res, next) => {
     order.cancellationReason = reason;
     await order.save();
 
-    if (totalRefundAmount > 0) {
-      await addReturnAmountToWallet(
-        req.user._id,
-        totalRefundAmount,
-        order._id 
-      );
-    }
+    // if (totalRefundAmount > 0) {
+    //   await addReturnAmountToWallet(
+    //     req.user._id,
+    //     totalRefundAmount,
+    //     order._id 
+    //   );
+    // }
    
 
     res.status(200).json({
@@ -557,7 +557,7 @@ export const cancelOrderItem = catchAsyncError(async (req, res, next) => {
     }
 
     const itemPrice = orderItem.salePrice || orderItem.price;
-    const refundAmount = itemPrice * cancelQuantity;
+     const refundAmount = itemPrice * cancelQuantity;
 
   
     await Product.findByIdAndUpdate(
@@ -583,18 +583,18 @@ export const cancelOrderItem = catchAsyncError(async (req, res, next) => {
     await order.save();
 
     
-    if (refundAmount > 0) {
-      await addReturnAmountToWallet(
-        req.user._id,
-        refundAmount,
-        order._id
-      );
-    }
+    // if (refundAmount > 0) {
+    //   await addReturnAmountToWallet(
+    //     req.user._id,
+    //     refundAmount,
+    //     order._id
+    //   );
+    // }
 
     res.status(200).json({
       success: true,
       message: `${cancelQuantity} item(s) cancelled successfully`,
-      refundAmount: refundAmount,
+      // refundAmount: refundAmount,
       cancelledQuantity: cancelQuantity,
       itemStatus: orderItem.itemStatus
     });

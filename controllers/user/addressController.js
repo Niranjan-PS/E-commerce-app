@@ -173,8 +173,7 @@ export const addAddress = catchAsyncError(async (req, res, next) => {
 
     
     const existingAddresses = await Address.find({ user: req.user._id, isActive: true });
-    
-
+  
     const shouldBeDefault = existingAddresses.length === 0 || isDefault === 'on';
   
 
