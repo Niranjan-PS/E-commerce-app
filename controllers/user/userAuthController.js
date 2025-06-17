@@ -148,7 +148,7 @@ async function sendVerificationCode(verificationMethod, verificationCode, email,
 
       const message = generateEmailTemplate(verificationCode);
 
-      console.log(`Sending email with verification code: ${verificationCode}`);
+      console.log(` email with verification code: ${verificationCode}`);
 
 
       await sendEmail({
