@@ -108,7 +108,7 @@ router.get("/otp-verification", (req, res) => {
 
 router.post("/register", register);
 router.post('/otp-verification', verifyOtp);
-router.post('/resend-otp', resendOtp)
+router.post('/resend-otp', resendOtp )
 
 router.get('/login', (req, res) => {
   res.render('user/login', { error: req.query.error || null });

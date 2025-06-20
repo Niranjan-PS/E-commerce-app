@@ -17,7 +17,7 @@ export const addReview = catchAsyncError(async (req, res, next) => {
     console.log('User email:', req.user.email);
     console.log('User isAdmin:', req.user.isAdmin);
 
-    // Validate input
+   
     if (!productId || !rating || !comment) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,

@@ -49,13 +49,10 @@ export const register = catchAsyncError(async (req, res, next) => {
         message: "Passwords do not match."
       });
     }
-
 phone = phone.trim();
 phone = phone.replace(/\s|-/g, "");
 phone = phone.replace(/[^\x20-\x7E]/g, '');
 console.log("Cleaned phone:", phone);
-
-
     function validatePhoneNumber(phone) {
       const phoneRegex = /^\+91[6-9]\d{9}$/;
       return phoneRegex.test(phone);
@@ -66,7 +63,6 @@ console.log("Cleaned phone:", phone);
         message: "InvalidMobilenumber."
       });
     }
-
     const existingUser = await User.findOne({
       $or: [
         { email, accountverified: true },
@@ -80,7 +76,6 @@ console.log("Cleaned phone:", phone);
         message: "Phone or Email is already used."
       });
     }
-
     const registrationAttemptsByUser = await User.find({
       $or: [
         { phone, accountverified: false },
@@ -409,16 +404,11 @@ export const resendOtp = catchAsyncError(async (req, res, next) => {
 
 export const login = catchAsyncError(async (req, res, next) => {
  console.log('Login route - Incoming request body:', req.body);
-
-  
     const { email = '', password = '' } = req.body || {};
-
   if (!email || !password) {
     return next(new ErrorHandler("Invalid email or password. Please enter valid credentials", HttpStatus.BAD_REQUEST));
   }
-
   const user = await User.findOne({ email, accountverified: true }).select("+password");
-
   if (!user) {
     return next(new ErrorHandler("Invalid Credentials", HttpStatus.BAD_REQUEST));
   }
@@ -537,9 +527,7 @@ export const resetPassword = catchAsyncError(async(req,res,next) => {
 
 export const checkUserStatus = catchAsyncError(async (req, res, next) => {
   try {
-    
     const token = req.cookies.userToken || req.cookies.adminToken
-
     if (!token) {
       return res.status(200).json({
         success: false,

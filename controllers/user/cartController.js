@@ -32,8 +32,8 @@ export const addToCart = catchAsyncError(async (req, res, next) => {
     const { productId, quantity = 1 } = req.body;
 
    
-    const product = await Product.findById(productId).populate('category');
-    if (!product) {
+    const productData = await Product.findById(productId).populate('category');
+    if (!productData) {
       return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: 'Product not found'
@@ -41,14 +41,14 @@ export const addToCart = catchAsyncError(async (req, res, next) => {
     }
 
    
-    if (product.isBlocked || product.isDeleted || product.status !== "Available") {
+    if (productData.isBlocked || productData.isDeleted || productData.status !== "Available") {
       return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: 'This product is currently not available'
       });
     }
 
-    if (!product.category.isListed) {
+    if (!productData.category.isListed) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: 'This product category is currently not available'
@@ -56,7 +56,7 @@ export const addToCart = catchAsyncError(async (req, res, next) => {
     }
 
     
-    if (product.quantity <= 0) {
+    if (productData.quantity <= 0) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: 'Product is out of stock'
@@ -72,15 +72,15 @@ export const addToCart = catchAsyncError(async (req, res, next) => {
     const requestedQuantity = parseInt(quantity);
     const totalQuantity = currentQuantityInCart + requestedQuantity;
 
-    if (totalQuantity > product.quantity) {
+    if (totalQuantity > productData.quantity) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
-        message: `Only ${product.quantity} items available. You already have ${currentQuantityInCart} in cart.`
+        message: `Only ${productData.quantity} items available. You already have ${currentQuantityInCart} in cart.`
       });
     }
 
    
-    cart.addItem(product, requestedQuantity);
+    cart.addItem(productData, requestedQuantity);
     await cart.save();
 
     

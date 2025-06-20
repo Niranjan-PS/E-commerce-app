@@ -3,6 +3,7 @@ import { Product } from "../../model/productModel.js";
 import { catchAsyncError } from "../../middlewares/catchAsync.js";
 import ErrorHandler from "../../middlewares/error.js";
 import PDFDocument from 'pdfkit';
+import { Address } from "../../model/addressModel.js";
 import { updateStockOnOrder } from "../admin/inventoryController.js";
 import { addReturnAmountToWallet } from './walletController.js'; // Add this import
 
@@ -28,9 +29,14 @@ export const getOrderDetails = catchAsyncError(async (req, res, next) => {
     const orderObj = order.toObject();
     orderObj.canBeCancelled = canBeCancelled;
     orderObj.canRequestReturn = canRequestReturn;
+    const displayAddress= order.shippingAddress
+    if(!displayAddress){
+      return res.status(400).json({"message":"addres not found"})
+    }
 
     res.render("user/order-details", {
       order: orderObj,
+      displayAddress,
       message: req.query.message || null,
       error: req.query.error || null
     });
@@ -674,7 +680,7 @@ export const returnOrderItem = catchAsyncError(async (req, res, next) => {
     const itemPrice = orderItem.salePrice || orderItem.price;
     const estimatedRefund = itemPrice * returnQuantity;
 
-    // Update order with return request (only if not already requested)
+    // Update order with return request
     if (order.returnStatus === 'None') {
       order.returnReason = reason.trim();
       order.returnStatus = 'Requested';
@@ -699,7 +705,7 @@ export const returnOrderItem = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Request return for individual item (NEW FUNCTION - doesn't modify existing logic)
+
 export const requestIndividualItemReturn = catchAsyncError(async (req, res, next) => {
   try {
     const { orderId, itemId } = req.params;

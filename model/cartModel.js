@@ -142,7 +142,7 @@ cartSchema.methods.addItem = function(productData, quantity = 1) {
   return this;
 };
 
-// Method to update item quantity
+
 cartSchema.methods.updateItemQuantity = function(productId, quantity) {
   const itemIndex = this.items.findIndex(
     item => item.product.toString() === productId.toString()
@@ -153,7 +153,7 @@ cartSchema.methods.updateItemQuantity = function(productId, quantity) {
   }
 
   if (quantity <= 0) {
-    // Remove item 
+   
     this.items.splice(itemIndex, 1);
   } else {
     if (quantity > CART_LIMITS.MAX_QUANTITY_PER_PRODUCT) {
@@ -167,7 +167,7 @@ cartSchema.methods.updateItemQuantity = function(productId, quantity) {
   return this;
 };
 
-// Method to remove item from cart
+
 cartSchema.methods.removeItem = function(productId) {
   const itemIndex = this.items.findIndex(
     item => item.product.toString() === productId.toString()
@@ -181,28 +181,28 @@ cartSchema.methods.removeItem = function(productId) {
   return this;
 };
 
-// Method to clear cart
+
 cartSchema.methods.clearCart = function() {
   this.items = [];
   this.calculateTotals();
   return this;
 };
 
-// Method to get item by product ID
+
 cartSchema.methods.getItem = function(productId) {
   return this.items.find(
     item => item.product.toString() === productId.toString()
   );
 };
 
-// Method to check if product is in cart
+
 cartSchema.methods.hasProduct = function(productId) {
   return this.items.some(
     item => item.product.toString() === productId.toString()
   );
 };
 
-// Static method to get or create cart for user
+
 cartSchema.statics.getOrCreateCart = async function(userId) {
   let cart = await this.findOne({ user: userId }).populate({
     path: 'items.product',

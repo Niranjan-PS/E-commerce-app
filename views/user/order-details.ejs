@@ -416,6 +416,41 @@
           <span class="info-label">Payment Method:</span>
           <span class="info-value"><%= order.paymentMethod %></span>
         </div>
+
+
+
+       <div class="info-item">
+        <span class="info-label">Address:</span>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addressModal">
+          View Address
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Address Modal -->
+  <div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addressModalLabel">Shipping Address</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p><strong>Full Name:</strong> <%= displayAddress.fullName %></p>
+          <p><strong>Phone:</strong> <%= displayAddress.phone %></p>
+          <p><strong>Address:</strong> <%= displayAddress.street %>, <%= displayAddress.landmark ? displayAddress.landmark + ', ' : '' %><%= displayAddress.city %>, <%= displayAddress.state %>, <%= displayAddress.zipCode %></p>
+          <p><strong>Type:</strong> <%= displayAddress.addressType %></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
         <div class="info-item">
           <span class="info-label">Total Amount:</span>
           <span class="info-value">₹<%= order.totalAmount.toFixed(2) %></span>
@@ -853,6 +888,13 @@
       document.getElementById('individualReturnItemReason').value = '';
       new bootstrap.Modal(document.getElementById('individualItemReturnModal')).show();
     }
+
+
+    // Initialize Bootstrap modals (if needed beyond data-bs attributes)
+document.addEventListener('DOMContentLoaded', () => {
+  const addressModal = new bootstrap.Modal(document.getElementById('addressModal'));
+  // Modal is triggered via data-bs-toggle, so no additional JS needed
+});
 
     // Handle reason select change
     document.getElementById('individualReturnReasonSelect').addEventListener('change', function() {
