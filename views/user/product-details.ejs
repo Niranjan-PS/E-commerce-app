@@ -289,6 +289,74 @@
     .zoom-hint:hover {
       opacity: 1;
     }
+
+    /* Offer Section Styles */
+    .offer-section {
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+      border: none !important;
+    }
+
+    .offer-section::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+      transform: rotate(45deg);
+      animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+      100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+    }
+
+    .offer-pricing {
+      position: relative;
+    }
+
+    .offer-price {
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .offer-discount-badge {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    .offer-badge {
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow {
+      from { box-shadow: 0 0 5px rgba(40, 167, 69, 0.5); }
+      to { box-shadow: 0 0 10px rgba(40, 167, 69, 0.8); }
+    }
+
+    /* Responsive offer section */
+    @media (max-width: 768px) {
+      .offer-section {
+        margin-bottom: 1rem !important;
+      }
+      
+      .offer-section .d-flex {
+        flex-direction: column;
+        align-items: flex-start !important;
+      }
+      
+      .validity-text {
+        margin-top: 0.5rem;
+      }
+    }
   </style>
   <style>
     .navbar {
@@ -760,8 +828,48 @@
             </div>
           </div>
 
+          <!-- Product Offer Section -->
+          <% if (activeOffer && activeOffer.isActive) { %>
+            <div class="offer-section mb-4 p-3 border rounded" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: white;">
+              <div class="d-flex align-items-center mb-2">
+                <i class="fas fa-fire me-2" style="font-size: 1.2rem;"></i>
+                <h5 class="mb-0 fw-bold"><%= activeOffer.name %></h5>
+              </div>
+              <div class="offer-details">
+                <div class="d-flex align-items-center mb-2">
+                  <span class="badge bg-light text-dark px-3 py-2 me-2" style="font-size: 1rem;">
+                    <i class="fas fa-percentage me-1"></i><%= activeOffer.discountPercentage %>% OFF
+                  </span>
+                  <span class="validity-text" style="font-size: 0.9rem; opacity: 0.9;">
+                    <i class="fas fa-clock me-1"></i><%= activeOffer.validityText %>
+                  </span>
+                </div>
+                <% if (activeOffer.description) { %>
+                  <p class="mb-0" style="font-size: 0.9rem; opacity: 0.9;">
+                    <i class="fas fa-info-circle me-1"></i><%= activeOffer.description %>
+                  </p>
+                <% } %>
+              </div>
+            </div>
+          <% } %>
+
           <div class="price-section mb-3">
-            <% if (product.salePrice && product.salePrice < product.price) { %>
+            <% if (activeOffer && activeOffer.isActive) { %>
+              <!-- Show offer price -->
+              <div class="offer-pricing">
+                <span class="offer-price text-success fw-bold fs-2">₹<%= activeOffer.discountedPrice.toFixed(2) %></span>
+                <span class="original-price text-muted text-decoration-line-through ms-2 fs-4">₹<%= activeOffer.originalPrice.toFixed(2) %></span>
+                <span class="offer-discount-badge bg-success text-white px-3 py-1 rounded ms-2" style="font-size: 0.9rem;">
+                  -<%= activeOffer.discountPercentage %>% OFF
+                </span>
+                <div class="savings-info mt-2">
+                  <small class="text-success fw-bold">
+                    <i class="fas fa-tags me-1"></i>Special Offer: You save ₹<%= activeOffer.savings.toFixed(2) %>
+                  </small>
+                </div>
+              </div>
+            <% } else if (product.salePrice && product.salePrice < product.price) { %>
+              <!-- Show regular sale price -->
               <span class="sale-price text-primary fw-bold fs-3">₹<%= product.salePrice.toFixed(2) %></span>
               <span class="original-price text-muted text-decoration-line-through ms-2 fs-5">₹<%= product.price.toFixed(2) %></span>
               <% if (product.discount > 0) { %>
@@ -771,6 +879,7 @@
                 <small class="text-success fw-bold">You save ₹<%= (product.price - product.salePrice).toFixed(2) %></small>
               </div>
             <% } else { %>
+              <!-- Show regular price -->
               <span class="product-price text-primary fw-bold fs-3">₹<%= product.price.toFixed(2) %></span>
             <% } %>
           </div>
@@ -815,9 +924,9 @@
           <% } %>
 
           <div class="product-meta">
-            <p><span>Availability:</span> <%= product.quantity > 0 ? 'In Stock' : 'Out of Stock' %></p>
+  <p><span>Availability:</span> <%= product.quantity %> item<%= product.quantity === 1 ? '' : 's' %> available</p>
+</div>
 
-          </div>
         </div>
       </div>
     </div>
@@ -843,7 +952,22 @@
                     <h5 class="product-card-title text-dark"><%= relatedProduct.productName %></h5>
                     <p class="product-card-category"><%= relatedProduct.category ? relatedProduct.category.name : "Uncategorized" %></p>
                     <div class="price-section">
-                      <% if (relatedProduct.salePrice && relatedProduct.salePrice < relatedProduct.price) { %>
+                      <% if (relatedProduct.offerDetails && relatedProduct.offerDetails.discountedPrice && relatedProduct.offerDetails.originalPrice) { %>
+                        <!-- Show offer price for related product -->
+                        <span class="offer-price text-success fw-bold">₹<%= relatedProduct.offerDetails.discountedPrice.toFixed(2) %></span>
+                        <span class="original-price text-muted text-decoration-line-through ms-1" style="font-size: 0.8rem;">₹<%= relatedProduct.offerDetails.originalPrice.toFixed(2) %></span>
+                        <div class="mt-1">
+                          <span class="offer-badge bg-success text-white px-2 py-1 rounded" style="font-size: 0.7rem;">
+                            <i class="fas fa-fire me-1"></i>-<%= relatedProduct.offerDetails.discountPercentage || 0 %>% OFF
+                          </span>
+                        </div>
+                        <div class="mt-1">
+                          <small class="text-success" style="font-size: 0.7rem;">
+                            <i class="fas fa-tag me-1"></i><%= relatedProduct.offerDetails.name || 'Special Offer' %>
+                          </small>
+                        </div>
+                      <% } else if (relatedProduct.salePrice && relatedProduct.salePrice < relatedProduct.price) { %>
+                        <!-- Show regular sale price -->
                         <span class="sale-price text-primary fw-bold">₹<%= relatedProduct.salePrice.toFixed(2) %></span>
                         <span class="original-price text-muted text-decoration-line-through ms-1" style="font-size: 0.9rem;">₹<%= relatedProduct.price.toFixed(2) %></span>
                         <% if (relatedProduct.discount > 0) { %>
@@ -852,6 +976,7 @@
                           </div>
                         <% } %>
                       <% } else { %>
+                        <!-- Show regular price -->
                         <span class="product-card-price text-primary fw-bold">₹<%= relatedProduct.price.toFixed(2) %></span>
                       <% } %>
                     </div>
@@ -1299,6 +1424,20 @@
     // Add to cart function
     function addToCart(productId) {
       const quantity = document.getElementById('quantity').value;
+      
+      // Get the current effective price (offer price if available, otherwise regular price)
+      const offerPrice = document.querySelector('.offer-price');
+      const salePrice = document.querySelector('.sale-price');
+      const regularPrice = document.querySelector('.product-price');
+      
+      let effectivePrice = 0;
+      if (offerPrice) {
+        effectivePrice = parseFloat(offerPrice.textContent.replace('₹', '').replace(',', ''));
+      } else if (salePrice) {
+        effectivePrice = parseFloat(salePrice.textContent.replace('₹', '').replace(',', ''));
+      } else if (regularPrice) {
+        effectivePrice = parseFloat(regularPrice.textContent.replace('₹', '').replace(',', ''));
+      }
 
       fetch('/cart/add', {
         method: 'POST',
@@ -1307,7 +1446,9 @@
         },
         body: JSON.stringify({
           productId: productId,
-          quantity: parseInt(quantity)
+          quantity: parseInt(quantity),
+          effectivePrice: effectivePrice,
+          hasOffer: !!offerPrice
         })
       })
       .then(response => response.json())
@@ -1470,6 +1611,7 @@
 
     // Initialize star rating functionality
     function initializeStarRating() {
+      e.preventDefault()
       const stars = document.querySelectorAll('.star-rating .star');
       const ratingInput = document.getElementById('rating');
 

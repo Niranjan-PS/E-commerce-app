@@ -782,17 +782,17 @@
           <!-- Coupon Section -->
           <div class="coupon-section">
             <h6 class="mb-2"><i class="fas fa-tag me-2"></i>Apply Coupon</h6>
-            <div id="couponInputSection">
+            <div id="couponInputSection" style="display: <%= appliedCoupon ? 'none' : 'block' %>;">
               <div class="coupon-input-group">
                 <input type="text" id="couponCode" class="coupon-input" placeholder="Enter coupon code" maxlength="20">
                 <button class="coupon-btn" onclick="applyCoupon()">Apply</button>
               </div>
             </div>
-            <div id="appliedCouponSection" style="display: none;">
+            <div id="appliedCouponSection" style="display: <%= appliedCoupon ? 'block' : 'none' %>;">
               <div class="applied-coupon">
                 <div>
                   <i class="fas fa-tag me-2"></i>
-                  <span class="coupon-code" id="appliedCouponCode"></span>
+                  <span class="coupon-code" id="appliedCouponCode"><%= appliedCoupon ? appliedCoupon.code : '' %></span>
                 </div>
                 <button class="remove-coupon" onclick="removeCoupon()">
                   <i class="fas fa-times"></i>
@@ -815,9 +815,9 @@
               </div>
             <% } %>
 
-            <div class="summary-row" id="couponDiscountRow" style="display: none;">
+            <div class="summary-row" id="couponDiscountRow" style="display: <%= appliedCoupon ? 'flex' : 'none' %>;">
               <span class="summary-label savings-text">Coupon Discount</span>
-              <span class="summary-value savings-text" id="couponDiscountValue">-₹0.00</span>
+              <span class="summary-value savings-text" id="couponDiscountValue">-₹<%= appliedCoupon ? appliedCoupon.discount.toFixed(2) : '0.00' %></span>
             </div>
 
             <div class="summary-row">
@@ -1027,7 +1027,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     let selectedAddressId = '<%= defaultAddress ? defaultAddress._id : "" %>';
-    let appliedCouponCode = null;
+    let appliedCouponCode = '<%= appliedCoupon ? appliedCoupon.code : "" %>';
     let currentOrderSummary = <%- JSON.stringify(orderSummary) %>;
 
     // Address selection

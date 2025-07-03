@@ -198,6 +198,7 @@
               <li><a class="dropdown-item" href="/profile">My Profile</a></li>
               <li><a class="dropdown-item" href="/orders">Order History</a></li>
               <li><a class="dropdown-item" href="/wallet">My Wallet</a></li>
+              <li><a class="dropdown-item" href="/referrals">Referrals</a></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="#" onclick="confirmLogout(event)">Logout</a></li>
             </ul>
@@ -316,6 +317,48 @@
         </div>
       </div>
 
+      <!-- Referral Information (NEW) -->
+      <div class="info-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h5 style="margin: 0;"><i class="fas fa-users me-2"></i>Referral Program</h5>
+          <a href="/referrals" class="btn btn-outline-primary btn-sm" style="border-radius: 20px; padding: 0.4rem 1rem;">
+            <i class="fas fa-chart-line me-1"></i>View Dashboard
+          </a>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Your Referral Code</span>
+          <span class="info-value">
+            <span class="fw-bold text-primary" style="font-family: 'Courier New', monospace; font-size: 1.1rem;">
+              <span id="referralCodeDisplay">Loading...</span>
+            </span>
+            <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyReferralCode()" style="border-radius: 15px; padding: 0.2rem 0.8rem;">
+              <i class="fas fa-copy"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-primary ms-1" onclick="createReferralRecord()" style="border-radius: 15px; padding: 0.2rem 0.8rem;" title="Create/Refresh Referral Code">
+              <i class="fas fa-refresh"></i>
+            </button>
+          </span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Invite Friends & Earn</span>
+          <span class="info-value">
+            <span class="text-success fw-bold">₹100</span> for you, <span class="text-success fw-bold">₹50</span> for them
+          </span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Total Referrals</span>
+          <span class="info-value">
+            <span class="fw-bold text-primary" id="totalReferrals">Loading...</span> friends joined
+          </span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Total Earnings</span>
+          <span class="info-value">
+            <span class="fw-bold text-success">₹<span id="totalEarnings">0</span></span> earned
+          </span>
+        </div>
+      </div>
+
       <!-- Order History Summary -->
       <div class="info-section">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -384,6 +427,9 @@
          <a href="/wallet" class="btn btn-primary">
           <i class="fas fa-wallet me-2"></i>My Wallet
         </a>
+        <a href="/referrals" class="btn btn-outline-primary">
+          <i class="fas fa-users me-2"></i>Referrals
+        </a>
       </div>
     </div>
   </div>
@@ -392,6 +438,136 @@
   <!-- No Back Button Prevention Script -->
   <script src="/js/no-back-button.js"></script>
   <script>
+    // Load referral information when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      loadReferralInfo();
+    });
+
+    // Load referral information
+    async function loadReferralInfo() {
+      try {
+        console.log('Loading referral information...');
+        const response = await fetch('/api/referrals/dashboard');
+        console.log('Response status:', response.status);
+        
+        const data = await response.json();
+        console.log('Response data:', data);
+        
+        if (data.success && data.data) {
+          const referralInfo = data.data;
+          console.log('Referral info:', referralInfo);
+          
+          // Update referral code
+          const referralCode = referralInfo.referralCode || 'N/A';
+          console.log('Setting referral code:', referralCode);
+          document.getElementById('referralCodeDisplay').textContent = referralCode;
+          
+          // Update statistics
+          document.getElementById('totalReferrals').textContent = referralInfo.stats?.totalReferrals || 0;
+          document.getElementById('totalEarnings').textContent = referralInfo.stats?.totalEarnings || 0;
+          
+          console.log('Referral info loaded successfully');
+        } else {
+          console.log('No referral data available:', data);
+          // Handle case where referral info is not available
+          document.getElementById('referralCodeDisplay').textContent = 'N/A';
+          document.getElementById('totalReferrals').textContent = '0';
+          document.getElementById('totalEarnings').textContent = '0';
+        }
+      } catch (error) {
+        console.error('Error loading referral info:', error);
+        document.getElementById('referralCodeDisplay').textContent = 'Error';
+        document.getElementById('totalReferrals').textContent = '0';
+        document.getElementById('totalEarnings').textContent = '0';
+      }
+    }
+
+    // Copy referral code to clipboard
+    function copyReferralCode() {
+      const referralCode = document.getElementById('referralCodeDisplay').textContent;
+      
+      if (referralCode && referralCode !== 'Loading...' && referralCode !== 'N/A' && referralCode !== 'Error') {
+        navigator.clipboard.writeText(referralCode).then(() => {
+          Swal.fire({
+            icon: 'success',
+            title: 'Copied!',
+            text: 'Referral code copied to clipboard',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        }).catch(() => {
+          // Fallback for older browsers
+          const textArea = document.createElement('textarea');
+          textArea.value = referralCode;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Copied!',
+            text: 'Referral code copied to clipboard',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Unable to copy referral code',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      }
+    }
+
+    // Create/refresh referral record
+    async function createReferralRecord() {
+      try {
+        console.log('Creating referral record...');
+        
+        const response = await fetch('/api/referrals/create-record', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        const data = await response.json();
+        console.log('Create referral response:', data);
+        
+        if (data.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: 'Referral code created/refreshed successfully',
+            timer: 2000,
+            showConfirmButton: false
+          });
+          
+          // Reload referral info
+          await loadReferralInfo();
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: data.message || 'Failed to create referral record',
+            confirmButtonColor: '#6200ea'
+          });
+        }
+      } catch (error) {
+        console.error('Error creating referral record:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to create referral record',
+          confirmButtonColor: '#6200ea'
+        });
+      }
+    }
+
     function confirmLogout(event) {
       event.preventDefault();
       Swal.fire({

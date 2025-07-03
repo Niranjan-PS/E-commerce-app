@@ -24,7 +24,7 @@ export const customerInfo = catchAsyncError(async (req, res, next) => {
       query.isBlocked = true;
     }
 
-    // Get paginated user data and total count for pagination
+   
     const [userData, total] = await Promise.all([
       User.find(query)
         .limit(limit)
@@ -84,7 +84,7 @@ export const customerInfo = catchAsyncError(async (req, res, next) => {
       search,
       status,
       message: userData.length === 0 ? "No users found." : null,
-      
+      page: 'users',
       userStats: {
         totalUsers,
         activeUsers,

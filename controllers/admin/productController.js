@@ -207,7 +207,8 @@ export const getProductList = async (req, res) => {
       search,
       category,
       minPrice,
-      maxPrice
+      maxPrice,
+      page: 'products'
     });
   } catch (error) {
     console.error('Error fetching products:', error.message);
@@ -543,7 +544,8 @@ const getDeletedProducts = async (req, res) => {
       totalPages: totalPages,
       totalProducts: totalProducts,
       message: req.query.message || null,
-      error: req.query.error || null
+      error: req.query.error || null,
+      page: 'products'
     });
   } catch (error) {
     console.error('Error fetching deleted products:', error);

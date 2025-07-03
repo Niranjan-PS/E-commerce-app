@@ -61,6 +61,8 @@ import {
 } from "../controllers/user/wishlistController.js";
 import {
   getCheckout,
+  applyCoupon,
+  removeCoupon,
   placeOrder,
   getOrderSuccess
 } from "../controllers/user/checkoutController.js";
@@ -79,7 +81,15 @@ import { profileUpload, processProfileImage, formDataUpload } from "../helpers/m
 import { isAuthenticated } from "../middlewares/auth.js";
 import { getUserProductList } from "../controllers/user/userProductController.js";
 import {getWalletDetails} from "../controllers/user/walletController.js"
+import {
+  getReferralDashboard,
+  generateShareableLink,
+  getReferralStats,
+  validateReferralCode,
+  renderReferralDashboard
+} from "../controllers/user/referralController.js";
 import passport from "../passport.js";
+
 
 const router = express.Router();
 
@@ -153,8 +163,6 @@ router.get('/google/callback', (req, res, next) => {
       console.error(' Google OAuth failed - no user returned:', info);
       return res.redirect('/login?error=Google authentication failed');
     }
-  
-
 
     console.log(' Google OAuth successful for user:', user.email);
 
@@ -216,8 +224,110 @@ router.post("/wishlist/move-to-cart/:productId", isAuthenticated, moveToCart);
 
 // Checkout routes
 router.get("/checkout", isAuthenticated, getCheckout);
+router.post("/checkout/apply-coupon", isAuthenticated, applyCoupon);
+router.post("/checkout/remove-coupon", isAuthenticated, removeCoupon);
 router.post("/checkout/place-order", isAuthenticated, placeOrder);
 router.get("/order-success/:orderId", isAuthenticated, getOrderSuccess);
+
+// Coupon validation route
+router.post("/checkout/validate-coupon", isAuthenticated, async (req, res) => {
+  try {
+    const { Coupon } = await import("../model/couponModel.js");
+    const { couponCode } = req.body;
+    
+    if (!couponCode) {
+      return res.status(400).json({ success: false, message: 'Coupon code required' });
+    }
+    
+    const coupon = await Coupon.findOne({ 
+      code: couponCode.toUpperCase(),
+      isActive: true 
+    });
+    
+    if (!coupon) {
+      return res.json({ 
+        success: false, 
+        message: 'Coupon not found',
+        valid: false 
+      });
+    }
+    
+    const now = new Date();
+    const isValid = coupon.isValid();
+    
+    let status = 'valid';
+    let message = 'Coupon is valid';
+    
+    if (!isValid) {
+      if (now < coupon.validFrom) {
+        status = 'not_active_yet';
+        message = `Coupon will be active from ${coupon.validFrom.toLocaleString()}`;
+      } else if (now > coupon.validUntil) {
+        status = 'expired';
+        message = `Coupon expired on ${coupon.validUntil.toLocaleString()}`;
+      } else if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
+        status = 'usage_limit_reached';
+        message = 'Coupon usage limit reached';
+      }
+    }
+    
+    res.json({
+      success: true,
+      valid: isValid,
+      status,
+      message,
+      coupon: {
+        code: coupon.code,
+        description: coupon.description,
+        discountType: coupon.discountType,
+        discountValue: coupon.discountValue,
+        minimumAmount: coupon.minimumAmount,
+        validFrom: coupon.validFrom,
+        validUntil: coupon.validUntil,
+        usedCount: coupon.usedCount,
+        usageLimit: coupon.usageLimit
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Debug route for testing coupon application
+router.post("/debug/test-coupon", isAuthenticated, async (req, res) => {
+  try {
+    const { Cart } = await import("../model/cartModel.js");
+    const { Coupon } = await import("../model/couponModel.js");
+    
+    const cart = await Cart.findOne({ user: req.user._id }).populate({
+      path: 'items.product',
+      populate: {
+        path: 'category'
+      }
+    });
+    
+    const coupons = await Coupon.find({ isActive: true }).populate('applicableCategories applicableProducts');
+    
+    res.json({
+      cart: cart ? {
+        itemCount: cart.items.length,
+        items: cart.items.map(item => ({
+          productId: item.product._id,
+          productName: item.product.productName,
+          categoryId: item.product.category ? item.product.category._id : null,
+          categoryName: item.product.category ? item.product.category.name : null
+        }))
+      } : null,
+      coupons: coupons.map(c => ({
+        code: c.code,
+        applicableCategories: c.applicableCategories.map(cat => ({ id: cat._id, name: cat.name })),
+        applicableProducts: c.applicableProducts.map(prod => ({ id: prod._id, name: prod.productName }))
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Order routes
 router.get("/orders", isAuthenticated, getUserOrders);
@@ -231,6 +341,43 @@ router.get("/orders/:orderId/invoice", isAuthenticated, downloadInvoice);
 router.post("/orders/:orderId/mark-delivered", isAuthenticated, markOrderDelivered);
 
 router.get('/wallet', isAuthenticated, getWalletDetails);
+
+// Referral routes
+router.get("/referrals", isAuthenticated, renderReferralDashboard);
+router.get("/api/referrals/dashboard", isAuthenticated, getReferralDashboard);
+router.get("/api/referrals/stats", isAuthenticated, getReferralStats);
+router.get("/api/referrals/link", isAuthenticated, generateShareableLink);
+router.post("/api/referrals/validate", validateReferralCode);
+
+// Debug route to manually create referral record
+router.post("/api/referrals/create-record", isAuthenticated, async (req, res) => {
+  try {
+    const { ensureReferralRecord } = await import("../utils/ensureReferralRecord.js");
+    const userId = req.user._id;
+    const userName = req.user.name;
+    
+    console.log('Manual referral record creation for:', userId, userName);
+    
+    const referralRecord = await ensureReferralRecord(userId, userName);
+    
+    res.json({
+      success: true,
+      message: 'Referral record created/verified successfully',
+      data: {
+        referralCode: referralRecord.referralCode,
+        referralToken: referralRecord.referralToken,
+        userId: referralRecord.userId
+      }
+    });
+  } catch (error) {
+    console.error('Error creating referral record:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create referral record',
+      error: error.message
+    });
+  }
+});
 
 router.get("/pageNotFound", pagenotFound);
 

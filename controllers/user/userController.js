@@ -2,7 +2,9 @@ import ErrorHandler from "../../middlewares/error.js";
 import { catchAsyncError } from "../../middlewares/catchAsync.js";
 import { Product } from '../../model/productModel.js';
 import { Category } from '../../model/categoryModel.js';
+import { ProductOffer } from '../../model/productOfferModel.js';
 import HttpStatus from '../../helpers/httpStatus.js';
+import { calculateBestOfferPrice, calculateOfferPricesForProducts } from '../../utils/offerCalculator.js';
 
 
 export const loadHomePage = async (req, res) => {
@@ -80,7 +82,7 @@ export const loadHomePage = async (req, res) => {
     }
 
 
-    const featuredProducts = await Product.find({
+    const featuredProductsRaw = await Product.find({
       status: 'Available',
       isBlocked: { $ne: true },
       isDeleted: { $ne: true },
@@ -89,7 +91,10 @@ export const loadHomePage = async (req, res) => {
       .populate('category')
       .limit(4);
 
-    const latestProducts = await Product.find({
+    // Add offer details to featured products using the new utility
+    const featuredProducts = await calculateOfferPricesForProducts(featuredProductsRaw);
+
+    const latestProductsRaw = await Product.find({
       status: 'Available',
       isBlocked: { $ne: true },
       isDeleted: { $ne: true }
@@ -97,6 +102,9 @@ export const loadHomePage = async (req, res) => {
       .sort({ createdAt: -1 })
       .populate('category')
       .limit(8);
+
+    // Add offer details to latest products using the new utility
+    const latestProducts = await calculateOfferPricesForProducts(latestProductsRaw);
 
     const categories = await Category.find({ isListed: true });
 
@@ -193,11 +201,14 @@ export const loadShopPage = async (req, res) => {
     const totalCount = await Product.countDocuments(filter);
     const totalPages = Math.ceil(totalCount / itemsPerPage);
 
-    const products = await Product.find(filter)
+    const productsRaw = await Product.find(filter)
       .populate("category")
       .sort(sortOptions)
       .skip((page - 1) * itemsPerPage)
       .limit(itemsPerPage);
+
+    // Add offer details to shop products using the new utility
+    const products = await calculateOfferPricesForProducts(productsRaw);
 
     const isAjax = req.headers['x-requested-with'] === 'XMLHttpRequest' || req.headers.accept?.includes('application/json');
 
@@ -275,13 +286,11 @@ export const getProductDetails = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;
 
-
     const productExists = await Product.findById(id).populate("category");
 
     if (!productExists) {
       return res.redirect('/shop?error=Product+not+found');
     }
-
 
     if (productExists.isBlocked || productExists.isDeleted || productExists.status !== "Available") {
       return res.redirect('/shop?error=Product+is+not+available');
@@ -289,8 +298,33 @@ export const getProductDetails = catchAsyncError(async (req, res, next) => {
 
     const product = productExists;
 
+    // Calculate offer details using the new utility
+    const offerCalculation = await calculateBestOfferPrice(product);
+    
+    // Format offer details for the view
+    let offerDetails = null;
+    if (offerCalculation.hasOffer && offerCalculation.offerDetails) {
+      const offer = offerCalculation.offerDetails;
+      offerDetails = {
+        id: offer.id,
+        name: offer.name,
+        discountPercentage: offer.discountPercentage,
+        type: offer.type,
+        startDate: offer.startDate,
+        endDate: offer.endDate,
+        originalPrice: offerCalculation.originalPrice,
+        discountedPrice: offerCalculation.discountedPrice,
+        savings: offerCalculation.savings,
+        isActive: true,
+        validityText: `Valid till ${offer.endDate.toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        })}`
+      };
+    }
 
-    const relatedProducts = await Product.find({
+    const relatedProductsRaw = await Product.find({
       category: product.category._id,
       _id: { $ne: product._id },
       status: "Available",
@@ -300,16 +334,18 @@ export const getProductDetails = catchAsyncError(async (req, res, next) => {
     .populate("category")
     .limit(4);
 
+    // Add offer details to related products using the new utility
+    const relatedProducts = await calculateOfferPricesForProducts(relatedProductsRaw);
+
     // Ensure rating fields are available
     if (!product.averageRating) product.averageRating = 0;
     if (!product.ratingCount) product.ratingCount = 0;
 
-
     const categories = await Category.find({ isListed: true });
-
 
     res.render("user/product-details", {
       product,
+      activeOffer: offerDetails,
       relatedProducts,
       categories,
       user: req.user || null,

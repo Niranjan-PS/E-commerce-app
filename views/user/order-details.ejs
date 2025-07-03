@@ -527,11 +527,58 @@
               <div class="item-name"><%= item.productName %></div>
               <div class="item-category"><%= item.category %></div>
               <div class="item-price">
-                <span class="current-price">₹<%= (item.salePrice || item.price).toFixed(2) %></span>
-                <% if (item.salePrice && item.salePrice < item.price) { %>
+                <% if (item.hasOffer && item.discountedPrice && item.originalPrice) { %>
+                  <!-- Show offer price -->
+                  <span class="current-price">₹<%= item.discountedPrice.toFixed(2) %></span>
+                  <span class="original-price">₹<%= item.originalPrice.toFixed(2) %></span>
+                  <% if (item.offerDetails && item.offerDetails.discountPercentage) { %>
+                    <span class="badge bg-success ms-2" style="font-size: 0.7rem;">
+                      <%= item.offerDetails.discountPercentage %>% OFF
+                    </span>
+                  <% } %>
+                <% } else if (item.salePrice && item.salePrice < item.price) { %>
+                  <!-- Show regular sale price -->
+                  <span class="current-price">₹<%= item.salePrice.toFixed(2) %></span>
                   <span class="original-price">₹<%= item.price.toFixed(2) %></span>
+                <% } else { %>
+                  <!-- Show regular price -->
+                  <span class="current-price">₹<%= item.price.toFixed(2) %></span>
                 <% } %>
               </div>
+              
+              <% if (item.hasOffer && item.offerDetails && item.offerDetails.name) { %>
+                <div class="offer-info mt-1">
+                  <div class="applied-offer">
+                    <small class="text-success fw-bold">
+                      <i class="fas fa-tag me-1"></i>Applied: <%= item.offerDetails.name %>
+                      <span class="badge bg-success ms-1" style="font-size: 0.6rem;">
+                        <%= item.offerDetails.discountPercentage %>% OFF - 
+                        <%= item.offerDetails.type === 'category' ? 'Category' : 'Product' %> Offer
+                      </span>
+                    </small>
+                  </div>
+                  
+                  <% if (item.appliedOfferInfo && item.appliedOfferInfo.availableOffers) { %>
+                    <% const availableOffers = item.appliedOfferInfo.availableOffers; %>
+                    <% if (availableOffers.productOffer && availableOffers.categoryOffer) { %>
+                      <div class="offer-comparison mt-1">
+                        <small class="text-muted" style="font-size: 0.7rem;">
+                          <span class="<%= availableOffers.productOffer.discountPercentage >= availableOffers.categoryOffer.discountPercentage ? 'text-success fw-bold' : '' %>">
+                            Product: <%= availableOffers.productOffer.discountPercentage %>%
+                          </span>
+                          <span class="mx-1">vs</span>
+                          <span class="<%= availableOffers.categoryOffer.discountPercentage > availableOffers.productOffer.discountPercentage ? 'text-success fw-bold' : '' %>">
+                            Category: <%= availableOffers.categoryOffer.discountPercentage %>%
+                          </span>
+                          <span class="text-success ms-1">
+                            <i class="fas fa-info-circle"></i> Best applied
+                          </span>
+                        </small>
+                      </div>
+                    <% } %>
+                  <% } %>
+                </div>
+              <% } %>
               <div class="item-status-info">
                 <div class="item-quantity">
                   Total Qty: <%= item.quantity %>
@@ -637,13 +684,29 @@
           </button>
         <% } %>
 
-        <% if (order.canRequestReturn) { %>
+        <% 
+          // Calculate if within 7 days of delivery
+          let withinReturnWindow = false;
+          if (order.deliveredAt) {
+            const deliveredDate = new Date(order.deliveredAt);
+            const now = new Date();
+            const diffTime = now.getTime() - deliveredDate.getTime();
+            const diffDays = diffTime / (1000 * 3600 * 24);
+            withinReturnWindow = diffDays <= 7;
+          }
+        %>
+        <% if (order.canRequestReturn && withinReturnWindow) { %>
           <% if (order.returnStatus === 'None' || order.returnStatus === 'Rejected') { %>
             <button class="back-button" style="background: linear-gradient(135deg, #ffc107, #f39c12); color: #212529;" onclick="showReturnModal('<%= order._id %>', '<%= order.orderNumber %>')">
               <i class="fas fa-undo"></i>
               Request Return
             </button>
           <% } %>
+        <% } else if (order.canRequestReturn && !withinReturnWindow && (order.returnStatus === 'None' || order.returnStatus === 'Rejected')) { %>
+          <button class="back-button" style="background: linear-gradient(135deg, #ffc107, #f39c12); color: #212529; opacity:0.7; cursor:not-allowed;" onclick="showReturnWindowClosedToast()">
+            <i class="fas fa-undo"></i>
+            Request Return
+          </button>
         <% } %>
 
         <% if (order.returnStatus === 'Requested') { %>
@@ -962,9 +1025,36 @@ document.addEventListener('DOMContentLoaded', () => {
       bootstrap.Modal.getInstance(document.getElementById('cancelModal')).hide();
     });
 
+    // Toast for return window closed
+    function showReturnWindowClosedToast() {
+      Swal.fire({
+        icon: 'error',
+        title: 'Return window closed',
+        text: 'Return window closed. You can only return items within 7 days of delivery.',
+        confirmButtonColor: '#6200ea',
+        toast: true,
+        position: 'top-end',
+        timer: 4000,
+        timerProgressBar: true,
+        showConfirmButton: false
+      });
+    }
+
     // Confirm return order
     document.getElementById('confirmReturn').addEventListener('click', async function() {
       if (!currentOrderId) return;
+
+      // Check return window validity (client-side)
+      const deliveredAt = <%- order.deliveredAt ? `new Date('${order.deliveredAt}').getTime()` : 'null' %>;
+      if (deliveredAt) {
+        const now = Date.now();
+        const diffDays = (now - deliveredAt) / (1000 * 3600 * 24);
+        if (diffDays > 7) {
+          showReturnWindowClosedToast();
+          bootstrap.Modal.getInstance(document.getElementById('returnModal')).hide();
+          return;
+        }
+      }
 
       const reason = document.getElementById('returnReason').value.trim();
 

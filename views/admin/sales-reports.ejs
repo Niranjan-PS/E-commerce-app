@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Reports - Admin Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --primary-color: #6f42c1;
+      --secondary-color: #6c757d;
+      --success-color: #198754;
+      --info-color: #0dcaf0;
+      --warning-color: #ffc107;
+      --danger-color: #dc3545;
+      --dark-color: #212529;
+      --light-color: #f8f9fa;
+    }
+
+    body {
+      background-color: var(--light-color);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .sidebar {
+      background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+      min-height: 100vh;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    }
+
+    .sidebar .nav-link {
+      color: rgba(255,255,255,0.8);
+      padding: 0.75rem 1rem;
+      margin: 0.25rem 0;
+      border-radius: 0.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar .nav-link:hover,
+    .sidebar .nav-link.active {
+      color: white;
+      background-color: rgba(255,255,255,0.1);
+      transform: translateX(5px);
+    }
+
+    .main-content {
+      padding: 2rem;
+    }
+
+    .page-header {
+      background: white;
+      border-radius: 15px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+
+    .filter-card {
+      background: white;
+      border-radius: 15px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .metric-card {
+      background: white;
+      border-radius: 15px;
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+      transition: transform 0.3s ease;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .metric-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      font-size: 1.5rem;
+      color: white;
+    }
+
+    .metric-icon.sales {
+      background: linear-gradient(135deg, var(--success-color), #20c997);
+    }
+
+    .metric-icon.amount {
+      background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+    }
+
+    .metric-icon.discounts {
+      background: linear-gradient(135deg, var(--warning-color), #fd7e14);
+    }
+
+    .metric-icon.coupons {
+      background: linear-gradient(135deg, var(--info-color), #6f42c1);
+    }
+
+    .metric-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--dark-color);
+      margin-bottom: 0.5rem;
+    }
+
+    .metric-label {
+      color: var(--secondary-color);
+      font-weight: 500;
+    }
+
+    .chart-card {
+      background: white;
+      border-radius: 15px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+
+    .table-card {
+      background: white;
+      border-radius: 15px;
+      padding: 1.5rem;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+
+    .btn-export {
+      background: linear-gradient(135deg, var(--success-color), #20c997);
+      border: none;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 25px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .btn-export:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      color: white;
+    }
+
+    .btn-filter {
+      background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+      border: none;
+      color: white;
+      padding: 0.5rem 1.5rem;
+      border-radius: 25px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .btn-filter:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      color: white;
+    }
+
+    .filter-group {
+      margin-bottom: 1rem;
+    }
+
+    .filter-group label {
+      font-weight: 600;
+      color: var(--dark-color);
+      margin-bottom: 0.5rem;
+    }
+
+    .form-control, .form-select {
+      border-radius: 10px;
+      border: 2px solid #e9ecef;
+      padding: 0.75rem;
+      transition: all 0.3s ease;
+    }
+
+    .form-control:focus, .form-select:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.25);
+    }
+
+    .table {
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .table thead th {
+      background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+      color: white;
+      border: none;
+      font-weight: 600;
+      padding: 1rem;
+    }
+
+    .table tbody td {
+      padding: 1rem;
+      vertical-align: middle;
+      border-color: #f1f3f4;
+    }
+
+    .table tbody tr:hover {
+      background-color: #f8f9fa;
+    }
+
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      display: none;
+    }
+
+    .loading-spinner {
+      background: white;
+      padding: 2rem;
+      border-radius: 15px;
+      text-align: center;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--secondary-color);
+    }
+
+    .empty-state i {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    @media (max-width: 768px) {
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .main-content {
+        padding: 1rem;
+      }
+      
+      .filter-card {
+        padding: 1rem;
+      }
+      
+      .table-responsive {
+        font-size: 0.875rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Sidebar -->
+      <div class="col-md-3 col-lg-2 sidebar">
+        <div class="p-3">
+          <h4 class="text-white mb-4">
+            <i class="fas fa-crown me-2"></i>Admin Panel
+          </h4>
+          <nav class="nav flex-column">
+            <a class="nav-link" href="/admin/dashboard">
+              <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+            </a>
+            <a class="nav-link" href="/admin/users">
+              <i class="fas fa-users me-2"></i>Customers
+            </a>
+            <a class="nav-link" href="/admin/category">
+              <i class="fas fa-tags me-2"></i>Categories
+            </a>
+            <a class="nav-link" href="/admin/products">
+              <i class="fas fa-box me-2"></i>Products
+            </a>
+            <a class="nav-link" href="/admin/orders">
+              <i class="fas fa-shopping-cart me-2"></i>Orders
+            </a>
+            <a class="nav-link" href="/admin/inventory">
+              <i class="fas fa-warehouse me-2"></i>Inventory
+            </a>
+            <a class="nav-link" href="/admin/coupons">
+              <i class="fas fa-ticket-alt me-2"></i>Coupons
+            </a>
+            <a class="nav-link" href="/admin/product-offers">
+              <i class="fas fa-percent me-2"></i>Product Offers
+            </a>
+            <a class="nav-link" href="/admin/category-offers">
+              <i class="fas fa-gift me-2"></i>Category Offers
+            </a>
+            <a class="nav-link active" href="/admin/sales-reports">
+              <i class="fas fa-chart-line me-2"></i>Sales Reports
+            </a>
+          </nav>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="col-md-9 col-lg-10 main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h1 class="h3 mb-1">Sales Reports</h1>
+              <p class="text-muted mb-0">Comprehensive sales analytics and reporting</p>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-export" onclick="exportReport('pdf')" id="exportPdfBtn">
+                <i class="fas fa-file-pdf me-2"></i>Export PDF
+              </button>
+              <button class="btn btn-export" onclick="exportReport('excel')" id="exportExcelBtn">
+                <i class="fas fa-file-excel me-2"></i>Export Excel
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-card">
+          <h5 class="mb-3">
+            <i class="fas fa-filter me-2"></i>Report Filters
+          </h5>
+          <form id="filterForm">
+            <div class="row">
+              <div class="col-md-3">
+                <div class="filter-group">
+                  <label for="filterType">Filter Type</label>
+                  <select class="form-select" id="filterType" name="filterType">
+                    <option value="monthly">Monthly</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="daily">Daily</option>
+                    <option value="custom">Custom Range</option>
+                  </select>
+                </div>
+              </div>
+              
+              <!-- Daily Filter -->
+              <div class="col-md-3 filter-option" id="dailyFilter" style="display: none;">
+                <div class="filter-group">
+                  <label for="selectedDate">Select Date</label>
+                  <input type="date" class="form-control" id="selectedDate" name="selectedDate">
+                </div>
+              </div>
+              
+              <!-- Weekly Filter -->
+              <div class="col-md-3 filter-option" id="weeklyFilter" style="display: none;">
+                <div class="filter-group">
+                  <label for="selectedWeek">Select Week</label>
+                  <input type="week" class="form-control" id="selectedWeek" name="selectedWeek">
+                </div>
+              </div>
+              
+              <!-- Monthly Filter -->
+              <div class="col-md-3 filter-option" id="monthlyFilter">
+                <div class="filter-group">
+                  <label for="selectedMonth">Select Month</label>
+                  <input type="month" class="form-control" id="selectedMonth" name="selectedMonth">
+                </div>
+              </div>
+              
+              <!-- Custom Range Filter -->
+              <div class="col-md-6 filter-option" id="customFilter" style="display: none;">
+                <div class="row">
+                  <div class="col-6">
+                    <div class="filter-group">
+                      <label for="startDate">Start Date</label>
+                      <input type="date" class="form-control" id="startDate" name="startDate">
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="filter-group">
+                      <label for="endDate">End Date</label>
+                      <input type="date" class="form-control" id="endDate" name="endDate">
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="col-md-3 d-flex align-items-end">
+                <div class="filter-group w-100">
+                  <button type="submit" class="btn btn-filter w-100">
+                    <i class="fas fa-search me-2"></i>Apply Filter
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Report Title -->
+        <div id="reportTitle" class="mb-3" style="display: none;">
+          <h4 class="text-primary"></h4>
+        </div>
+
+        <!-- Metrics Cards -->
+        <div class="metrics-grid" id="metricsGrid" style="display: none;">
+          <div class="metric-card">
+            <div class="metric-icon sales">
+              <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="metric-value" id="totalSalesCount">0</div>
+            <div class="metric-label">Total Sales</div>
+          </div>
+          
+          <div class="metric-card">
+            <div class="metric-icon amount">
+              <i class="fas fa-rupee-sign"></i>
+            </div>
+            <div class="metric-value" id="totalSalesAmount">₹0</div>
+            <div class="metric-label">Sales Amount</div>
+          </div>
+          
+          <div class="metric-card">
+            <div class="metric-icon discounts">
+              <i class="fas fa-tags"></i>
+            </div>
+            <div class="metric-value" id="totalOfferDiscounts">₹0</div>
+            <div class="metric-label">Offer Discounts</div>
+          </div>
+          
+          <div class="metric-card">
+            <div class="metric-icon coupons">
+              <i class="fas fa-ticket-alt"></i>
+            </div>
+            <div class="metric-value" id="totalCouponDeductions">₹0</div>
+            <div class="metric-label">Coupon Discounts</div>
+          </div>
+        </div>
+
+        <!-- Sales Chart -->
+        <div class="chart-card" id="chartCard" style="display: none;">
+          <h5 class="mb-3">
+            <i class="fas fa-chart-line me-2"></i>Sales Trend
+          </h5>
+          <canvas id="salesChart" height="100"></canvas>
+        </div>
+
+        <!-- Orders Table -->
+        <div class="table-card" id="tableCard" style="display: none;">
+          <h5 class="mb-3">
+            <i class="fas fa-table me-2"></i>Order Details
+          </h5>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Order #</th>
+                  <th>Date</th>
+                  <th>Customer</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Payment</th>
+                  <th>Discounts</th>
+                  <th>Items</th>
+                </tr>
+              </thead>
+              <tbody id="ordersTableBody">
+                <!-- Orders will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState">
+          <i class="fas fa-chart-line"></i>
+          <h4>No Data Available</h4>
+          <p>Select a filter and click "Apply Filter" to view sales reports</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-2 mb-0">Loading report data...</p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let currentReportData = null;
+    let salesChart = null;
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+      // Set default values
+      const today = new Date();
+      const currentMonth = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+      document.getElementById('selectedMonth').value = currentMonth;
+      document.getElementById('selectedDate').value = today.toISOString().split('T')[0];
+      
+      // Set current week
+      const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
+      const year = startOfWeek.getFullYear();
+      const week = getWeekNumber(startOfWeek);
+      document.getElementById('selectedWeek').value = `${year}-W${String(week).padStart(2, '0')}`;
+
+      // Load initial data
+      loadSalesData();
+    });
+
+    // Filter type change handler
+    document.getElementById('filterType').addEventListener('change', function() {
+      const filterType = this.value;
+      
+      // Hide all filter options
+      document.querySelectorAll('.filter-option').forEach(el => {
+        el.style.display = 'none';
+      });
+      
+      // Show relevant filter option
+      if (filterType === 'daily') {
+        document.getElementById('dailyFilter').style.display = 'block';
+      } else if (filterType === 'weekly') {
+        document.getElementById('weeklyFilter').style.display = 'block';
+      } else if (filterType === 'monthly') {
+        document.getElementById('monthlyFilter').style.display = 'block';
+      } else if (filterType === 'custom') {
+        document.getElementById('customFilter').style.display = 'block';
+      }
+    });
+
+    // Form submit handler
+    document.getElementById('filterForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      loadSalesData();
+    });
+
+    // Load sales data
+    async function loadSalesData() {
+      try {
+        showLoading(true);
+        
+        const formData = new FormData(document.getElementById('filterForm'));
+        const params = new URLSearchParams();
+        
+        for (const [key, value] of formData.entries()) {
+          if (value) {
+            params.append(key, value);
+          }
+        }
+
+        const response = await fetch(`/admin/api/sales-data?${params.toString()}`);
+        const result = await response.json();
+
+        if (result.success) {
+          currentReportData = result.data;
+          displayReportData(result.data);
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: result.message || 'Failed to load sales data'
+          });
+        }
+      } catch (error) {
+        console.error('Error loading sales data:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to load sales data'
+        });
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    // Display report data
+    function displayReportData(data) {
+      // Show report title
+      document.getElementById('reportTitle').style.display = 'block';
+      document.getElementById('reportTitle').querySelector('h4').textContent = data.reportTitle;
+
+      // Update metrics
+      document.getElementById('totalSalesCount').textContent = data.metrics.totalSalesCount;
+      document.getElementById('totalSalesAmount').textContent = `₹${data.metrics.totalSalesAmount.toFixed(2)}`;
+      document.getElementById('totalOfferDiscounts').textContent = `₹${data.metrics.totalOfferDiscounts.toFixed(2)}`;
+      document.getElementById('totalCouponDeductions').textContent = `₹${data.metrics.totalCouponDeductions.toFixed(2)}`;
+
+      // Show metrics grid
+      document.getElementById('metricsGrid').style.display = 'grid';
+
+      // Update chart
+      if (data.chartData && data.chartData.length > 0) {
+        updateSalesChart(data.chartData);
+        document.getElementById('chartCard').style.display = 'block';
+      } else {
+        document.getElementById('chartCard').style.display = 'none';
+      }
+
+      // Update orders table
+      if (data.orders && data.orders.length > 0) {
+        updateOrdersTable(data.orders);
+        document.getElementById('tableCard').style.display = 'block';
+      } else {
+        document.getElementById('tableCard').style.display = 'none';
+      }
+
+      // Hide empty state
+      document.getElementById('emptyState').style.display = 'none';
+    }
+
+    // Update sales chart
+    function updateSalesChart(chartData) {
+      const ctx = document.getElementById('salesChart').getContext('2d');
+      
+      if (salesChart) {
+        salesChart.destroy();
+      }
+
+      salesChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartData.map(item => new Date(item.date).toLocaleDateString()),
+          datasets: [{
+            label: 'Sales Amount',
+            data: chartData.map(item => item.salesAmount),
+            borderColor: '#6f42c1',
+            backgroundColor: 'rgba(111, 66, 193, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4
+          }, {
+            label: 'Sales Count',
+            data: chartData.map(item => item.salesCount),
+            borderColor: '#198754',
+            backgroundColor: 'rgba(25, 135, 84, 0.1)',
+            borderWidth: 3,
+            fill: false,
+            tension: 0.4,
+            yAxisID: 'y1'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              title: {
+                display: true,
+                text: 'Sales Amount (₹)'
+              }
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              title: {
+                display: true,
+                text: 'Sales Count'
+              },
+              grid: {
+                drawOnChartArea: false,
+              },
+            }
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top'
+            }
+          }
+        }
+      });
+    }
+
+    // Update orders table
+    function updateOrdersTable(orders) {
+      const tbody = document.getElementById('ordersTableBody');
+      tbody.innerHTML = '';
+
+      orders.forEach(order => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><strong>${order.orderNumber}</strong></td>
+          <td>${new Date(order.orderDate).toLocaleDateString()}</td>
+          <td>
+            <div>${order.customerName}</div>
+            <small class="text-muted">${order.customerEmail}</small>
+          </td>
+          <td><strong>₹${order.totalAmount.toFixed(2)}</strong></td>
+          <td>
+            <span class="badge bg-success">${order.orderStatus}</span>
+          </td>
+          <td>${order.paymentMethod}</td>
+          <td>
+            <div>Offer: ₹${order.offerDiscount.toFixed(2)}</div>
+            <div>Coupon: ₹${order.couponDiscount.toFixed(2)}</div>
+          </td>
+          <td>${order.itemCount}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Export report
+    async function exportReport(format) {
+      if (!currentReportData) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'No Data',
+          text: 'Please load report data before exporting'
+        });
+        return;
+      }
+
+      try {
+        const formData = new FormData(document.getElementById('filterForm'));
+        const params = new URLSearchParams();
+        
+        for (const [key, value] of formData.entries()) {
+          if (value) {
+            params.append(key, value);
+          }
+        }
+
+        const url = `/admin/export-sales-report-${format}?${params.toString()}`;
+        
+        // Create a temporary link to download the file
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `sales-report-${new Date().toISOString().split('T')[0]}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Export Started',
+          text: `${format.toUpperCase()} export has been initiated`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+      } catch (error) {
+        console.error('Export error:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Export Failed',
+          text: 'Failed to export report'
+        });
+      }
+    }
+
+    // Show/hide loading
+    function showLoading(show) {
+      document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+    }
+
+    // Get week number
+    function getWeekNumber(date) {
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+      return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+    }
+  </script>
+</body>
+</html>

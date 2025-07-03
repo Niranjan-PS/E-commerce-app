@@ -86,6 +86,35 @@ const userSchema= new mongoose.Schema({
       type: Number,
       default: 0,
       min: 0
+    },
+    
+    // Referral system fields
+    referredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    },
+    
+    referralMethod: {
+      type: String,
+      enum: ['code', 'token'],
+      default: null
+    },
+    
+    referralRewardReceived: {
+      type: Boolean,
+      default: false
+    },
+    
+    referralRewardAmount: {
+      type: Number,
+      default: 0
+    },
+    
+    // Temporary field to store referral data during registration
+    tempReferralData: {
+      type: String,
+      default: null
     }
 
 
@@ -117,7 +146,7 @@ userSchema.methods.generateVerificationCode = function(){
     }
     const verificationCode=generateRandomFiveDigitNumber()
     this.verificationCode=verificationCode
-    this.verificationCodeExpire = new Date(Date.now() + 30*1000) 
+    this.verificationCodeExpire = new Date(Date.now() + 5*1000) 
 
 return verificationCode
 }

@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Category Offer - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root {
+            --primary-color: #6200ea;
+            --secondary-color: #f8f9fa;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--secondary-color);
+        }
+
+        .sidebar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            width: 250px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 12px 20px;
+            margin: 5px 15px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+
+        .page-header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .form-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control, .form-select {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px 15px;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(98, 0, 234, 0.25);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            padding: 12px 30px;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background-color: #5000d0;
+            border-color: #5000d0;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            padding: 12px 30px;
+            font-weight: 600;
+            border-radius: 8px;
+        }
+
+        .availability-check {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .availability-success {
+            color: var(--success-color);
+        }
+
+        .availability-error {
+            color: var(--danger-color);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="p-3">
+            <h4 class="text-white mb-4">
+                <i class="fas fa-shield-alt me-2"></i>Admin Panel
+            </h4>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/dashboard">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/users">
+                        <i class="fas fa-users me-2"></i>Users
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/category">
+                        <i class="fas fa-tags me-2"></i>Categories
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/products">
+                        <i class="fas fa-box me-2"></i>Products
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/orders">
+                        <i class="fas fa-shopping-cart me-2"></i>Orders
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/coupons">
+                        <i class="fas fa-ticket-alt me-2"></i>Coupons
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/product-offers">
+                        <i class="fas fa-percentage me-2"></i>Product Offers
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/admin/category-offers">
+                        <i class="fas fa-layer-group me-2"></i>Category Offers
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/inventory">
+                        <i class="fas fa-warehouse me-2"></i>Inventory
+                    </a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link" href="/admin/logout">
+                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="fas fa-plus me-2 text-primary"></i>Add Category Offer
+                    </h2>
+                    <p class="text-muted mb-0">Create a new category-specific discount offer</p>
+                </div>
+                <a href="/admin/category-offers" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Offers
+                </a>
+            </div>
+        </div>
+
+        <!-- Form Container -->
+        <div class="form-container">
+            <form id="categoryOfferForm">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="category" class="form-label">
+                                <i class="fas fa-layer-group me-2"></i>Select Category *
+                            </label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="">Choose a category...</option>
+                                <% categories.forEach(category => { %>
+                                    <option value="<%= category._id %>"><%= category.name %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="offerName" class="form-label">
+                                <i class="fas fa-tag me-2"></i>Offer Name *
+                            </label>
+                            <input type="text" class="form-control" id="offerName" name="offerName" 
+                                   placeholder="e.g., Summer Category Sale" required maxlength="100">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="discountPercentage" class="form-label">
+                                <i class="fas fa-percentage me-2"></i>Discount Percentage *
+                            </label>
+                            <input type="number" class="form-control" id="discountPercentage" name="discountPercentage" 
+                                   placeholder="Enter percentage (1-90)" min="1" max="90" required>
+                            <small class="text-muted">Enter a value between 1% and 90%</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="description" class="form-label">
+                                <i class="fas fa-info-circle me-2"></i>Description (Optional)
+                            </label>
+                            <input type="text" class="form-control" id="description" name="description" 
+                                   placeholder="Brief description of the offer" maxlength="500">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="startDate" class="form-label">
+                                <i class="fas fa-calendar-alt me-2"></i>Start Date *
+                            </label>
+                            <input type="datetime-local" class="form-control" id="startDate" name="startDate" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="endDate" class="form-label">
+                                <i class="fas fa-calendar-check me-2"></i>End Date *
+                            </label>
+                            <input type="datetime-local" class="form-control" id="endDate" name="endDate" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Availability Check -->
+                <div id="availabilityCheck" class="availability-check">
+                    <div id="availabilityMessage"></div>
+                </div>
+
+                <div class="d-flex gap-3 mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Create Category Offer
+                    </button>
+                    <a href="/admin/category-offers" class="btn btn-secondary">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Set minimum date to current date
+        const now = new Date();
+        const currentDateTime = now.toISOString().slice(0, 16);
+        document.getElementById('startDate').min = currentDateTime;
+        document.getElementById('endDate').min = currentDateTime;
+
+        // Update end date minimum when start date changes
+        document.getElementById('startDate').addEventListener('change', function() {
+            const startDate = this.value;
+            document.getElementById('endDate').min = startDate;
+            checkAvailability();
+        });
+
+        document.getElementById('endDate').addEventListener('change', checkAvailability);
+        document.getElementById('category').addEventListener('change', checkAvailability);
+
+        // Check category availability
+        async function checkAvailability() {
+            const categoryId = document.getElementById('category').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const availabilityDiv = document.getElementById('availabilityCheck');
+            const messageDiv = document.getElementById('availabilityMessage');
+
+            if (!categoryId || !startDate || !endDate) {
+                availabilityDiv.style.display = 'none';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/category-offers/check-availability?categoryId=${categoryId}&startDate=${startDate}&endDate=${endDate}`);
+                const data = await response.json();
+
+                availabilityDiv.style.display = 'block';
+                
+                if (data.available) {
+                    messageDiv.innerHTML = `
+                        <i class="fas fa-check-circle me-2"></i>
+                        <span class="availability-success">${data.message}</span>
+                    `;
+                } else {
+                    messageDiv.innerHTML = `
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <span class="availability-error">${data.message}</span>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error checking availability:', error);
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('categoryOfferForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+
+            // Validation
+            if (!data.category || !data.offerName || !data.discountPercentage || !data.startDate || !data.endDate) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    text: 'Please fill in all required fields.',
+                    confirmButtonColor: '#6200ea'
+                });
+                return;
+            }
+
+            const discount = parseFloat(data.discountPercentage);
+            if (isNaN(discount) || discount < 1 || discount > 90) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Discount',
+                    text: 'Discount percentage must be between 1% and 90%.',
+                    confirmButtonColor: '#6200ea'
+                });
+                return;
+            }
+
+            const startDate = new Date(data.startDate);
+            const endDate = new Date(data.endDate);
+
+            if (endDate <= startDate) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Dates',
+                    text: 'End date must be after start date.',
+                    confirmButtonColor: '#6200ea'
+                });
+                return;
+            }
+
+            try {
+                Swal.fire({
+                    title: 'Creating Category Offer...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                const response = await fetch('/admin/category-offers/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: result.message,
+                        confirmButtonColor: '#6200ea'
+                    }).then(() => {
+                        window.location.href = '/admin/category-offers';
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: result.message,
+                        confirmButtonColor: '#6200ea'
+                    });
+                }
+            } catch (error) {
+                console.error('Error creating category offer:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Failed to create category offer. Please try again.',
+                    confirmButtonColor: '#6200ea'
+                });
+            }
+        });
+
+        // Show messages
+        <% if (message) { %>
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: '<%= message %>',
+                confirmButtonColor: '#6200ea'
+            });
+        <% } %>
+
+        <% if (error) { %>
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: '<%= error %>',
+                confirmButtonColor: '#6200ea'
+            });
+        <% } %>
+    </script>
+</body>
+</html>

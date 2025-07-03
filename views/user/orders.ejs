@@ -346,13 +346,14 @@
       box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
       color: white;
     }
-.btn-action.btn-warning-custom[disabled] {
-  /* Your desired styles for the disabled state */
-  background-color: #cccccc !important; /* Example: a lighter gray background */
-  color: #666666; /* Example: darker gray text */
-  cursor: not-allowed; /* Ensures the cursor indicates it's not clickable */
-  border-color: #bbbbbb; /* Example: lighter border */
-}
+
+    .btn-action.btn-warning-custom[disabled] {
+      background-color: #cccccc !important;
+      color: #666666;
+      cursor: not-allowed;
+      border-color: #bbbbbb;
+    }
+
     .btn-danger-custom {
       background: linear-gradient(135deg, var(--danger-color), #e74c3c);
       color: white;
@@ -477,6 +478,7 @@
               <li><a class="dropdown-item" href="/profile">My Profile</a></li>
               <li><a class="dropdown-item" href="/orders">Order History</a></li>
               <li><a class="dropdown-item" href="/wallet">My Wallet</a></li>
+              <li><a class="dropdown-item" href="/referrals">Referrals</a></li>
               <li><a class="dropdown-item" href="/addresses">My Addresses</a></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="/logout">Logout</a></li>
@@ -587,27 +589,31 @@
                 <i class="fas fa-times me-1"></i>Cancel Order
               </button>
             <% } %>
-<% if (order.canRequestReturn) { %>
-  <% const isRejected = order.returnStatus === 'Rejected'; %>
-  <% if (order.returnStatus === 'None' || isRejected) { %>
-    <span
-      <% if (isRejected) { %>
-        class="d-inline-block"
-        tabindex="0"
-        title="Return is rejected"
-        data-bs-toggle="tooltip"
-        data-bs-placement="top"
-      <% } %>
-    >
-      <button
-        class="btn-action btn-warning-custom"
-        onclick="showReturnModal('<%= order._id %>', '<%= order.orderNumber %>')"
-        <%= isRejected ? 'disabled' : '' %>>
-        <i class="fas fa-undo me-1"></i>Request Return
-      </button>
-    </span>
-  <% } %>
-<% } %>
+
+            <% if (order.orderStatus === 'Delivered') { %>
+              <% const isRejected = order.returnStatus === 'Rejected'; %>
+              <% const deliveredAt = order.deliveredAt ? new Date(order.deliveredAt).getTime() : null; %>
+              <% const isReturnWindowExpired = deliveredAt ? (Date.now() - deliveredAt) > (7 * 24 * 60 * 60 * 1000) : false; %>
+              <% if (order.returnStatus === 'None' || isRejected) { %>
+                <span
+                  <% if (isRejected) { %>
+                    class="d-inline-block"
+                    tabindex="0"
+                    title="Return is rejected"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                  <% } %>
+                >
+                  <button
+                    class="btn-action btn-warning-custom"
+                    onclick="handleReturnRequest('<%= order._id %>', '<%= order.orderNumber %>', <%= deliveredAt %>, <%= isReturnWindowExpired %>)"
+                    <%= isRejected ? 'disabled' : '' %>>
+                    <i class="fas fa-undo me-1"></i>Request Return
+                  </button>
+                </span>
+              <% } %>
+            <% } %>
+
             <% if (order.returnStatus === 'Requested') { %>
               <span class="btn-action" style="background: #6c757d; color: white; cursor: default;">
                 <i class="fas fa-clock me-1"></i>Return Pending
@@ -703,8 +709,16 @@
         <div class="modal-body">
           <p>Are you sure you want to cancel order <strong id="cancelOrderNumber"></strong>?</p>
           <div class="mb-3">
-            <label for="cancelReason" class="form-label">Reason for cancellation (optional):</label>
-            <textarea class="form-control" id="cancelReason" rows="3" placeholder="Please provide a reason for cancellation..."></textarea>
+            <label for="cancelReasonSelect" class="form-label">Reason for cancellation:</label>
+            <select class="form-control" id="cancelReasonSelect">
+              <option value="">Select a reason</option>
+              <option value="Ordered by mistake">Ordered by mistake</option>
+              <option value="Found a better price">Found a better price</option>
+              <option value="Shipping too slow">Shipping too slow</option>
+              <option value="Changed my mind">Changed my mind</option>
+              <option value="Other">Other</option>
+            </select>
+            <input type="text" class="form-control mt-2" id="cancelReasonOther" placeholder="Please specify your reason..." style="display:none;" />
           </div>
         </div>
         <div class="modal-footer">
@@ -731,7 +745,14 @@
           </div>
           <div class="mb-3">
             <label for="returnReason" class="form-label">Reason for return <span class="text-danger">*</span>:</label>
-            <textarea class="form-control" id="returnReason" rows="3" placeholder="Please provide a detailed reason for return..." required></textarea>
+            <select class="form-control" id="returnReason" required>
+              <option value="">Select a reason</option>
+              <option value="Defective/Damaged">Defective/Damaged</option>
+              <option value="Wrong item received">Wrong item received</option>
+              <option value="Item not as described">Item not as described</option>
+              <option value="Better price elsewhere">Better price elsewhere</option>
+              <option value="No longer needed">No longer needed</option>
+            </select>
           </div>
         </div>
         <div class="modal-footer">
@@ -746,22 +767,29 @@
   <script>
     let currentOrderId = null;
 
+    // Handle return request with 7-day validation
+    function handleReturnRequest(orderId, orderNumber, deliveredAt, isExpired) {
+      if (isExpired) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Return Window Closed',
+          text: 'You can only return items within 7 days of delivery.',
+          confirmButtonColor: '#6200ea'
+        });
+        return;
+      }
+      showReturnModal(orderId, orderNumber);
+    }
+
     // Show cancel modal
     function showCancelModal(orderId, orderNumber) {
       currentOrderId = orderId;
       document.getElementById('cancelOrderNumber').textContent = orderNumber;
-      document.getElementById('cancelReason').value = '';
+      document.getElementById('cancelReasonSelect').value = '';
+      document.getElementById('cancelReasonOther').style.display = 'none';
       new bootstrap.Modal(document.getElementById('cancelModal')).show();
     }
-document.addEventListener('DOMContentLoaded', function () {
-  // Select all elements that have the data-bs-toggle="tooltip" attribute
-  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
 
-  // Initialize each tooltip
-  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-    return new bootstrap.Tooltip(tooltipTriggerEl);
-  });
-});
     // Show return modal
     function showReturnModal(orderId, orderNumber) {
       currentOrderId = orderId;
@@ -770,11 +798,34 @@ document.addEventListener('DOMContentLoaded', function () {
       new bootstrap.Modal(document.getElementById('returnModal')).show();
     }
 
+    // Handle cancellation reason dropdown
+    document.getElementById('cancelReasonSelect').addEventListener('change', function() {
+      const otherInput = document.getElementById('cancelReasonOther');
+      if (this.value === 'Other') {
+        otherInput.style.display = 'block';
+        otherInput.required = true;
+      } else {
+        otherInput.style.display = 'none';
+        otherInput.required = false;
+        otherInput.value = '';
+      }
+    });
+
+    // Initialize Bootstrap tooltips
+    document.addEventListener('DOMContentLoaded', function () {
+      var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+      var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+      });
+    });
+
     // Confirm cancel order
     document.getElementById('confirmCancel').addEventListener('click', async function() {
       if (!currentOrderId) return;
 
-      const reason = document.getElementById('cancelReason').value.trim();
+      const reasonSelect = document.getElementById('cancelReasonSelect').value;
+      const reasonOther = document.getElementById('cancelReasonOther').value.trim();
+      const reason = reasonSelect === 'Other' ? reasonOther : reasonSelect;
 
       try {
         const response = await fetch(`/orders/${currentOrderId}/cancel`, {
@@ -784,7 +835,7 @@ document.addEventListener('DOMContentLoaded', function () {
           },
           body: JSON.stringify({
             reason: reason,
-            items: [] // Full cancellation - will be handled by backend
+            items: []
           })
         });
 
@@ -844,7 +895,7 @@ document.addEventListener('DOMContentLoaded', function () {
           },
           body: JSON.stringify({
             reason: reason,
-            items: [] // Full return - will be handled by backend
+            items: []
           })
         });
 

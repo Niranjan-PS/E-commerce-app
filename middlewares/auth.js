@@ -8,20 +8,11 @@ export const isAuthenticated = catchAsyncError(async(req,res,next)=>{
 
     authNoCache(req, res, () => {});
 
-    // Debug for address routes
-    if (req.url.includes('/addresses/')) {
-        console.log("=== AUTH DEBUG FOR ADDRESS ===");
-        console.log("URL:", req.url);
-        console.log("Method:", req.method);
-        console.log("Cookies:", req.cookies);
-    }
-
+   
     const token= req.cookies.userToken
     console.log("cokkiess",req.cookies)
     if(!token){
-       if (req.url.includes('/addresses/')) {
-           console.log("No token found, redirecting to login");
-       }
+      
        return res.redirect('/login')
     }
 
@@ -53,11 +44,7 @@ export const isAuthenticated = catchAsyncError(async(req,res,next)=>{
 
         console.log("user is ",req.user)
 
-        if (req.url.includes('/addresses/')) {
-            console.log("User authenticated for address route:", req.user._id);
-            console.log("Request body:", req.body);
-            console.log("=== END AUTH DEBUG ===");
-        }
+        
 
         next()
     } catch (error) {

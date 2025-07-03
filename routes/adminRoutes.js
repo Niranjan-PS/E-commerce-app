@@ -36,6 +36,48 @@ import {
   getStockMovements
 } from "../controllers/admin/inventoryController.js";
 
+import {
+  getCoupons,
+  getAddCoupon,
+  createCoupon,
+  getEditCoupon,
+  updateCoupon,
+  deleteCoupon,
+  toggleCouponStatus,
+  getCouponDetails
+} from "../controllers/admin/couponController.js";
+
+import {
+  getProductOffers,
+  getAddProductOffer,
+  createProductOffer,
+  getEditProductOffer,
+  updateProductOffer,
+  deleteProductOffer,
+  toggleProductOfferStatus,
+  getProductOfferDetails,
+  checkProductAvailability
+} from "../controllers/admin/productOfferController.js";
+
+import {
+  getCategoryOffers,
+  getAddCategoryOffer,
+  createCategoryOffer,
+  getEditCategoryOffer,
+  updateCategoryOffer,
+  deleteCategoryOffer,
+  toggleCategoryOfferStatus,
+  getCategoryOfferDetails,
+  checkCategoryAvailability
+} from "../controllers/admin/categoryOfferController.js";
+
+import {
+  getSalesReports,
+  getSalesData,
+  exportSalesReportPDF,
+  exportSalesReportExcel
+} from "../controllers/admin/salesReportController.js";
+
 
 //admin
 router.get('/admin-login',loadLogin)
@@ -113,12 +155,84 @@ router.post('/orders/:orderId/return', isAdminAuthenticated, handleReturnRequest
 router.post('/orders/:orderId/items/:itemId/return', isAdminAuthenticated, handleIndividualItemReturn);
 router.get('/return-requests', isAdminAuthenticated, getReturnRequests);
 
+
 //inventory
 router.get('/inventory', isAdminAuthenticated, getInventoryDashboard);
 router.post('/inventory/:productId/stock', isAdminAuthenticated, updateStock);
 router.post('/inventory/bulk-update', isAdminAuthenticated, bulkUpdateStock);
 router.get('/inventory/alerts', isAdminAuthenticated, getLowStockAlerts);
 router.get('/inventory/movements', isAdminAuthenticated, getStockMovements);
+
+// Coupon routes
+router.get('/coupons', isAdminAuthenticated, getCoupons);
+router.get('/coupons/add', isAdminAuthenticated, getAddCoupon);
+router.post('/coupons/add', isAdminAuthenticated, createCoupon);
+router.get('/coupons/edit/:id', isAdminAuthenticated, getEditCoupon);
+router.post('/coupons/edit/:id', isAdminAuthenticated, updateCoupon);
+router.delete('/coupons/:id', isAdminAuthenticated, deleteCoupon);
+router.patch('/coupons/:id/toggle', isAdminAuthenticated, toggleCouponStatus);
+router.get('/coupons/:id/details', isAdminAuthenticated, getCouponDetails);
+
+// Quick fix route to update coupon validity dates
+router.post('/coupons/:code/fix-dates', isAdminAuthenticated, async (req, res) => {
+  try {
+    const { Coupon } = await import("../../model/couponModel.js");
+    const { code } = req.params;
+    
+    const coupon = await Coupon.findOne({ code: code.toUpperCase() });
+    if (!coupon) {
+      return res.status(404).json({ success: false, message: 'Coupon not found' });
+    }
+    
+    const now = new Date();
+    const oneWeekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    
+    coupon.validFrom = now;
+    coupon.validUntil = oneWeekFromNow;
+    await coupon.save();
+    
+    res.json({
+      success: true,
+      message: 'Coupon dates updated',
+      coupon: {
+        code: coupon.code,
+        validFrom: coupon.validFrom,
+        validUntil: coupon.validUntil,
+        isValid: coupon.isValid()
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Product Offer routes
+router.get('/product-offers', isAdminAuthenticated, getProductOffers);
+router.get('/product-offers/add', isAdminAuthenticated, getAddProductOffer);
+router.post('/product-offers/add', isAdminAuthenticated, createProductOffer);
+router.get('/product-offers/edit/:id', isAdminAuthenticated, getEditProductOffer);
+router.post('/product-offers/edit/:id', isAdminAuthenticated, updateProductOffer);
+router.delete('/product-offers/:id', isAdminAuthenticated, deleteProductOffer);
+router.patch('/product-offers/:id/toggle', isAdminAuthenticated, toggleProductOfferStatus);
+router.get('/product-offers/:id/details', isAdminAuthenticated, getProductOfferDetails);
+router.get('/product-offers/check-availability', isAdminAuthenticated, checkProductAvailability);
+
+// Category Offer routes
+router.get('/category-offers', isAdminAuthenticated, getCategoryOffers);
+router.get('/category-offers/add', isAdminAuthenticated, getAddCategoryOffer);
+router.post('/category-offers/add', isAdminAuthenticated, createCategoryOffer);
+router.get('/category-offers/edit/:id', isAdminAuthenticated, getEditCategoryOffer);
+router.post('/category-offers/edit/:id', isAdminAuthenticated, updateCategoryOffer);
+router.delete('/category-offers/:id', isAdminAuthenticated, deleteCategoryOffer);
+router.patch('/category-offers/:id/toggle', isAdminAuthenticated, toggleCategoryOfferStatus);
+router.get('/category-offers/:id/details', isAdminAuthenticated, getCategoryOfferDetails);
+router.get('/category-offers/check-availability', isAdminAuthenticated, checkCategoryAvailability);
+
+// Sales Reports routes
+router.get('/sales-reports', isAdminAuthenticated, getSalesReports);
+router.get('/api/sales-data', isAdminAuthenticated, getSalesData);
+router.get('/export-sales-report-pdf', isAdminAuthenticated, exportSalesReportPDF);
+router.get('/export-sales-report-excel', isAdminAuthenticated, exportSalesReportExcel);
 
 export default router;
 

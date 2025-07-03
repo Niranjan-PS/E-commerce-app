@@ -84,7 +84,8 @@ export const getAdminOrders = catchAsyncError(async (req, res, next) => {
       orderStats,
       returnRequests,
       message: req.query.message || null,
-      error: req.query.error || null
+      error: req.query.error || null,
+      page: 'orders'
     });
 
   } catch (error) {
@@ -110,7 +111,8 @@ export const getAdminOrderDetails = catchAsyncError(async (req, res, next) => {
     res.render("admin/order-details", {
       order,
       message: req.query.message || null,
-      error: req.query.error || null
+      error: req.query.error || null,
+      page: 'order-details'
     });
 
   } catch (error) {
@@ -549,7 +551,8 @@ export const getReturnRequests = catchAsyncError(async (req, res, next) => {
       sortBy,
       sortOrder,
       message: req.query.message || null,
-      error: req.query.error || null
+      error: req.query.error || null,
+      page: 'return-requests'
     });
 
   } catch (error) {

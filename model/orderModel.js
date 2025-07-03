@@ -46,6 +46,56 @@ const orderItemSchema = new mongoose.Schema({
     type: Number,
     default: null
   },
+  // Offer-related fields
+  originalPrice: {
+    type: Number,
+    required: true
+  },
+  discountedPrice: {
+    type: Number,
+    required: true
+  },
+  offerSavings: {
+    type: Number,
+    default: 0
+  },
+  hasOffer: {
+    type: Boolean,
+    default: false
+  },
+  offerDetails: {
+    id: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null
+    },
+    name: {
+      type: String,
+      default: null
+    },
+    discountPercentage: {
+      type: Number,
+      default: 0
+    },
+    type: {
+      type: String,
+      enum: ['product', 'category'],
+      default: null
+    }
+  },
+  appliedOfferInfo: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
+  },
+  availableOffers: {
+    productOffer: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null
+    },
+    categoryOffer: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null
+    }
+  },
   discount: {
     type: Number,
     default: 0

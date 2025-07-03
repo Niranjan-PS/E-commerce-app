@@ -12,6 +12,7 @@ import { sendToken } from '../../utils/sendToken.js';
 import HttpStatus from '../../helpers/httpStatus.js';
 
 import { Wallet } from '../../model/walletModel.js';
+import { validateReferral, processReferralRewards, createReferralRecord } from '../../services/referralService.js';
 
 const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
 
@@ -33,9 +34,9 @@ export const register = catchAsyncError(async (req, res, next) => {
     }
 
 
-    let { userName:name, email, phone, password,confirmPassword, verificationMethod } = req.body;
+    let { userName:name, email, phone, password, confirmPassword, verificationMethod, referralCode } = req.body;
 
-    console.log('Destructured values:', { name, email, phone, password: password , verificationMethod });
+    console.log('Destructured values:', { name, email, phone, password: password, verificationMethod, referralCode });
 
     if (!name || !email || !phone || !password || !confirmPassword|| !verificationMethod) {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -76,16 +77,23 @@ console.log("Cleaned phone:", phone);
         message: "Phone or Email is already used."
       });
     }
-    const registrationAttemptsByUser = await User.find({
-      $or: [
-        { phone, accountverified: false },
-        { email, accountverified: false },
-      ],
-    });
 
-    // if (registrationAttemptsByUser.length > 3) {
-    //   return next(new ErrorHandler("You have exceeded the maximum number of attempts(3).Please try again after 10 minutes.", 400));
-    // }
+    // Validate referral if provided
+    let referralData = null;
+    const ipAddress = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
+    
+    if (referralCode && referralCode.trim()) {
+      const referralValidation = await validateReferral(referralCode.trim(), email, ipAddress);
+      
+      if (!referralValidation.valid) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          success: false,
+          message: referralValidation.message
+        });
+      }
+      
+      referralData = referralValidation;
+    }
 
     const userData = {
       name,
@@ -95,20 +103,26 @@ console.log("Cleaned phone:", phone);
       accountverified: false,
     };
 
-
     const user = await User.create(userData);
-
-await User.create({ ...userData });
-await Wallet.create({ userId: user._id, balance: 0, transactions: [] });
+    await Wallet.create({ userId: user._id, balance: 0, transactions: [] });
 
     const verificationCode = user.generateVerificationCode();
     console.log(`Generated verification code: ${verificationCode} for user: ${name || email}`);
 
 
+    // Store referral data in user session or temporary storage for OTP verification
+    if (referralData) {
+      user.tempReferralData = JSON.stringify({
+        referralId: referralData.referral._id,
+        referrerId: referralData.referrer._id,
+        ipAddress,
+        userAgent: req.get('User-Agent')
+      });
+    }
+
     await user.save();
 
     try {
-
       await sendVerificationCode(verificationMethod, verificationCode, email, phone, name);
 
       return res.status(HttpStatus.OK).json({
@@ -316,13 +330,51 @@ export const verifyOtp = catchAsyncError(async(req,res,next) => {
     user.accountverified = true
     user.verificationCode = null
     user.verificationCodeExpire = null
+
+    // Process referral rewards if applicable
+    let referralMessage = '';
+    if (user.tempReferralData) {
+      try {
+        const tempData = JSON.parse(user.tempReferralData);
+        
+        // Process referral rewards
+        const referralResult = await processReferralRewards(
+          user._id,
+          { 
+            referral: { _id: tempData.referralId },
+            referrer: { _id: tempData.referrerId }
+          },
+          tempData.ipAddress,
+          tempData.userAgent
+        );
+
+        if (referralResult.success) {
+          referralMessage = ` You've received ₹${referralResult.referredReward} welcome bonus!`;
+        }
+
+        // Clear temporary referral data
+        user.tempReferralData = null;
+      } catch (error) {
+        console.error('Error processing referral rewards:', error);
+        // Don't fail registration if referral processing fails
+      }
+    }
+
+    // Create referral record for the new user
+    try {
+      await createReferralRecord(user._id, user.name);
+    } catch (error) {
+      console.error('Error creating referral record:', error);
+      // Don't fail registration if referral record creation fails
+    }
+
     await user.save({validateModifiedOnly:true})
 
     sendToken(user,res)
     console.log("Account verified successfully");
     return res.status(HttpStatus.OK).json({
       success: true,
-      message: "Account verified successfully",
+      message: `Account verified successfully!${referralMessage}`,
       redirectUrl: "/login"
     });
 
@@ -425,7 +477,7 @@ export const login = catchAsyncError(async (req, res, next) => {
     });
   }
 
-// After creating a new user:
+
   sendToken(user, res);
     
  

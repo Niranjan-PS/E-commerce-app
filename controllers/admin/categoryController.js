@@ -40,7 +40,8 @@ export const categoryInfo = catchAsyncError(async (req, res, next) => {
             startItem: startItem,
             endItem: endItem,
             message: message,
-            error: error
+            error: error,
+            page: 'category'
         });
 
     } catch (error) {
@@ -180,8 +181,8 @@ export const getEditCategory =  catchAsyncError(async (req, res, next) =>{
         const category = await Category.findOne({_id:id})
         res.render("admin/edit-category",{category:category,
         message: req.query.message || null,
-        error: req.query.error || null
-
+        error: req.query.error || null,
+        page: 'category'
         })
 
     } catch (error) {

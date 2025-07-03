@@ -5,6 +5,7 @@ import { Category } from "../../model/categoryModel.js";
 import { catchAsyncError } from "../../middlewares/catchAsync.js";
 import ErrorHandler from "../../middlewares/error.js";
 import HttpStatus from "../../helpers/httpStatus.js";
+import { calculateBestOfferPrice } from "../../utils/offerCalculator.js";
 
 
 export const getCart = catchAsyncError(async (req, res, next) => {
@@ -80,7 +81,10 @@ export const addToCart = catchAsyncError(async (req, res, next) => {
     }
 
    
-    cart.addItem(productData, requestedQuantity);
+    // Calculate offer price for the product
+    const offerCalculation = await calculateBestOfferPrice(productData);
+    
+    cart.addItem(productData, requestedQuantity, offerCalculation);
     await cart.save();
 
     
@@ -147,13 +151,17 @@ export const updateCartQuantity = catchAsyncError(async (req, res, next) => {
     cart.updateItemQuantity(productId, parseInt(quantity));
     await cart.save();
 
-    res.status(HttpStatus.OK).json({
-      success: true,
-      message: 'Cart updated successfully',
-      cartCount: cart.totalItems,
-      cartTotal: cart.totalSalePrice,
-      itemTotal: quantity > 0 ? (product.salePrice || product.price) * quantity : 0
-    });
+   // Calculate offer price for updated quantity
+    const offerCalculation = await calculateBestOfferPrice(product);
+    const effectivePrice = offerCalculation.discountedPrice;
+
+   res.status(HttpStatus.OK).json({
+  success: true,
+  message: 'Cart updated successfully',
+  updatedSubtotal: quantity > 0 ? effectivePrice * quantity : 0,
+  updatedGrandTotal: cart.totalSalePrice
+});
+
 
   } catch (error) {
     console.error("Error updating cart quantity:", error);
@@ -296,10 +304,37 @@ async function validateCartItems(cart) {
       }
     }
 
+    // Recalculate offer prices
+    const offerCalculation = await calculateBestOfferPrice(product);
     
-    if (item.price !== product.price || item.salePrice !== product.salePrice) {
+    // Update prices and offer information
+    if (item.price !== product.price || 
+        item.salePrice !== product.salePrice ||
+        item.originalPrice !== offerCalculation.originalPrice ||
+        item.discountedPrice !== offerCalculation.discountedPrice) {
+      
       item.price = product.price;
       item.salePrice = product.salePrice;
+      item.originalPrice = offerCalculation.originalPrice;
+      item.discountedPrice = offerCalculation.discountedPrice;
+      item.offerSavings = offerCalculation.savings;
+      item.hasOffer = offerCalculation.hasOffer;
+      
+      if (offerCalculation.offerDetails) {
+        item.offerDetails = {
+          id: offerCalculation.offerDetails.id,
+          name: offerCalculation.offerDetails.name,
+          discountPercentage: offerCalculation.offerDetails.discountPercentage,
+          type: offerCalculation.offerDetails.type
+        };
+      } else {
+        item.offerDetails = {};
+      }
+      
+      // Store enhanced offer information
+      item.appliedOfferInfo = offerCalculation.appliedOfferInfo;
+      item.availableOffers = offerCalculation.availableOffers;
+      
       hasChanges = true;
     }
   }

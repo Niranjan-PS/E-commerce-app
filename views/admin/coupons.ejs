@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coupons Management - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root {
+            --primary-color: #6200ea;
+            --secondary-color: #f8f9fa;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--secondary-color);
+        }
+
+        .sidebar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            width: 250px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 12px 20px;
+            margin: 5px 15px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+
+        .page-header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .stats-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .coupon-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+
+        .coupon-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .coupon-header {
+            background: linear-gradient(135deg, var(--primary-color), #bb86fc);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .coupon-code {
+            font-size: 1.2rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        .coupon-body {
+            padding: 20px;
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: rgba(40, 167, 69, 0.1);
+            color: var(--success-color);
+        }
+
+        .status-inactive {
+            background: rgba(220, 53, 69, 0.1);
+            color: var(--danger-color);
+        }
+
+        .status-expired {
+            background: rgba(108, 117, 125, 0.1);
+            color: #6c757d;
+        }
+
+        .discount-badge {
+            background: var(--warning-color);
+            color: #000;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .btn-action {
+            padding: 5px 10px;
+            margin: 2px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+        }
+
+        .search-box {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .pagination-wrapper {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="p-3">
+            <h4 class="text-white mb-4">
+                <i class="fas fa-shield-alt me-2"></i>Admin Panel
+            </h4>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/dashboard">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/users">
+                        <i class="fas fa-users me-2"></i>Users
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/category">
+                        <i class="fas fa-tags me-2"></i>Categories
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/products">
+                        <i class="fas fa-box me-2"></i>Products
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/orders">
+                        <i class="fas fa-shopping-cart me-2"></i>Orders
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/admin/coupons">
+                        <i class="fas fa-ticket-alt me-2"></i>Coupons
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/inventory">
+                        <i class="fas fa-warehouse me-2"></i>Inventory
+                    </a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link" href="/admin/logout">
+                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="fas fa-ticket-alt me-2 text-primary"></i>Coupons Management
+                    </h2>
+                    <p class="text-muted mb-0">Manage discount coupons and promotional offers</p>
+                </div>
+                <a href="/admin/coupons/add" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add New Coupon
+                </a>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-1"><%= totalCoupons %></h3>
+                            <p class="text-muted mb-0">Total Coupons</p>
+                        </div>
+                        <i class="fas fa-ticket-alt fa-2x text-primary"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-1"><%= coupons.filter(c => c.isActive).length %></h3>
+                            <p class="text-muted mb-0">Active Coupons</p>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x text-success"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-1"><%= coupons.filter(c => new Date() > c.validUntil).length %></h3>
+                            <p class="text-muted mb-0">Expired Coupons</p>
+                        </div>
+                        <i class="fas fa-clock fa-2x text-warning"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-1"><%= coupons.reduce((sum, c) => sum + c.usedCount, 0) %></h3>
+                            <p class="text-muted mb-0">Total Usage</p>
+                        </div>
+                        <i class="fas fa-chart-line fa-2x text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Box -->
+        <div class="search-box">
+            <form method="GET" action="/admin/coupons">
+                <div class="row">
+                    <div class="col-md-10">
+                        <input type="text" class="form-control" name="search" 
+                               placeholder="Search coupons by code or description..." 
+                               value="<%= search %>">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search me-2"></i>Search
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Coupons List -->
+        <% if (coupons && coupons.length > 0) { %>
+            <% coupons.forEach(coupon => { %>
+                <div class="coupon-card">
+                    <div class="coupon-header">
+                        <div>
+                            <div class="coupon-code"><%= coupon.code %></div>
+                            <small><%= coupon.description %></small>
+                        </div>
+                        <div class="text-end">
+                            <% 
+                                let statusClass = 'status-active';
+                                let statusText = 'Active';
+                                const now = new Date();
+                                
+                                if (!coupon.isActive) {
+                                    statusClass = 'status-inactive';
+                                    statusText = 'Inactive';
+                                } else if (now > coupon.validUntil) {
+                                    statusClass = 'status-expired';
+                                    statusText = 'Expired';
+                                } else if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
+                                    statusClass = 'status-expired';
+                                    statusText = 'Limit Reached';
+                                }
+                            %>
+                            <div class="status-badge <%= statusClass %>"><%= statusText %></div>
+                        </div>
+                    </div>
+                    
+                    <div class="coupon-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Discount:</strong>
+                                        <span class="discount-badge">
+                                            <% if (coupon.discountType === 'percentage') { %>
+                                                <%= coupon.discountValue %>% OFF
+                                            <% } else { %>
+                                                ₹<%= coupon.discountValue %> OFF
+                                            <% } %>
+                                        </span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Min Amount:</strong> ₹<%= coupon.minimumAmount %>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-6">
+                                        <strong>Valid From:</strong> <%= new Date(coupon.validFrom).toLocaleDateString() %>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Valid Until:</strong> <%= new Date(coupon.validUntil).toLocaleDateString() %>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-6">
+                                        <strong>Usage:</strong> 
+                                        <%= coupon.usedCount %><% if (coupon.usageLimit) { %>/<%= coupon.usageLimit %><% } else { %>/∞<% } %>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <% if (coupon.maximumDiscount) { %>
+                                            <strong>Max Discount:</strong> ₹<%= coupon.maximumDiscount %>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 text-end">
+                                <div class="btn-group-vertical">
+                                    <a href="/admin/coupons/edit/<%= coupon._id %>" class="btn btn-outline-primary btn-action">
+                                        <i class="fas fa-edit me-1"></i>Edit
+                                    </a>
+                                    <button class="btn btn-outline-<%= coupon.isActive ? 'warning' : 'success' %> btn-action" 
+                                            onclick="toggleStatus('<%= coupon._id %>', <%= coupon.isActive %>)">
+                                        <i class="fas fa-<%= coupon.isActive ? 'pause' : 'play' %> me-1"></i>
+                                        <%= coupon.isActive ? 'Deactivate' : 'Activate' %>
+                                    </button>
+                                    <button class="btn btn-outline-info btn-action" 
+                                            onclick="viewDetails('<%= coupon._id %>')">
+                                        <i class="fas fa-eye me-1"></i>Details
+                                    </button>
+                                    <% if (coupon.usedCount === 0) { %>
+                                        <button class="btn btn-outline-danger btn-action" 
+                                                onclick="deleteCoupon('<%= coupon._id %>')">
+                                            <i class="fas fa-trash me-1"></i>Delete
+                                        </button>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <% }) %>
+        <% } else { %>
+            <div class="text-center py-5">
+                <i class="fas fa-ticket-alt fa-5x text-muted mb-3"></i>
+                <h4>No coupons found</h4>
+                <p class="text-muted">
+                    <% if (search) { %>
+                        No coupons match your search criteria.
+                    <% } else { %>
+                        Start by creating your first coupon.
+                    <% } %>
+                </p>
+                <a href="/admin/coupons/add" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add New Coupon
+                </a>
+            </div>
+        <% } %>
+
+        <!-- Pagination -->
+        <% if (totalPages > 1) { %>
+            <div class="pagination-wrapper">
+                <nav>
+                    <ul class="pagination justify-content-center mb-0">
+                        <% if (currentPage > 1) { %>
+                            <li class="page-item">
+                                <a class="page-link" href="?page=<%= currentPage - 1 %><%= search ? '&search=' + search : '' %>">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                        <% } %>
+                        
+                        <% for (let i = 1; i <= totalPages; i++) { %>
+                            <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                                <a class="page-link" href="?page=<%= i %><%= search ? '&search=' + search : '' %>">
+                                    <%= i %>
+                                </a>
+                            </li>
+                        <% } %>
+                        
+                        <% if (currentPage < totalPages) { %>
+                            <li class="page-item">
+                                <a class="page-link" href="?page=<%= currentPage + 1 %><%= search ? '&search=' + search : '' %>">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        <% } %>
+                    </ul>
+                </nav>
+            </div>
+        <% } %>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle coupon status
+        async function toggleStatus(couponId, currentStatus) {
+            const action = currentStatus ? 'deactivate' : 'activate';
+            
+            const result = await Swal.fire({
+                title: `${action.charAt(0).toUpperCase() + action.slice(1)} Coupon?`,
+                text: `Are you sure you want to ${action} this coupon?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#6200ea',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: `Yes, ${action}!`
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch(`/admin/coupons/${couponId}/toggle`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: data.message,
+                            confirmButtonColor: '#6200ea'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: data.message,
+                            confirmButtonColor: '#6200ea'
+                        });
+                    }
+                } catch (error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Failed to update coupon status',
+                        confirmButtonColor: '#6200ea'
+                    });
+                }
+            }
+        }
+
+        // Delete coupon
+        async function deleteCoupon(couponId) {
+            const result = await Swal.fire({
+                title: 'Delete Coupon?',
+                text: 'This action cannot be undone!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete!'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch(`/admin/coupons/${couponId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Deleted!',
+                            text: data.message,
+                            confirmButtonColor: '#6200ea'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: data.message,
+                            confirmButtonColor: '#6200ea'
+                        });
+                    }
+                } catch (error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Failed to delete coupon',
+                        confirmButtonColor: '#6200ea'
+                    });
+                }
+            }
+        }
+
+        // View coupon details
+        async function viewDetails(couponId) {
+            try {
+                const response = await fetch(`/admin/coupons/${couponId}/details`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const coupon = data.coupon;
+                    let detailsHtml = `
+                        <div class="text-start">
+                            <h5>Coupon Details</h5>
+                            <hr>
+                            <p><strong>Code:</strong> ${coupon.code}</p>
+                            <p><strong>Description:</strong> ${coupon.description}</p>
+                            <p><strong>Discount:</strong> ${coupon.discountType === 'percentage' ? coupon.discountValue + '%' : '₹' + coupon.discountValue}</p>
+                            <p><strong>Minimum Amount:</strong> ₹${coupon.minimumAmount}</p>
+                            ${coupon.maximumDiscount ? `<p><strong>Maximum Discount:</strong> ₹${coupon.maximumDiscount}</p>` : ''}
+                            <p><strong>Usage:</strong> ${coupon.usedCount}${coupon.usageLimit ? '/' + coupon.usageLimit : '/∞'}</p>
+                            <p><strong>Valid From:</strong> ${new Date(coupon.validFrom).toLocaleDateString()}</p>
+                            <p><strong>Valid Until:</strong> ${new Date(coupon.validUntil).toLocaleDateString()}</p>
+                            <p><strong>Status:</strong> ${coupon.isActive ? 'Active' : 'Inactive'}</p>
+                        </div>
+                    `;
+
+                    Swal.fire({
+                        title: 'Coupon Details',
+                        html: detailsHtml,
+                        confirmButtonColor: '#6200ea',
+                        width: '600px'
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Failed to load coupon details',
+                    confirmButtonColor: '#6200ea'
+                });
+            }
+        }
+
+        // Show messages
+        <% if (message) { %>
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: '<%= message %>',
+                confirmButtonColor: '#6200ea'
+            });
+        <% } %>
+
+        <% if (error) { %>
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: '<%= error %>',
+                confirmButtonColor: '#6200ea'
+            });
+        <% } %>
+    </script>
+</body>
+</html>

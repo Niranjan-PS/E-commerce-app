@@ -150,7 +150,7 @@ export const cancelOrder = catchAsyncError(async (req, res, next) => {
       quantity: item.quantity - item.cancelledQuantity
     }));
 
-    // Process cancellation for each item
+    
     for (const cancelItem of itemsToCancel) {
       const orderItem = order.items.find(item =>
         item.product._id.toString() === cancelItem.productId
@@ -177,7 +177,7 @@ export const cancelOrder = catchAsyncError(async (req, res, next) => {
           isFullCancellation = false;
         }
 
-        const itemPrice = orderItem.salePrice || orderItem.price;
+        const itemPrice = orderItem.discountedPrice || orderItem.salePrice || orderItem.price;
         totalRefundAmount += itemPrice * cancelQuantity;
 
         await Product.findByIdAndUpdate(
@@ -254,7 +254,14 @@ export const returnOrder = catchAsyncError(async (req, res, next) => {
       });
     }
 
-   
+    // Explicit 7-day return window check
+    if (!order.deliveredAt || (Date.now() - order.deliveredAt.getTime()) > (7 * 24 * 60 * 60 * 1000)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Return window closed. You can only return items within 7 days of delivery.'
+      });
+    }
+
     if (!order.canRequestReturn()) {
       let message = 'Return request cannot be submitted.';
 
@@ -263,7 +270,7 @@ export const returnOrder = catchAsyncError(async (req, res, next) => {
       } else if (!order.deliveredAt) {
         message = 'Order delivery date not found.';
       } else if ((Date.now() - order.deliveredAt.getTime()) > (7 * 24 * 60 * 60 * 1000)) {
-        message = 'Return window has expired. Returns must be requested within 7 days of delivery.';
+        message = 'Return window closed. You can only return items within 7 days of delivery.';
       } else if (order.returnStatus === 'Requested') {
         message = 'Return request is already pending admin approval.';
       } else if (order.returnStatus === 'Approved') {
@@ -302,7 +309,7 @@ export const returnOrder = catchAsyncError(async (req, res, next) => {
 
       if (returnQuantity > 0) {
         hasValidItems = true;
-        const itemPrice = orderItem.salePrice || orderItem.price;
+        const itemPrice = orderItem.discountedPrice || orderItem.salePrice || orderItem.price;
         totalRefundAmount += itemPrice * returnQuantity;
       }
     }
@@ -411,7 +418,8 @@ export const downloadInvoice = catchAsyncError(async (req, res, next) => {
 
     // Add items
     order.items.forEach(item => {
-      const itemPrice = item.salePrice || item.price;
+      // Use offer price if available, otherwise fallback to sale price or regular price
+      const itemPrice = item.discountedPrice || item.salePrice || item.price;
       const itemTotal = itemPrice * item.quantity;
 
       doc.text(item.productName, 50, yPosition, { width: 240 });
@@ -562,7 +570,7 @@ export const cancelOrderItem = catchAsyncError(async (req, res, next) => {
       orderItem.itemStatus = 'Partially Cancelled';
     }
 
-    const itemPrice = orderItem.salePrice || orderItem.price;
+    const itemPrice = orderItem.discountedPrice || orderItem.salePrice || orderItem.price;
      const refundAmount = itemPrice * cancelQuantity;
 
   
@@ -589,18 +597,12 @@ export const cancelOrderItem = catchAsyncError(async (req, res, next) => {
     await order.save();
 
     
-    // if (refundAmount > 0) {
-    //   await addReturnAmountToWallet(
-    //     req.user._id,
-    //     refundAmount,
-    //     order._id
-    //   );
-    // }
+    
 
     res.status(200).json({
       success: true,
       message: `${cancelQuantity} item(s) cancelled successfully`,
-      // refundAmount: refundAmount,
+     
       cancelledQuantity: cancelQuantity,
       itemStatus: orderItem.itemStatus
     });
@@ -641,6 +643,14 @@ export const returnOrderItem = catchAsyncError(async (req, res, next) => {
     }
 
     
+    // Explicit 7-day return window check
+    if (!order.deliveredAt || (Date.now() - order.deliveredAt.getTime()) > (7 * 24 * 60 * 60 * 1000)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Return window closed. You can only return items within 7 days of delivery.'
+      });
+    }
+
     if (!order.canRequestReturn()) {
       let message = 'Return request cannot be submitted.';
 
@@ -649,7 +659,7 @@ export const returnOrderItem = catchAsyncError(async (req, res, next) => {
       } else if (!order.deliveredAt) {
         message = 'Order delivery date not found.';
       } else if ((Date.now() - order.deliveredAt.getTime()) > (7 * 24 * 60 * 60 * 1000)) {
-        message = 'Return window has expired. Returns must be requested within 7 days of delivery.';
+        message = 'Return window closed. You can only return items within 7 days of delivery.';
       }
 
       return res.status(400).json({
@@ -677,7 +687,7 @@ export const returnOrderItem = catchAsyncError(async (req, res, next) => {
     }
 
   
-    const itemPrice = orderItem.salePrice || orderItem.price;
+    const itemPrice = orderItem.discountedPrice || orderItem.salePrice || orderItem.price;
     const estimatedRefund = itemPrice * returnQuantity;
 
     // Update order with return request
@@ -741,6 +751,14 @@ export const requestIndividualItemReturn = catchAsyncError(async (req, res, next
     }
 
     
+    // Explicit 7-day return window check
+    if (!order.deliveredAt || (Date.now() - order.deliveredAt.getTime()) > (7 * 24 * 60 * 60 * 1000)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Return window closed. You can only return items within 7 days of delivery.'
+      });
+    }
+
     if (!order.canItemRequestReturn(itemId)) {
       let message = 'Return request cannot be submitted for this item.';
 
@@ -749,7 +767,7 @@ export const requestIndividualItemReturn = catchAsyncError(async (req, res, next
       } else if (!order.deliveredAt) {
         message = 'Order delivery date not found.';
       } else if ((Date.now() - order.deliveredAt.getTime()) > (7 * 24 * 60 * 60 * 1000)) {
-        message = 'Return window has expired. Returns must be requested within 7 days of delivery.';
+        message = 'Return window closed. You can only return items within 7 days of delivery.';
       } else if (orderItem.itemReturnStatus === 'Requested') {
         message = 'Return request is already pending for this item.';
       } else if (orderItem.itemReturnStatus === 'Approved') {
@@ -775,7 +793,7 @@ export const requestIndividualItemReturn = catchAsyncError(async (req, res, next
     }
 
     
-    const itemPrice = orderItem.salePrice || orderItem.price;
+    const itemPrice = orderItem.discountedPrice || orderItem.salePrice || orderItem.price;
     const estimatedRefund = itemPrice * returnQuantity;
 
    
@@ -831,7 +849,7 @@ export const completeReturnAndCreditWallet = catchAsyncError(async (req, res, ne
     for (const item of order.items) {
         const activeQuantity = item.quantity - item.cancelledQuantity - item.returnedQuantity;
         if (activeQuantity > 0) {
-            const itemPrice = item.salePrice || item.price;
+            const itemPrice = item.discountedPrice || item.salePrice || item.price;
             totalRefundAmount += itemPrice * activeQuantity;
         }
     }

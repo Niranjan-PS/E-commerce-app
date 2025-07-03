@@ -20,6 +20,56 @@ const cartItemSchema = new mongoose.Schema({
     type: Number,
     default: null
   },
+  // Offer-related fields
+  originalPrice: {
+    type: Number,
+    required: true
+  },
+  discountedPrice: {
+    type: Number,
+    required: true
+  },
+  offerSavings: {
+    type: Number,
+    default: 0
+  },
+  hasOffer: {
+    type: Boolean,
+    default: false
+  },
+  offerDetails: {
+    id: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null
+    },
+    name: {
+      type: String,
+      default: null
+    },
+    discountPercentage: {
+      type: Number,
+      default: 0
+    },
+    type: {
+      type: String,
+      enum: ['product', 'category'],
+      default: null
+    }
+  },
+  appliedOfferInfo: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
+  },
+  availableOffers: {
+    productOffer: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null
+    },
+    categoryOffer: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null
+    }
+  },
   addedAt: {
     type: Date,
     default: Date.now
@@ -73,17 +123,22 @@ cartSchema.methods.calculateTotals = function() {
   let totalItems = 0;
   let totalPrice = 0;
   let totalSalePrice = 0;
+  let totalOfferSavings = 0;
 
   this.items.forEach(item => {
     totalItems += item.quantity;
-    totalPrice += item.price * item.quantity;
-    totalSalePrice += (item.salePrice || item.price) * item.quantity;
+    // Use original price for total calculation
+    totalPrice += item.originalPrice * item.quantity;
+    // Use discounted price for sale price calculation
+    totalSalePrice += item.discountedPrice * item.quantity;
+    // Add offer savings
+    totalOfferSavings += item.offerSavings * item.quantity;
   });
 
   this.totalItems = totalItems;
   this.totalPrice = totalPrice;
   this.totalSalePrice = totalSalePrice;
-  this.totalSavings = totalPrice - totalSalePrice;
+  this.totalSavings = totalOfferSavings;
   this.lastUpdated = new Date();
 
   return {
@@ -95,10 +150,25 @@ cartSchema.methods.calculateTotals = function() {
 };
 
 
-cartSchema.methods.addItem = function(productData, quantity = 1) {
+cartSchema.methods.addItem = function(productData, quantity = 1, offerCalculation = null) {
   const existingItemIndex = this.items.findIndex(
     item => item.product.toString() === productData._id.toString()
   );
+
+  // Use offer calculation or fallback to original price
+  const originalPrice = offerCalculation ? offerCalculation.originalPrice : productData.price;
+  const discountedPrice = offerCalculation ? offerCalculation.discountedPrice : productData.price;
+  const offerSavings = offerCalculation ? offerCalculation.savings : 0;
+  const hasOffer = offerCalculation ? offerCalculation.hasOffer : false;
+  const offerDetails = offerCalculation && offerCalculation.offerDetails ? {
+    id: offerCalculation.offerDetails.id,
+    name: offerCalculation.offerDetails.name,
+    discountPercentage: offerCalculation.offerDetails.discountPercentage,
+    type: offerCalculation.offerDetails.type
+  } : {};
+
+  const appliedOfferInfo = offerCalculation ? offerCalculation.appliedOfferInfo : null;
+  const availableOffers = offerCalculation ? offerCalculation.availableOffers : { productOffer: null, categoryOffer: null };
 
   if (existingItemIndex > -1) {
     
@@ -113,9 +183,17 @@ cartSchema.methods.addItem = function(productData, quantity = 1) {
       throw new Error(`Only ${productData.quantity} items available in stock`);
     }
 
+    // Update existing item with new offer calculations
     this.items[existingItemIndex].quantity = newQuantity;
     this.items[existingItemIndex].price = productData.price;
     this.items[existingItemIndex].salePrice = productData.salePrice;
+    this.items[existingItemIndex].originalPrice = originalPrice;
+    this.items[existingItemIndex].discountedPrice = discountedPrice;
+    this.items[existingItemIndex].offerSavings = offerSavings;
+    this.items[existingItemIndex].hasOffer = hasOffer;
+    this.items[existingItemIndex].offerDetails = offerDetails;
+    this.items[existingItemIndex].appliedOfferInfo = appliedOfferInfo;
+    this.items[existingItemIndex].availableOffers = availableOffers;
   } else {
    
     if (this.items.length >= CART_LIMITS.MAX_ITEMS_IN_CART) {
@@ -134,7 +212,14 @@ cartSchema.methods.addItem = function(productData, quantity = 1) {
       product: productData._id,
       quantity,
       price: productData.price,
-      salePrice: productData.salePrice
+      salePrice: productData.salePrice,
+      originalPrice,
+      discountedPrice,
+      offerSavings,
+      hasOffer,
+      offerDetails,
+      appliedOfferInfo,
+      availableOffers
     });
   }
 

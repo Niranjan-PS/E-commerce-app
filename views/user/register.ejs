@@ -356,6 +356,12 @@
         </div>
 
         <div class="input-group">
+          <input type="text" name="referralCode" class="form-control" placeholder="Referral Code (Optional)" />
+          <span class="error-message"></span>
+          <small class="form-text">Enter a friend's referral code to get ₹50 bonus</small>
+        </div>
+
+        <div class="input-group">
           <div class="password-container">
             <input type="password" name="password" id="password" class="form-control" placeholder="Password" minlength="8" maxlength="32" required />
             <button type="button" class="password-toggle" onclick="togglePassword('password')">
@@ -428,6 +434,26 @@
   document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const error = urlParams.get('error');
+    const ref = urlParams.get('ref');
+
+    // Handle referral token from URL
+    if (ref) {
+      const referralInput = document.querySelector('input[name="referralCode"]');
+      if (referralInput) {
+        referralInput.value = ref;
+        referralInput.style.borderColor = '#28a745';
+        
+        // Show referral bonus message
+        Swal.fire({
+          icon: 'info',
+          title: 'Referral Code Applied!',
+          text: 'You\'ll receive ₹50 bonus when you complete registration.',
+          confirmButtonColor: '#d4af37',
+          timer: 3000,
+          timerProgressBar: true
+        });
+      }
+    }
 
     if (error) {
       let errorMessage = '';
