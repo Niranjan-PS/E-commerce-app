@@ -3,7 +3,7 @@ import ErrorHandler from "../../middlewares/error.js";
 import { CategoryOffer } from "../../model/categoryOfferModel.js";
 import { Category } from "../../model/categoryModel.js";
 
-// Get all category offers
+
 export const getCategoryOffers = catchAsyncError(async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -12,13 +12,13 @@ export const getCategoryOffers = catchAsyncError(async (req, res, next) => {
     const search = req.query.search || '';
     const status = req.query.status || '';
 
-    // Auto-disable expired offers
+    
     await CategoryOffer.disableExpiredOffers();
 
     let query = {};
 
     if (search) {
-      // Search by offer name or category name
+      
       const categories = await Category.find({
         name: new RegExp(search, 'i')
       });
@@ -31,7 +31,7 @@ export const getCategoryOffers = catchAsyncError(async (req, res, next) => {
       };
     }
 
-    // Filter by status
+   
     const now = new Date();
     if (status === 'active') {
       query.isActive = true;
@@ -88,7 +88,7 @@ export const getCategoryOffers = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Get add category offer page
+
 export const getAddCategoryOffer = catchAsyncError(async (req, res, next) => {
   try {
     const categories = await Category.find({ isListed: true }).sort({ name: 1 });
@@ -104,7 +104,7 @@ export const getAddCategoryOffer = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Create new category offer
+
 export const createCategoryOffer = catchAsyncError(async (req, res, next) => {
   try {
     const {
@@ -118,7 +118,7 @@ export const createCategoryOffer = catchAsyncError(async (req, res, next) => {
 
     console.log('Creating category offer with data:', req.body);
 
-    // Validation
+   
     if (!category || !offerName || !discountPercentage || !startDate || !endDate) {
       return res.status(400).json({
         success: false,
@@ -144,7 +144,7 @@ export const createCategoryOffer = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Check if category exists
+    
     const categoryExists = await Category.findById(category);
     if (!categoryExists) {
       return res.status(400).json({
@@ -153,7 +153,7 @@ export const createCategoryOffer = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Check for overlapping offers
+   
     const hasOverlap = await CategoryOffer.hasOverlappingOffer(category, start, end);
     if (hasOverlap) {
       return res.status(400).json({
@@ -162,7 +162,7 @@ export const createCategoryOffer = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Create offer
+   
     const offer = new CategoryOffer({
       category,
       offerName: offerName.trim(),
@@ -197,7 +197,7 @@ export const createCategoryOffer = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Get edit category offer page
+
 export const getEditCategoryOffer = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -221,7 +221,7 @@ export const getEditCategoryOffer = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Update category offer
+
 export const updateCategoryOffer = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -243,7 +243,7 @@ export const updateCategoryOffer = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Validation
+   
     if (!category || !offerName || !discountPercentage || !startDate || !endDate) {
       return res.status(400).json({
         success: false,
@@ -269,7 +269,7 @@ export const updateCategoryOffer = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Check if category exists
+   
     const categoryExists = await Category.findById(category);
     if (!categoryExists) {
       return res.status(400).json({
@@ -278,7 +278,7 @@ export const updateCategoryOffer = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Check for overlapping offers (excluding current offer)
+   
     if (category !== offer.category.toString() ||
         start.getTime() !== offer.startDate.getTime() ||
         end.getTime() !== offer.endDate.getTime()) {
@@ -292,7 +292,7 @@ export const updateCategoryOffer = catchAsyncError(async (req, res, next) => {
       }
     }
 
-    // Update offer
+   
     offer.category = category;
     offer.offerName = offerName.trim();
     offer.discountPercentage = discount;
@@ -318,7 +318,7 @@ export const updateCategoryOffer = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Delete category offer
+
 export const deleteCategoryOffer = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -346,7 +346,7 @@ export const deleteCategoryOffer = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Toggle category offer status
+
 export const toggleCategoryOfferStatus = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -376,7 +376,7 @@ export const toggleCategoryOfferStatus = catchAsyncError(async (req, res, next) 
   }
 });
 
-// Get category offer details
+
 export const getCategoryOfferDetails = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -404,7 +404,7 @@ export const getCategoryOfferDetails = catchAsyncError(async (req, res, next) =>
   }
 });
 
-// Check category availability for offers
+
 export const checkCategoryAvailability = catchAsyncError(async (req, res, next) => {
   try {
     const { categoryId, startDate, endDate, excludeOfferId } = req.query;

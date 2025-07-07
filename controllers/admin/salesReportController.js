@@ -55,9 +55,7 @@ const getEndOfWeek = (startOfWeek) => {
   return endOfWeek;
 };
 
-/**
- * Get sales reports page
- */
+
 export const getSalesReports = catchAsyncError(async (req, res, next) => {
   try {
     res.render('admin/sales-reports', {
@@ -72,14 +70,12 @@ export const getSalesReports = catchAsyncError(async (req, res, next) => {
   }
 });
 
-/**
- * Get sales data with filters
- */
+
 export const getSalesData = catchAsyncError(async (req, res, next) => {
   try {
     const { filterType, startDate, endDate, selectedDate, selectedWeek, selectedMonth } = req.query;
     
-    // Build date filter based on filter type
+    
     let dateFilter = {};
     let reportTitle = '';
     
@@ -97,7 +93,7 @@ export const getSalesData = catchAsyncError(async (req, res, next) => {
           };
           reportTitle = `Daily Report - ${formatDate(selectedDate, 'MMMM DD, YYYY')}`;
         } else {
-          // Default to today
+          
           const today = new Date();
           const startOfDay = new Date(today.setHours(0, 0, 0, 0));
           const endOfDay = new Date(today.setHours(23, 59, 59, 999));
@@ -124,7 +120,7 @@ export const getSalesData = catchAsyncError(async (req, res, next) => {
           };
           reportTitle = `Weekly Report - Week ${week}, ${year}`;
         } else {
-          // Default to current week
+          
           const today = new Date();
           const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
           startOfWeek.setHours(0, 0, 0, 0);
@@ -155,7 +151,7 @@ export const getSalesData = catchAsyncError(async (req, res, next) => {
           };
           reportTitle = `Monthly Report - ${formatDate(startOfMonth, 'MMMM YYYY')}`;
         } else {
-          // Default to current month
+          
           const today = new Date();
           const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
           const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
@@ -174,7 +170,7 @@ export const getSalesData = catchAsyncError(async (req, res, next) => {
         if (startDate && endDate) {
           const start = new Date(startDate);
           const end = new Date(endDate);
-          end.setHours(23, 59, 59, 999); // Include the entire end date
+          end.setHours(23, 59, 59, 999); 
           dateFilter = {
             orderDate: {
               $gte: start,
@@ -191,7 +187,7 @@ export const getSalesData = catchAsyncError(async (req, res, next) => {
         break;
         
       default:
-        // Default to current month if no filter specified
+        
         const today = new Date();
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
@@ -205,24 +201,24 @@ export const getSalesData = catchAsyncError(async (req, res, next) => {
         reportTitle = `Monthly Report - ${formatDate(new Date(), 'MMMM YYYY')}`;
     }
 
-    // Only include completed/delivered orders
+    
     const orderStatusFilter = {
       orderStatus: { $in: ['Delivered', 'Completed'] }
     };
 
     const combinedFilter = { ...dateFilter, ...orderStatusFilter };
 
-    // Get orders with populated data
+  
     const orders = await Order.find(combinedFilter)
       .populate('user', 'name email')
       .populate('items.product', 'productName')
       .sort({ orderDate: -1 });
 
-    // Calculate metrics
+   
     const totalSalesCount = orders.length;
     const totalSalesAmount = orders.reduce((sum, order) => sum + order.totalAmount, 0);
     
-    // Calculate total discounts from offers
+   
     const totalOfferDiscounts = orders.reduce((sum, order) => {
       return sum + order.items.reduce((itemSum, item) => {
         if (item.hasOffer && item.originalPrice && item.discountedPrice) {
@@ -232,15 +228,15 @@ export const getSalesData = catchAsyncError(async (req, res, next) => {
       }, 0);
     }, 0);
 
-    // Calculate total coupon deductions
+    
     const totalCouponDeductions = orders.reduce((sum, order) => {
       return sum + (order.couponDiscount || 0);
     }, 0);
 
-    // Calculate total discounts (offers + coupons)
+    
     const totalDiscounts = totalOfferDiscounts + totalCouponDeductions;
 
-    // Prepare order details for table
+    
     const orderDetails = orders.map(order => ({
       orderNumber: order.orderNumber,
       orderDate: order.orderDate,
@@ -259,7 +255,7 @@ export const getSalesData = catchAsyncError(async (req, res, next) => {
       itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0)
     }));
 
-    // Group orders by date for chart data
+  
     const dailySales = {};
     orders.forEach(order => {
       const dateKey = formatDate(order.orderDate, 'YYYY-MM-DD');
@@ -307,14 +303,12 @@ export const getSalesData = catchAsyncError(async (req, res, next) => {
   }
 });
 
-/**
- * Export sales report as PDF
- */
+
 export const exportSalesReportPDF = catchAsyncError(async (req, res, next) => {
   try {
     const { filterType, startDate, endDate, selectedDate, selectedWeek, selectedMonth } = req.query;
     
-    // Get the same data as the main report
+   
     const salesDataResponse = await getSalesDataInternal({
       filterType, startDate, endDate, selectedDate, selectedWeek, selectedMonth
     });
@@ -325,23 +319,23 @@ export const exportSalesReportPDF = catchAsyncError(async (req, res, next) => {
 
     const { data } = salesDataResponse;
 
-    // Create PDF document
+  
     const doc = new PDFDocument({ margin: 50 });
     
-    // Set response headers
+    
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="sales-report-${formatDate(new Date(), 'YYYY-MM-DD')}.pdf"`);
     
-    // Pipe the PDF to response
+   
     doc.pipe(res);
 
-    // Add header
+   
     doc.fontSize(20).text('LUXE SCENTS', 50, 50);
     doc.fontSize(16).text('Sales Report', 50, 80);
     doc.fontSize(12).text(data.reportTitle, 50, 110);
     doc.text(`Generated on: ${formatDate(new Date(), 'MMMM DD, YYYY')} ${new Date().toLocaleTimeString()}`, 50, 130);
 
-    // Add metrics summary
+   
     doc.fontSize(14).text('Summary', 50, 170);
     doc.fontSize(10);
     doc.text(`Total Sales Count: ${data.metrics.totalSalesCount}`, 50, 195);
@@ -350,14 +344,14 @@ export const exportSalesReportPDF = catchAsyncError(async (req, res, next) => {
     doc.text(`Total Coupon Deductions: ₹${data.metrics.totalCouponDeductions.toFixed(2)}`, 50, 240);
     doc.text(`Average Order Value: ₹${data.metrics.averageOrderValue.toFixed(2)}`, 50, 255);
 
-    // Add orders table
+   
     if (data.orders.length > 0) {
       doc.fontSize(12).text('Order Details', 50, 290);
       
       let yPosition = 320;
       const pageHeight = doc.page.height - 100;
 
-      // Table headers
+      
       doc.fontSize(8);
       doc.text('Order #', 50, yPosition);
       doc.text('Date', 120, yPosition);
@@ -368,7 +362,7 @@ export const exportSalesReportPDF = catchAsyncError(async (req, res, next) => {
       
       yPosition += 20;
 
-      // Table rows
+     
       data.orders.forEach((order, index) => {
         if (yPosition > pageHeight) {
           doc.addPage();
@@ -386,7 +380,7 @@ export const exportSalesReportPDF = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Finalize the PDF
+    
     doc.end();
 
   } catch (error) {
@@ -398,14 +392,12 @@ export const exportSalesReportPDF = catchAsyncError(async (req, res, next) => {
   }
 });
 
-/**
- * Export sales report as Excel (CSV format)
- */
+
 export const exportSalesReportExcel = catchAsyncError(async (req, res, next) => {
   try {
     const { filterType, startDate, endDate, selectedDate, selectedWeek, selectedMonth } = req.query;
     
-    // Get the same data as the main report
+   
     const salesDataResponse = await getSalesDataInternal({
       filterType, startDate, endDate, selectedDate, selectedWeek, selectedMonth
     });
@@ -416,42 +408,41 @@ export const exportSalesReportExcel = catchAsyncError(async (req, res, next) => 
 
     const { data } = salesDataResponse;
 
-    // Create CSV content
+   
     let csvContent = '';
     
-    // Add header information
+   
     csvContent += 'LUXE SCENTS - Sales Report\n';
     csvContent += `${data.reportTitle}\n`;
     csvContent += `Generated on: ${formatDate(new Date(), 'MMMM DD, YYYY')} ${new Date().toLocaleTimeString()}\n`;
-    csvContent += '\n'; // Empty row
+    csvContent += '\n'; 
 
-    // Add summary metrics
+    
     csvContent += 'SUMMARY\n';
     csvContent += `Total Sales Count,${data.metrics.totalSalesCount}\n`;
     csvContent += `Total Sales Amount,₹${data.metrics.totalSalesAmount.toFixed(2)}\n`;
     csvContent += `Total Offer Discounts,₹${data.metrics.totalOfferDiscounts.toFixed(2)}\n`;
     csvContent += `Total Coupon Deductions,₹${data.metrics.totalCouponDeductions.toFixed(2)}\n`;
     csvContent += `Average Order Value,₹${data.metrics.averageOrderValue.toFixed(2)}\n`;
-    csvContent += '\n'; // Empty row
+    csvContent += '\n'; 
 
-    // Add order details table
+   
     if (data.orders.length > 0) {
       csvContent += 'ORDER DETAILS\n';
       
-      // Headers
+     
       csvContent += 'Order Number,Order Date,Customer Name,Customer Email,Total Amount,Order Status,Payment Method,Offer Discount,Coupon Discount,Total Discount,Item Count\n';
 
-      // Add data rows
+     
       data.orders.forEach(order => {
         csvContent += `${order.orderNumber},${formatDate(order.orderDate, 'YYYY-MM-DD HH:mm')},${order.customerName},${order.customerEmail},${order.totalAmount},${order.orderStatus},${order.paymentMethod},${order.offerDiscount},${order.couponDiscount},${order.offerDiscount + order.couponDiscount},${order.itemCount}\n`;
       });
     }
 
-    // Set response headers for CSV download
+   
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="sales-report-${formatDate(new Date(), 'YYYY-MM-DD')}.csv"`);
 
-    // Send CSV content
     res.send(csvContent);
 
   } catch (error) {
@@ -463,14 +454,12 @@ export const exportSalesReportExcel = catchAsyncError(async (req, res, next) => 
   }
 });
 
-/**
- * Internal function to get sales data (reusable for exports)
- */
+
 async function getSalesDataInternal(params) {
   try {
     const { filterType, startDate, endDate, selectedDate, selectedWeek, selectedMonth } = params;
     
-    // Build date filter based on filter type (same logic as getSalesData)
+  
     let dateFilter = {};
     let reportTitle = '';
     

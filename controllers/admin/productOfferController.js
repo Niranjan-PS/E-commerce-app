@@ -3,10 +3,10 @@ import { Product } from "../../model/productModel.js";
 import { catchAsyncError } from "../../middlewares/catchAsync.js";
 import ErrorHandler from "../../middlewares/error.js";
 
-// Get all product offers
+
 export const getProductOffers = catchAsyncError(async (req, res, next) => {
   try {
-    // Auto-disable expired offers
+   
     await ProductOffer.disableExpiredOffers();
 
     const page = parseInt(req.query.page) || 1;
@@ -18,7 +18,7 @@ export const getProductOffers = catchAsyncError(async (req, res, next) => {
     let query = {};
     
     if (search) {
-      // Search by offer name or product name
+      
       const products = await Product.find({
         productName: new RegExp(search, 'i')
       }).select('_id');
@@ -58,7 +58,7 @@ export const getProductOffers = catchAsyncError(async (req, res, next) => {
     const totalOffers = await ProductOffer.countDocuments(query);
     const totalPages = Math.ceil(totalOffers / limit);
 
-    // Calculate statistics
+   
     const now = new Date();
     const stats = {
       total: await ProductOffer.countDocuments(),
@@ -93,7 +93,7 @@ export const getProductOffers = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Get add product offer page
+
 export const getAddProductOffer = catchAsyncError(async (req, res, next) => {
   try {
     const products = await Product.find({
@@ -112,7 +112,7 @@ export const getAddProductOffer = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Create new product offer
+
 export const createProductOffer = catchAsyncError(async (req, res, next) => {
   try {
     const {
@@ -124,9 +124,9 @@ export const createProductOffer = catchAsyncError(async (req, res, next) => {
       description
     } = req.body;
 
-    console.log('Creating product offer with data:', req.body);
+    console.log('Creating product offer data:', req.body);
 
-    // Validation
+   
     if (!product || !offerName || !discountPercentage || !startDate || !endDate) {
       return res.status(400).json({
         success: false,
@@ -134,7 +134,7 @@ export const createProductOffer = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Validate discount percentage
+    
     const discount = parseFloat(discountPercentage);
     if (discount < 1 || discount > 90) {
       return res.status(400).json({
@@ -143,7 +143,7 @@ export const createProductOffer = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Validate dates
+    
     const start = new Date(startDate);
     const end = new Date(endDate);
     const now = new Date();
@@ -162,7 +162,7 @@ export const createProductOffer = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Check if product exists
+   
     const productExists = await Product.findById(product);
     if (!productExists) {
       return res.status(404).json({
@@ -171,7 +171,7 @@ export const createProductOffer = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Check for overlapping offers
+   
     const hasOverlap = await ProductOffer.hasOverlappingOffer(product, start, end);
     if (hasOverlap) {
       return res.status(400).json({
@@ -180,7 +180,7 @@ export const createProductOffer = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Create offer
+ 
     const offer = new ProductOffer({
       product,
       offerName: offerName.trim(),
@@ -221,7 +221,7 @@ export const createProductOffer = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Get edit product offer page
+
 export const getEditProductOffer = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -248,7 +248,7 @@ export const getEditProductOffer = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Update product offer
+
 export const updateProductOffer = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -270,7 +270,7 @@ export const updateProductOffer = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Validation
+   
     if (!product || !offerName || !discountPercentage || !startDate || !endDate) {
       return res.status(400).json({
         success: false,
@@ -278,7 +278,7 @@ export const updateProductOffer = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Validate discount percentage
+   
     const discount = parseFloat(discountPercentage);
     if (discount < 1 || discount > 90) {
       return res.status(400).json({
@@ -287,7 +287,7 @@ export const updateProductOffer = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Validate dates
+   
     const start = new Date(startDate);
     const end = new Date(endDate);
 
@@ -298,7 +298,7 @@ export const updateProductOffer = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Check for overlapping offers (excluding current offer)
+    
     if (product !== offer.product.toString() || 
         start.getTime() !== offer.startDate.getTime() || 
         end.getTime() !== offer.endDate.getTime()) {
@@ -312,7 +312,7 @@ export const updateProductOffer = catchAsyncError(async (req, res, next) => {
       }
     }
 
-    // Update offer
+   
     offer.product = product;
     offer.offerName = offerName.trim();
     offer.discountPercentage = discount;
@@ -345,7 +345,7 @@ export const updateProductOffer = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Delete product offer
+
 export const deleteProductOffer = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -373,7 +373,7 @@ export const deleteProductOffer = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Toggle product offer status
+
 export const toggleProductOfferStatus = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -403,7 +403,7 @@ export const toggleProductOfferStatus = catchAsyncError(async (req, res, next) =
   }
 });
 
-// Get product offer details
+
 export const getProductOfferDetails = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;
