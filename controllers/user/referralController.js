@@ -5,15 +5,13 @@ import { Referral } from '../../model/referralModel.js';
 import { ensureReferralRecord } from '../../utils/ensureReferralRecord.js';
 import HttpStatus from '../../helpers/httpStatus.js';
 
-/**
- * Get user's referral dashboard
- */
+
 export const getReferralDashboard = catchAsyncError(async (req, res, next) => {
   try {
     const userId = req.user._id;
     const userName = req.user.name;
     
-    // Ensure referral record exists
+    
     await ensureReferralRecord(userId, userName);
     
     const referralInfo = await getUserReferralInfo(userId);
@@ -38,15 +36,12 @@ export const getReferralDashboard = catchAsyncError(async (req, res, next) => {
   }
 });
 
-/**
- * Generate referral link for sharing
- */
 export const generateShareableLink = catchAsyncError(async (req, res, next) => {
   try {
     const userId = req.user._id;
     const userName = req.user.name;
     
-    // Ensure referral record exists
+   
     await ensureReferralRecord(userId, userName);
     
     const referralLink = await generateReferralLink(userId);
@@ -67,9 +62,7 @@ export const generateShareableLink = catchAsyncError(async (req, res, next) => {
   }
 });
 
-/**
- * Get referral statistics for the user
- */
+
 export const getReferralStats = catchAsyncError(async (req, res, next) => {
   try {
     const userId = req.user._id;
@@ -102,9 +95,7 @@ export const getReferralStats = catchAsyncError(async (req, res, next) => {
   }
 });
 
-/**
- * Validate referral code (for frontend validation)
- */
+
 export const validateReferralCode = catchAsyncError(async (req, res, next) => {
   try {
     const { code } = req.body;
@@ -151,15 +142,13 @@ export const validateReferralCode = catchAsyncError(async (req, res, next) => {
   }
 });
 
-/**
- * Render referral dashboard page
- */
+
 export const renderReferralDashboard = catchAsyncError(async (req, res, next) => {
   try {
     const userId = req.user._id;
     const userName = req.user.name;
     
-    // Ensure referral record exists
+    
     await ensureReferralRecord(userId, userName);
     
     const referralInfo = await getUserReferralInfo(userId);
@@ -169,7 +158,7 @@ export const renderReferralDashboard = catchAsyncError(async (req, res, next) =>
       title: 'Referral Dashboard',
       user,
       referralInfo,
-      baseUrl: process.env.BASE_URL || 'http://localhost:3000'
+      baseUrl: process.env.BASE_URL || 'http://localhost:4003'
     });
   } catch (error) {
     console.error('Error rendering referral dashboard:', error);

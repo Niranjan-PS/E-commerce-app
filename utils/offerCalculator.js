@@ -1,12 +1,7 @@
 import { ProductOffer } from "../model/productOfferModel.js";
 import { CategoryOffer } from "../model/categoryOfferModel.js";
 
-/**
- * Calculate the best offer price for a product
- * @param {Object} product - Product object with populated category
- * @param {Date} date - Date to check offers against (defaults to current date)
- * @returns {Object} - Object containing original price, discounted price, offer details, and savings
- */
+
 export const calculateBestOfferPrice = async (product, date = new Date()) => {
   try {
     const originalPrice = product.price;
@@ -14,13 +9,12 @@ export const calculateBestOfferPrice = async (product, date = new Date()) => {
     let bestDiscountPercentage = 0;
     let offerType = null;
 
-    // Store all available offers for comparison
     const availableOffers = {
       productOffer: null,
       categoryOffer: null
     };
 
-    // Check for product-specific offers
+   
     const productOffer = await ProductOffer.findActiveOfferForProduct(product._id, date);
     if (productOffer) {
       availableOffers.productOffer = {
@@ -39,7 +33,7 @@ export const calculateBestOfferPrice = async (product, date = new Date()) => {
       }
     }
 
-    // Check for category offers
+   
     if (product.category && product.category._id) {
       const categoryOffer = await CategoryOffer.findActiveOfferForCategory(product.category._id, date);
       if (categoryOffer) {
@@ -60,7 +54,7 @@ export const calculateBestOfferPrice = async (product, date = new Date()) => {
       }
     }
 
-    // Calculate discounted price
+   
     let discountedPrice = originalPrice;
     let savings = 0;
     let offerDetails = null;
@@ -80,7 +74,7 @@ export const calculateBestOfferPrice = async (product, date = new Date()) => {
         endDate: bestOffer.endDate
       };
 
-      // Create detailed applied offer information
+      
       appliedOfferInfo = {
         appliedOffer: offerDetails,
         availableOffers: availableOffers,
@@ -108,7 +102,7 @@ export const calculateBestOfferPrice = async (product, date = new Date()) => {
 
   } catch (error) {
     console.error('Error calculating best offer price:', error);
-    // Return original price if there's an error
+   
     return {
       originalPrice: product.price,
       discountedPrice: product.price,
@@ -121,12 +115,7 @@ export const calculateBestOfferPrice = async (product, date = new Date()) => {
   }
 };
 
-/**
- * Calculate offer prices for multiple products
- * @param {Array} products - Array of product objects with populated categories
- * @param {Date} date - Date to check offers against (defaults to current date)
- * @returns {Array} - Array of products with offer calculations
- */
+
 export const calculateOfferPricesForProducts = async (products, date = new Date()) => {
   try {
     const productsWithOffers = await Promise.all(
@@ -150,23 +139,12 @@ export const calculateOfferPricesForProducts = async (products, date = new Date(
   }
 };
 
-/**
- * Get the effective price for a product (considering offers)
- * @param {Object} product - Product object
- * @param {Date} date - Date to check offers against
- * @returns {Number} - Effective price to use
- */
+
 export const getEffectivePrice = async (product, date = new Date()) => {
   const offerCalculation = await calculateBestOfferPrice(product, date);
   return offerCalculation.discountedPrice;
 };
 
-/**
- * Check if a product has an active offer
- * @param {Object} product - Product object with populated category
- * @param {Date} date - Date to check offers against
- * @returns {Boolean} - Whether product has an active offer
- */
 export const hasActiveOffer = async (product, date = new Date()) => {
   const offerCalculation = await calculateBestOfferPrice(product, date);
   return offerCalculation.hasOffer;

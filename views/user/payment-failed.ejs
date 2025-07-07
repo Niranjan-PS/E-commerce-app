@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Failed - Luxe Scents</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    :root {
+      --primary-color: #6200ea;
+      --secondary-color: #f8f9fa;
+      --success-color: #28a745;
+      --danger-color: #dc3545;
+      --warning-color: #ffc107;
+      --info-color: #17a2b8;
+      --dark-color: #343a40;
+      --light-color: #f8f9fa;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--dark-color);
+    }
+
+    .failure-container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      padding: 3rem;
+      text-align: center;
+      max-width: 600px;
+      width: 90%;
+      margin: 2rem;
+    }
+
+    .failure-icon {
+      width: 120px;
+      height: 120px;
+      background: linear-gradient(135deg, var(--danger-color), #e74c3c);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 2rem;
+      animation: failurePulse 2s ease-in-out infinite;
+    }
+
+    .failure-icon i {
+      font-size: 3rem;
+      color: white;
+    }
+
+    @keyframes failurePulse {
+      0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+      }
+      70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 20px rgba(220, 53, 69, 0);
+      }
+      100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+      }
+    }
+
+    .failure-title {
+      color: var(--danger-color);
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    .failure-message {
+      font-size: 1.2rem;
+      color: #666;
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    .order-info {
+      background: var(--light-color);
+      border-radius: 15px;
+      padding: 1.5rem;
+      margin: 2rem 0;
+      border-left: 5px solid var(--danger-color);
+    }
+
+    .order-info h5 {
+      color: var(--primary-color);
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #e9ecef;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      color: #666;
+      font-weight: 500;
+    }
+
+    .info-value {
+      font-weight: 600;
+      color: var(--dark-color);
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 2rem;
+    }
+
+    .btn-primary-custom {
+      background: linear-gradient(135deg, var(--primary-color), #bb86fc);
+      border: none;
+      border-radius: 25px;
+      padding: 0.8rem 2rem;
+      font-weight: 600;
+      color: white;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary-custom:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(98, 0, 234, 0.3);
+      color: white;
+    }
+
+    .btn-danger-custom {
+      background: linear-gradient(135deg, var(--danger-color), #e74c3c);
+      border: none;
+      border-radius: 25px;
+      padding: 0.8rem 2rem;
+      font-weight: 600;
+      color: white;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-danger-custom:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(220, 53, 69, 0.3);
+      color: white;
+    }
+
+    .btn-secondary-custom {
+      background: white;
+      border: 2px solid var(--primary-color);
+      border-radius: 25px;
+      padding: 0.8rem 2rem;
+      font-weight: 600;
+      color: var(--primary-color);
+      text-decoration: none;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-secondary-custom:hover {
+      background: var(--primary-color);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(98, 0, 234, 0.3);
+    }
+
+    .help-section {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .help-section h6 {
+      color: #856404;
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+
+    .help-section ul {
+      color: #856404;
+      text-align: left;
+      margin: 0;
+      padding-left: 1.5rem;
+    }
+
+    .help-section li {
+      margin-bottom: 0.5rem;
+    }
+
+    .loading-spinner {
+      display: none;
+      margin: 1rem 0;
+    }
+
+    @media (max-width: 768px) {
+      .failure-container {
+        padding: 2rem 1.5rem;
+        margin: 1rem;
+      }
+
+      .failure-title {
+        font-size: 2rem;
+      }
+
+      .failure-message {
+        font-size: 1.1rem;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .btn-primary-custom,
+      .btn-danger-custom,
+      .btn-secondary-custom {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="failure-container">
+    <!-- Failure Icon -->
+    <div class="failure-icon">
+      <i class="fas fa-times"></i>
+    </div>
+
+    <!-- Failure Message -->
+    <h1 class="failure-title">Payment Failed</h1>
+    <p class="failure-message">
+      We're sorry, but your payment could not be processed. Please try again or use a different payment method.
+    </p>
+
+    <!-- Order Information -->
+    <div class="order-info" id="orderInfo">
+      <div class="loading-spinner text-center" id="loadingSpinner">
+        <div class="spinner-border text-danger" role="status">
+          <span class="visually-hidden">Loading order details...</span>
+        </div>
+        <p class="mt-2">Loading order details...</p>
+      </div>
+      
+      <div id="orderDetails" style="display: none;">
+        <h5><i class="fas fa-exclamation-triangle me-2"></i>Order Status</h5>
+        <div class="info-row">
+          <span class="info-label">Order Number:</span>
+          <span class="info-value" id="orderNumber">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Total Amount:</span>
+          <span class="info-value" id="totalAmount">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Payment Method:</span>
+          <span class="info-value" id="paymentMethod">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Payment Status:</span>
+          <span class="info-value text-danger" id="paymentStatus">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Order Status:</span>
+          <span class="info-value text-warning" id="orderStatus">-</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <button class="btn-danger-custom" id="retryPaymentBtn" onclick="retryPayment()" style="display: none;">
+        <i class="fas fa-redo"></i>
+        Retry Payment
+      </button>
+      <a href="#" class="btn-primary-custom" id="viewOrderBtn" style="display: none;">
+        <i class="fas fa-eye"></i>
+        View Order Details
+      </a>
+      <a href="/checkout" class="btn-secondary-custom">
+        <i class="fas fa-shopping-cart"></i>
+        Back to Checkout
+      </a>
+    </div>
+
+    <!-- Help Section -->
+    <div class="help-section">
+      <h6><i class="fas fa-question-circle me-2"></i>Why did my payment fail?</h6>
+      <ul>
+        <li>Insufficient funds in your account</li>
+        <li>Incorrect card details or expired card</li>
+        <li>Network connectivity issues</li>
+        <li>Bank security restrictions</li>
+        <li>Daily transaction limit exceeded</li>
+      </ul>
+    </div>
+
+    <!-- Additional Information -->
+    <div class="mt-4">
+      <p class="text-muted">
+        <i class="fas fa-headset me-2"></i>
+        Need help? Contact our customer support at <strong>support@luxescents.com</strong> or call <strong>+91 9876543210</strong>
+      </p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+    // Get order ID from URL
+    const orderId = '<%= orderId %>';
+    let orderData = null;
+
+    // Load order details
+    async function loadOrderDetails() {
+      try {
+        const response = await fetch(`/orders/${orderId}`);
+        
+        if (response.ok) {
+          // If we can access the order details page, show the link
+          const orderDetailsUrl = `/orders/${orderId}`;
+          document.getElementById('viewOrderBtn').href = orderDetailsUrl;
+          document.getElementById('viewOrderBtn').style.display = 'inline-flex';
+          
+          // Show retry payment button
+          document.getElementById('retryPaymentBtn').style.display = 'inline-flex';
+          
+          // Try to get order data for display
+          try {
+            const orderResponse = await fetch(`/payment/status/${orderId}`);
+            const result = await orderResponse.json();
+            
+            if (result.success) {
+              orderData = result;
+              displayOrderDetails(result);
+            } else {
+              showBasicOrderInfo();
+            }
+          } catch (error) {
+            console.log('Could not fetch order status, showing basic info');
+            showBasicOrderInfo();
+          }
+        } else {
+          showBasicOrderInfo();
+        }
+      } catch (error) {
+        console.error('Error loading order details:', error);
+        showBasicOrderInfo();
+      }
+    }
+
+    function displayOrderDetails(orderData) {
+      document.getElementById('loadingSpinner').style.display = 'none';
+      document.getElementById('orderDetails').style.display = 'block';
+      
+      document.getElementById('paymentStatus').textContent = orderData.paymentStatus || 'Failed';
+      document.getElementById('orderStatus').textContent = orderData.orderStatus || 'Pending Payment';
+      
+      // Show basic info
+      document.getElementById('orderNumber').textContent = `Order created - Payment pending`;
+      document.getElementById('totalAmount').textContent = 'Payment failed';
+      document.getElementById('paymentMethod').textContent = 'Online Payment (Razorpay)';
+    }
+
+    function showBasicOrderInfo() {
+      document.getElementById('loadingSpinner').style.display = 'none';
+      document.getElementById('orderDetails').style.display = 'block';
+      
+      document.getElementById('orderNumber').textContent = 'Order created - Payment pending';
+      document.getElementById('totalAmount').textContent = 'Payment failed';
+      document.getElementById('paymentMethod').textContent = 'Online Payment (Razorpay)';
+      document.getElementById('paymentStatus').textContent = 'Failed';
+      document.getElementById('orderStatus').textContent = 'Pending Payment';
+    }
+
+    // Retry payment function
+    async function retryPayment() {
+      if (!orderId) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Order information not found. Please try placing a new order.',
+          confirmButtonColor: '#6200ea'
+        });
+        return;
+      }
+
+      try {
+        // Disable retry button
+        const retryBtn = document.getElementById('retryPaymentBtn');
+        const originalText = retryBtn.innerHTML;
+        retryBtn.disabled = true;
+        retryBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+
+        // Create new Razorpay order for the existing order
+        const response = await fetch('/payment/create-order', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ orderId: orderId })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.message || 'Failed to create payment order');
+        }
+
+        // Configure Razorpay options
+        const options = {
+          key: result.razorpayKeyId,
+          amount: result.razorpayOrder.amount,
+          currency: result.razorpayOrder.currency,
+          name: 'Luxe Scents',
+          description: `Order #${result.order.orderNumber}`,
+          order_id: result.razorpayOrder.id,
+          prefill: {
+            name: result.user.name,
+            email: result.user.email,
+            contact: result.user.phone
+          },
+          theme: {
+            color: '#6200ea'
+          },
+          modal: {
+            ondismiss: function() {
+              // Re-enable retry button if payment modal is closed
+              retryBtn.disabled = false;
+              retryBtn.innerHTML = originalText;
+            }
+          },
+          handler: async function(response) {
+            // Payment successful - verify on server
+            await verifyPayment(response, orderId);
+          }
+        };
+
+        // Open Razorpay checkout
+        const rzp = new Razorpay(options);
+        
+        rzp.on('payment.failed', async function(response) {
+          // Handle payment failure
+          await handlePaymentFailure(orderId, response.error);
+          retryBtn.disabled = false;
+          retryBtn.innerHTML = originalText;
+        });
+
+        rzp.open();
+
+      } catch (error) {
+        console.error('Error retrying payment:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Payment Error',
+          text: error.message || 'Failed to initiate payment',
+          confirmButtonColor: '#6200ea'
+        });
+
+        // Re-enable retry button
+        const retryBtn = document.getElementById('retryPaymentBtn');
+        retryBtn.disabled = false;
+        retryBtn.innerHTML = '<i class="fas fa-redo me-2"></i>Retry Payment';
+      }
+    }
+
+    // Verify payment on server
+    async function verifyPayment(razorpayResponse, orderId) {
+      try {
+        const response = await fetch('/payment/verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            razorpay_order_id: razorpayResponse.razorpay_order_id,
+            razorpay_payment_id: razorpayResponse.razorpay_payment_id,
+            razorpay_signature: razorpayResponse.razorpay_signature,
+            orderId: orderId
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Payment verified successfully
+          Swal.fire({
+            icon: 'success',
+            title: 'Payment Successful!',
+            text: 'Your payment has been processed successfully.',
+            confirmButtonColor: '#6200ea',
+            timer: 2000,
+            timerProgressBar: true
+          }).then(() => {
+            window.location.href = result.redirectUrl;
+          });
+        } else {
+          // Payment verification failed
+          Swal.fire({
+            icon: 'error',
+            title: 'Verification Failed',
+            text: 'Payment verification failed. Please contact support.',
+            confirmButtonColor: '#6200ea'
+          });
+        }
+
+      } catch (error) {
+        console.error('Error verifying payment:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Verification Error',
+          text: 'Payment verification failed. Please contact support.',
+          confirmButtonColor: '#6200ea'
+        });
+      }
+    }
+
+    // Handle payment failure
+    async function handlePaymentFailure(orderId, error) {
+      try {
+        const response = await fetch('/payment/failure', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            orderId: orderId,
+            error: error
+          })
+        });
+
+        const result = await response.json();
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Payment Failed',
+          text: error.description || 'Payment was not completed',
+          confirmButtonColor: '#6200ea'
+        });
+
+      } catch (err) {
+        console.error('Error handling payment failure:', err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Payment Failed',
+          text: error.description || 'Payment was not completed',
+          confirmButtonColor: '#6200ea'
+        });
+      }
+    }
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+      loadOrderDetails();
+      
+      // Show failure animation
+      setTimeout(() => {
+        document.querySelector('.failure-icon').style.animation = 'failurePulse 2s ease-in-out infinite';
+      }, 500);
+    });
+  </script>
+</body>
+</html>

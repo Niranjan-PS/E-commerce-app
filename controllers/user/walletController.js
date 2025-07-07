@@ -21,7 +21,7 @@ export const addReturnAmountToWallet = async (userId, amount, orderId) => {
         const transactionId = `TRN-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
         wallet.transactions.push({
             transactionId: transactionId,
-            description: `Refund for Order #${orderId || 'N/A'}`, 
+            description: `Refund for Order Return #${orderId || 'N/A'}`, 
             amount: amount,
             date: new Date()
         });
@@ -30,6 +30,35 @@ export const addReturnAmountToWallet = async (userId, amount, orderId) => {
         return wallet;
     } catch (error) {
         console.error(`Error adding amount to wallet for user ${userId}:`, error);
+        throw error; 
+    }
+};
+
+export const addCancellationRefundToWallet = async (userId, amount, orderId) => {
+    try {
+        if (!userId || typeof amount !== 'number' || amount <= 0) {
+            console.error("Invalid arguments for addCancellationRefundToWallet:", { userId, amount, orderId });
+            throw new Error('Invalid user ID or amount provided for wallet credit.');
+        }
+        let wallet = await Wallet.findOne({ userId });
+
+        if (!wallet) {
+            wallet = new Wallet({ userId, balance: 0, transactions: [] });
+            console.log(`New wallet created for user: ${userId}`);
+        }
+        wallet.balance += amount;
+        const transactionId = `TRN-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+        wallet.transactions.push({
+            transactionId: transactionId,
+            description: `Refund for Order Cancellation #${orderId || 'N/A'}`, 
+            amount: amount,
+            date: new Date()
+        });
+        await wallet.save();
+        console.log(`Cancellation refund ${amount} added to wallet for user ${userId}. New balance: ${wallet.balance}`);
+        return wallet;
+    } catch (error) {
+        console.error(`Error adding cancellation refund to wallet for user ${userId}:`, error);
         throw error; 
     }
 };

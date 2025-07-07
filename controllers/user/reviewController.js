@@ -10,13 +10,7 @@ export const addReview = catchAsyncError(async (req, res, next) => {
     const { productId, rating, comment } = req.body;
     const userId = req.user._id;
 
-    console.log('=== ADD REVIEW DEBUG ===');
-    console.log('Request user:', req.user);
-    console.log('User ID:', userId);
-    console.log('User name:', req.user.name);
-    console.log('User email:', req.user.email);
-    console.log('User isAdmin:', req.user.isAdmin);
-
+        
    
     if (!productId || !rating || !comment) {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -69,9 +63,6 @@ export const addReview = catchAsyncError(async (req, res, next) => {
 
     
     await review.populate('user', 'name email');
-
-    console.log('Review created with user:', review.user);
-    console.log('Current user from req.user:', req.user);
 
     res.status(HttpStatus.CREATED).json({
       success: true,

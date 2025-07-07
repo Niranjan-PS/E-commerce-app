@@ -4,20 +4,18 @@ import { Wallet } from '../model/walletModel.js';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
 
-// Referral reward amounts
+
 const REFERRAL_REWARDS = {
-  REFERRER_BONUS: 100,  // Amount referrer gets
-  REFERRED_BONUS: 50    // Amount new user gets
+  REFERRER_BONUS: 100,  
+  REFERRED_BONUS: 50    
 };
 
-/**
- * Create referral record for a new user
- */
+
 export const createReferralRecord = async (userId, userName) => {
   try {
     console.log('Creating referral record for user:', userId, 'name:', userName);
     
-    // Generate unique referral code and token
+  
     let referralCode, referralToken;
     let isUnique = false;
     let attempts = 0;
@@ -29,7 +27,7 @@ export const createReferralRecord = async (userId, userName) => {
       
       console.log(`Attempt ${attempts + 1}: Generated code: ${referralCode}, token: ${referralToken}`);
       
-      // Check if code and token are unique
+     
       const existingReferral = await Referral.findOne({
         $or: [
           { referralCode },
@@ -50,7 +48,7 @@ export const createReferralRecord = async (userId, userName) => {
       throw new Error('Failed to generate unique referral code after multiple attempts');
     }
 
-    // Create referral record
+    
     const referral = new Referral({
       userId,
       referralCode,
@@ -68,33 +66,31 @@ export const createReferralRecord = async (userId, userName) => {
   }
 };
 
-/**
- * Validate referral code or token
- */
+
 export const validateReferral = async (identifier, newUserEmail, ipAddress) => {
   try {
     if (!identifier) {
       return { valid: false, message: 'No referral identifier provided' };
     }
 
-    // Find referral by code or token
+  
     const referral = await Referral.findByCodeOrToken(identifier);
     
     if (!referral) {
       return { valid: false, message: 'Invalid referral code or token' };
     }
 
-    // Check if referrer user exists and is active
+    
     if (!referral.userId || referral.userId.isBlocked) {
       return { valid: false, message: 'Referrer account is not active' };
     }
 
-    // Check if the new user is trying to refer themselves
+   
     if (referral.userId.email === newUserEmail) {
       return { valid: false, message: 'You cannot refer yourself' };
     }
 
-    // Check for IP abuse (same IP used recently)
+   
     if (ipAddress && referral.hasRecentIPUsage(ipAddress, 24)) {
       return { 
         valid: false, 
@@ -102,7 +98,7 @@ export const validateReferral = async (identifier, newUserEmail, ipAddress) => {
       };
     }
 
-    // Check if user has already been referred by this referrer
+   
     const existingReferral = referral.successfulReferrals.find(
       ref => ref.referredUserEmail === newUserEmail
     );
@@ -123,66 +119,121 @@ export const validateReferral = async (identifier, newUserEmail, ipAddress) => {
   }
 };
 
-/**
- * Process referral rewards after successful registration
- */
+
 export const processReferralRewards = async (newUserId, referralData, ipAddress, userAgent) => {
   const session = await mongoose.startSession();
   
   try {
+   
+    
+    let transactionResult = null;
+    
     await session.withTransaction(async () => {
       const { referral, referrer } = referralData;
       
-      // Get the new user
+      console.log(`[Referral] Processing referral: ${referral._id}, referrer: ${referrer._id}`);
+
+     
       const newUser = await User.findById(newUserId).session(session);
       if (!newUser) {
         throw new Error('New user not found');
       }
 
-      // Update new user with referral information
-      newUser.referredBy = referrer._id;
-      newUser.referralMethod = referral.referralCode ? 'code' : 'token';
-      newUser.referralRewardReceived = true;
-      newUser.referralRewardAmount = REFERRAL_REWARDS.REFERRED_BONUS;
-      newUser.wallet += REFERRAL_REWARDS.REFERRED_BONUS;
-      await newUser.save({ session });
+     
+      if (newUser.referralRewardReceived) {
+        
+        transactionResult = {
+          success: false,
+          message: 'Referral bonus already given to this user.'
+        };
+        return;
+      }
 
-      // Update referrer's wallet
+     
       const referrerUser = await User.findById(referrer._id).session(session);
       if (!referrerUser) {
         throw new Error('Referrer user not found');
       }
-      
-      referrerUser.wallet += REFERRAL_REWARDS.REFERRER_BONUS;
-      await referrerUser.save({ session });
 
-      // Update referrer's wallet transactions
-      const referrerWallet = await Wallet.findOne({ userId: referrer._id }).session(session);
-      if (referrerWallet) {
-        referrerWallet.balance += REFERRAL_REWARDS.REFERRER_BONUS;
-        referrerWallet.transactions.push({
-          transactionId: `REF_${Date.now()}_${referrer._id}`,
-          description: `Referral Bonus - ${newUser.name} joined using your referral`,
-          amount: REFERRAL_REWARDS.REFERRER_BONUS,
-          date: new Date()
-        });
-        await referrerWallet.save({ session });
+      
+
+     
+      newUser.referredBy = referrer._id;
+      newUser.referralMethod = referral.referralCode ? 'code' : 'token';
+      newUser.referralRewardReceived = true;
+      newUser.referralRewardAmount = REFERRAL_REWARDS.REFERRED_BONUS;
+      newUser.showReferralToast = true;
+
+     
+      try {
+        const { Coupon } = await import('../model/couponModel.js');
+        const now = new Date();
+        
+        const coupon = await Coupon.findOne({
+          isActive: true,
+          validFrom: { $lte: now },
+          validUntil: { $gte: now },
+          $or: [
+            { usageLimit: null },
+            { $expr: { $lt: ['$usedCount', '$usageLimit'] } }
+          ]
+        }).sort({ validFrom: 1 }).session(session);
+        
+        if (coupon) {
+          
+          newUser.assignedCoupons = newUser.assignedCoupons || [];
+          if (!newUser.assignedCoupons.includes(coupon._id)) {
+            newUser.assignedCoupons.push(coupon._id);
+           
+          } else {
+            console.log(`[Referral] Coupon already assigned to new user ${newUser.email}`);
+          }
+        } else {
+          console.warn('[Referral] No active coupon found to assign to new user');
+        }
+      } catch (couponError) {
+        console.error('[Referral] Could not assign coupon, but continuing with referral credit.', couponError);
       }
 
-      // Update new user's wallet transactions
+      // Save the user with coupon
+      await newUser.save({ session });
+      console.log(`[Referral] Updated new user referral info and assigned coupons`);
+
+      
       const newUserWallet = await Wallet.findOne({ userId: newUserId }).session(session);
       if (newUserWallet) {
         newUserWallet.balance += REFERRAL_REWARDS.REFERRED_BONUS;
         newUserWallet.transactions.push({
           transactionId: `REF_${Date.now()}_${newUserId}`,
-          description: `Welcome Bonus - Referred by ${referrer.name}`,
+          description: 'Referral Bonus',
           amount: REFERRAL_REWARDS.REFERRED_BONUS,
           date: new Date()
         });
         await newUserWallet.save({ session });
+        console.log(`[Referral] Credited ₹${REFERRAL_REWARDS.REFERRED_BONUS} to new user ${newUser.email}`);
+      } else {
+        console.error(`[Referral] Wallet not found for new user ${newUser.email}`);
+        throw new Error('New user wallet not found');
       }
 
-      // Add successful referral to referral record
+      // Credit referrer's wallet
+      const referrerWallet = await Wallet.findOne({ userId: referrer._id }).session(session);
+      if (referrerWallet) {
+        referrerWallet.balance += REFERRAL_REWARDS.REFERRER_BONUS;
+        referrerWallet.transactions.push({
+          transactionId: `REF_${Date.now()}_${referrer._id}`,
+          description: 'Referral Reward',
+          amount: REFERRAL_REWARDS.REFERRER_BONUS,
+          date: new Date()
+        });
+        await referrerWallet.save({ session });
+        console.log(`[Referral] Credited ₹${REFERRAL_REWARDS.REFERRER_BONUS} to referrer ${referrerUser.email}`);
+      } else {
+        console.error(`[Referral] Wallet not found for referrer ${referrerUser.email}`);
+        throw new Error('Referrer wallet not found');
+      }
+
+     
       await referral.addSuccessfulReferral({
         referredUserId: newUserId,
         referredUserEmail: newUser.email,
@@ -194,30 +245,34 @@ export const processReferralRewards = async (newUserId, referralData, ipAddress,
         userAgent
       });
 
-      return {
+      console.log(`[Referral] Referral rewards processed successfully for new user ${newUser.email} and referrer ${referrerUser.email}`);
+      
+      transactionResult = {
         success: true,
         referrerReward: REFERRAL_REWARDS.REFERRER_BONUS,
         referredReward: REFERRAL_REWARDS.REFERRED_BONUS,
-        referrerName: referrer.name
+        referrerName: referrerUser.name
       };
     });
 
-    return {
+    console.log(`[Referral] Transaction completed, result:`, transactionResult);
+    
+    return transactionResult || {
       success: true,
       referrerReward: REFERRAL_REWARDS.REFERRER_BONUS,
       referredReward: REFERRAL_REWARDS.REFERRED_BONUS
     };
+    
   } catch (error) {
-    console.error('Error processing referral rewards:', error);
+    console.error('[Referral] Error processing referral rewards:', error);
+    console.error('[Referral] Error stack:', error.stack);
     throw error;
   } finally {
     await session.endSession();
   }
 };
 
-/**
- * Get user's referral information
- */
+
 export const getUserReferralInfo = async (userId) => {
   try {
     console.log('Getting referral info for user:', userId);
@@ -238,7 +293,7 @@ export const getUserReferralInfo = async (userId) => {
     const referralInfo = {
       referralCode: referral.referralCode,
       referralToken: referral.referralToken,
-      referralUrl: `${process.env.BASE_URL || 'http://localhost:3000'}/register?ref=${referral.referralToken}`,
+      referralUrl: `${process.env.BASE_URL || 'http://localhost:4003'}/register?ref=${referral.referralToken}`,
       stats: referral.getStats(),
       recentReferrals: referral.successfulReferrals
         .sort((a, b) => b.referralDate - a.referralDate)
@@ -260,9 +315,7 @@ export const getUserReferralInfo = async (userId) => {
   }
 };
 
-/**
- * Generate referral link for sharing
- */
+
 export const generateReferralLink = async (userId) => {
   try {
     const referral = await Referral.findOne({ userId });
@@ -271,7 +324,7 @@ export const generateReferralLink = async (userId) => {
       throw new Error('Referral record not found');
     }
 
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.BASE_URL || 'http://localhost:4003';
     return `${baseUrl}/register?ref=${referral.referralToken}`;
   } catch (error) {
     console.error('Error generating referral link:', error);
@@ -279,9 +332,7 @@ export const generateReferralLink = async (userId) => {
   }
 };
 
-/**
- * Get referral statistics for admin
- */
+
 export const getReferralStatistics = async () => {
   try {
     const totalReferrals = await Referral.aggregate([
@@ -312,6 +363,52 @@ export const getReferralStatistics = async () => {
   } catch (error) {
     console.error('Error getting referral statistics:', error);
     throw error;
+  }
+};
+
+
+export const getUserAvailableCoupons = async (userId) => {
+  try {
+    const { Coupon } = await import('../model/couponModel.js');
+    const user = await User.findById(userId).populate('assignedCoupons');
+    
+    if (!user) {
+      return [];
+    }
+
+    const now = new Date();
+    const availableCoupons = [];
+
+    
+    if (user.assignedCoupons && user.assignedCoupons.length > 0) {
+      for (const coupon of user.assignedCoupons) {
+        if (coupon && coupon.isValid()) {
+          
+          const hasUsed = coupon.usedBy.some(usage => 
+            usage.user.toString() === userId.toString()
+          );
+          
+          if (!hasUsed) {
+            availableCoupons.push({
+              _id: coupon._id,
+              code: coupon.code,
+              description: coupon.description,
+              discountType: coupon.discountType,
+              discountValue: coupon.discountValue,
+              minimumAmount: coupon.minimumAmount,
+              maximumDiscount: coupon.maximumDiscount,
+              validUntil: coupon.validUntil,
+              source: 'referral'
+            });
+          }
+        }
+      }
+    }
+
+    return availableCoupons;
+  } catch (error) {
+    console.error('Error getting user available coupons:', error);
+    return [];
   }
 };
 

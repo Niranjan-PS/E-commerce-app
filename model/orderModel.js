@@ -46,7 +46,7 @@ const orderItemSchema = new mongoose.Schema({
     type: Number,
     default: null
   },
-  // Offer-related fields
+  
   originalPrice: {
     type: Number,
     required: true
@@ -236,11 +236,33 @@ const orderSchema = new mongoose.Schema({
     enum: ['Pending', 'Paid', 'Failed', 'Refunded'],
     default: 'Pending'
   },
+  
+  // Razorpay payment fields
+  razorpayOrderId: {
+    type: String,
+    default: null
+  },
+  razorpayPaymentId: {
+    type: String,
+    default: null
+  },
+  razorpaySignature: {
+    type: String,
+    default: null
+  },
+  paidAt: {
+    type: Date,
+    default: null
+  },
+  paymentFailureReason: {
+    type: String,
+    default: null
+  },
 
  
   orderStatus: {
     type: String,
-    enum: ['Pending', 'Confirmed', 'Processing', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Returned'],
+    enum: ['Pending', 'Pending Payment', 'Confirmed', 'Processing', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Returned'],
     default: 'Processing'
   },
 
@@ -331,7 +353,19 @@ orderSchema.pre('save', async function(next) {
 
 
 orderSchema.methods.canBeCancelled = function() {
-  return ['Pending', 'Confirmed', 'Processing', 'Packed'].includes(this.orderStatus);
+  
+  const allowedStatuses = ['Pending', 'Pending Payment', 'Confirmed', 'Processing', 'Packed'];
+  if (!allowedStatuses.includes(this.orderStatus)) {
+    return false;
+  }
+  
+  
+  const orderCreatedAt = new Date(this.orderDate || this.createdAt);
+  const currentTime = new Date();
+  const timeDifference = currentTime.getTime() - orderCreatedAt.getTime();
+  const hoursDifference = timeDifference / (1000 * 60 * 60); 
+  
+  return hoursDifference <= 24;
 };
 
 orderSchema.methods.canBeReturned = function() {

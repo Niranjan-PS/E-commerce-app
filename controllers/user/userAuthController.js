@@ -334,29 +334,51 @@ export const verifyOtp = catchAsyncError(async(req,res,next) => {
     // Process referral rewards if applicable
     let referralMessage = '';
     if (user.tempReferralData) {
+      console.log('[Referral] Processing referral rewards for user:', user.email);
       try {
         const tempData = JSON.parse(user.tempReferralData);
+        console.log('[Referral] Parsed tempReferralData:', tempData);
+        
+        // Get the actual referral and referrer objects
+        const { Referral } = await import('../../model/referralModel.js');
+        const referral = await Referral.findById(tempData.referralId).populate('userId');
+        const referrer = await User.findById(tempData.referrerId);
+        
+        if (!referral || !referrer) {
+          console.error('[Referral] Referral or referrer not found:', { referral: !!referral, referrer: !!referrer });
+          throw new Error('Referral or referrer not found');
+        }
+        
+        console.log('[Referral] Found referral and referrer, processing rewards...');
         
         // Process referral rewards
         const referralResult = await processReferralRewards(
           user._id,
           { 
-            referral: { _id: tempData.referralId },
-            referrer: { _id: tempData.referrerId }
+            referral: referral,
+            referrer: referrer
           },
           tempData.ipAddress,
           tempData.userAgent
         );
 
-        if (referralResult.success) {
-          referralMessage = ` You've received ₹${referralResult.referredReward} welcome bonus!`;
+        console.log('[Referral] processReferralRewards result:', referralResult);
+
+        if (referralResult && referralResult.success) {
+          referralMessage = ` You've received ₹${referralResult.referredReward} welcome bonus and a coupon!`;
+          console.log('[Referral] Referral rewards processed successfully');
+        } else {
+          console.warn('[Referral] Referral rewards processing returned unsuccessful result');
         }
 
-        // Clear temporary referral data
-        user.tempReferralData = null;
       } catch (error) {
-        console.error('Error processing referral rewards:', error);
-        // Don't fail registration if referral processing fails
+        console.error('[Referral] Error processing referral rewards:', error);
+        console.error('[Referral] Error stack:', error.stack);
+        // Don't fail registration if referral processing fails, but log the error
+      } finally {
+        // Always clear temporary referral data regardless of success/failure
+        user.tempReferralData = null;
+        console.log('[Referral] Cleared tempReferralData');
       }
     }
 
@@ -480,11 +502,18 @@ export const login = catchAsyncError(async (req, res, next) => {
 
   sendToken(user, res);
     
- 
- res.status(HttpStatus.OK).json({
+  let toastMessage = null;
+  if (user.showReferralToast) {
+    toastMessage = `Congratulations! You\'ve received a ₹${user.referralRewardAmount} referral bonus!`;
+    user.showReferralToast = false;
+    await user.save({ validateBeforeSave: false });
+  }
+
+  res.status(HttpStatus.OK).json({
       success: true,
       message: 'Login successful',
-      user: { id: user._id, email: user.email }
+      user: { id: user._id, email: user.email },
+      toastMessage
     });
 });
 

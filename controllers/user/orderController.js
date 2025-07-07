@@ -134,6 +134,19 @@ export const cancelOrder = catchAsyncError(async (req, res, next) => {
     }
 
     
+    const orderCreatedAt = new Date(order.orderDate || order.createdAt);
+    const currentTime = new Date();
+    const timeDifference = currentTime.getTime() - orderCreatedAt.getTime();
+    const hoursDifference = timeDifference / (1000 * 60 * 60); 
+
+    if (hoursDifference > 24) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot cancel the product — Cancellation period has expired.'
+      });
+    }
+
+    
     if (!order.canBeCancelled()) {
       return res.status(400).json({
         success: false,
@@ -144,7 +157,7 @@ export const cancelOrder = catchAsyncError(async (req, res, next) => {
     let isFullCancellation = true;
     let totalRefundAmount = 0;
 
-    //full cancellation
+    
     const itemsToCancel = items && items.length > 0 ? items : order.items.map(item => ({
       productId: item.product._id.toString(),
       quantity: item.quantity - item.cancelledQuantity
@@ -203,20 +216,35 @@ export const cancelOrder = catchAsyncError(async (req, res, next) => {
     order.cancellationReason = reason;
     await order.save();
 
-    // if (totalRefundAmount > 0) {
-    //   await addReturnAmountToWallet(
-    //     req.user._id,
-    //     totalRefundAmount,
-    //     order._id 
-    //   );
-    // }
-   
+    
+    let walletRefundAmount = 0;
+    if (allItemsInactive && order.paymentMethod === 'Online' && order.paymentStatus === 'Paid') {
+      
+      walletRefundAmount = order.totalAmount;
+      await addReturnAmountToWallet(
+        req.user._id,
+        walletRefundAmount,
+        order._id 
+      );
+    } else if (!allItemsInactive && order.paymentMethod === 'Online' && order.paymentStatus === 'Paid') {
+     
+      walletRefundAmount = totalRefundAmount;
+      if (walletRefundAmount > 0) {
+        await addReturnAmountToWallet(
+          req.user._id,
+          walletRefundAmount,
+          order._id 
+        );
+      }
+    }
 
     res.status(200).json({
       success: true,
       message: allItemsInactive ? 'Order cancelled successfully' : 'Items cancelled successfully',
       refundAmount: totalRefundAmount,
-      isFullCancellation: allItemsInactive
+      walletRefundAmount: walletRefundAmount,
+      isFullCancellation: allItemsInactive,
+      refundNote: walletRefundAmount > 0 ? `₹${walletRefundAmount} has been credited to your wallet` : null
     });
 
   } catch (error) {
@@ -228,7 +256,7 @@ export const cancelOrder = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Request return order (requires admin approval)
+// Request return order 
 export const returnOrder = catchAsyncError(async (req, res, next) => {
   try {
     const { orderId } = req.params;
@@ -241,7 +269,7 @@ export const returnOrder = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Get order
+    
     const order = await Order.findOne({
       _id: orderId,
       user: req.user._id
@@ -254,7 +282,7 @@ export const returnOrder = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Explicit 7-day return window check
+    //return duration-7days deadline
     if (!order.deliveredAt || (Date.now() - order.deliveredAt.getTime()) > (7 * 24 * 60 * 60 * 1000)) {
       return res.status(400).json({
         success: false,
@@ -360,30 +388,30 @@ export const downloadInvoice = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Create PDF document
+    
     const doc = new PDFDocument({ margin: 50 });
 
-    // Set response headers
+   
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=invoice-${order.orderNumber}.pdf`);
 
-    // Pipe PDF to response
+   
     doc.pipe(res);
 
-    // Add company header
+   
     doc.fontSize(20).text('LUXE SCENTS', 50, 50);
     doc.fontSize(10).text('Premium Fragrances & Perfumes', 50, 75);
     doc.text('Email: info@luxescents.com | Phone: +91 9876543210', 50, 90);
 
-    // Add invoice title
+    
     doc.fontSize(16).text('INVOICE', 400, 50);
     doc.fontSize(10).text(`Invoice #: ${order.orderNumber}`, 400, 75);
     doc.text(`Date: ${new Date(order.orderDate).toLocaleDateString()}`, 400, 90);
 
-    // Add line
+   
     doc.moveTo(50, 120).lineTo(550, 120).stroke();
 
-    // Add billing information
+    
     doc.fontSize(12).text('Bill To:', 50, 140);
     doc.fontSize(10).text(order.shippingAddress.fullName, 50, 160);
     doc.text(order.shippingAddress.street, 50, 175);
@@ -394,7 +422,7 @@ export const downloadInvoice = catchAsyncError(async (req, res, next) => {
     doc.text(order.shippingAddress.zipCode, 50, 220);
     doc.text(`Phone: ${order.shippingAddress.phone}`, 50, 235);
 
-    // Add order information
+  
     doc.fontSize(12).text('Order Details:', 300, 140);
     doc.fontSize(10).text(`Order Status: ${order.orderStatus}`, 300, 160);
     doc.text(`Payment Method: ${order.paymentMethod}`, 300, 175);
@@ -403,7 +431,7 @@ export const downloadInvoice = catchAsyncError(async (req, res, next) => {
       doc.text(`Delivered: ${new Date(order.deliveredAt).toLocaleDateString()}`, 300, 205);
     }
 
-    // Add items table header
+   
     let yPosition = 280;
     doc.fontSize(10);
     doc.text('Item', 50, yPosition);
@@ -411,14 +439,14 @@ export const downloadInvoice = catchAsyncError(async (req, res, next) => {
     doc.text('Price', 350, yPosition);
     doc.text('Total', 450, yPosition);
 
-    // Add line under header
+   
     yPosition += 15;
     doc.moveTo(50, yPosition).lineTo(550, yPosition).stroke();
     yPosition += 10;
 
-    // Add items
+   
     order.items.forEach(item => {
-      // Use offer price if available, otherwise fallback to sale price or regular price
+      // Use offer price 
       const itemPrice = item.discountedPrice || item.salePrice || item.price;
       const itemTotal = itemPrice * item.quantity;
 
@@ -643,7 +671,7 @@ export const returnOrderItem = catchAsyncError(async (req, res, next) => {
     }
 
     
-    // Explicit 7-day return window check
+   
     if (!order.deliveredAt || (Date.now() - order.deliveredAt.getTime()) > (7 * 24 * 60 * 60 * 1000)) {
       return res.status(400).json({
         success: false,
@@ -690,7 +718,7 @@ export const returnOrderItem = catchAsyncError(async (req, res, next) => {
     const itemPrice = orderItem.discountedPrice || orderItem.salePrice || orderItem.price;
     const estimatedRefund = itemPrice * returnQuantity;
 
-    // Update order with return request
+    
     if (order.returnStatus === 'None') {
       order.returnReason = reason.trim();
       order.returnStatus = 'Requested';
@@ -751,7 +779,7 @@ export const requestIndividualItemReturn = catchAsyncError(async (req, res, next
     }
 
     
-    // Explicit 7-day return window check
+    
     if (!order.deliveredAt || (Date.now() - order.deliveredAt.getTime()) > (7 * 24 * 60 * 60 * 1000)) {
       return res.status(400).json({
         success: false,

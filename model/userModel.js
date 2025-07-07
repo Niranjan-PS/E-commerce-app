@@ -88,7 +88,7 @@ const userSchema= new mongoose.Schema({
       min: 0
     },
     
-    // Referral system fields
+    
     referredBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -111,14 +111,22 @@ const userSchema= new mongoose.Schema({
       default: 0
     },
     
-    // Temporary field to store referral data during registration
+    
     tempReferralData: {
       type: String,
       default: null
-    }
+    },
+
+    showReferralToast: {
+      type: Boolean,
+      default: false
+    },
 
 
-
+    assignedCoupons: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Coupon'
+    }]
 
 })
 userSchema.pre("save", async function(next) {
@@ -146,7 +154,7 @@ userSchema.methods.generateVerificationCode = function(){
     }
     const verificationCode=generateRandomFiveDigitNumber()
     this.verificationCode=verificationCode
-    this.verificationCodeExpire = new Date(Date.now() + 5*1000) 
+    this.verificationCodeExpire = new Date(Date.now() + 30*1000) 
 
 return verificationCode
 }

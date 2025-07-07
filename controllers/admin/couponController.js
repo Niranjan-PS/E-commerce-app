@@ -4,7 +4,6 @@ import { Product } from "../../model/productModel.js";
 import { catchAsyncError } from "../../middlewares/catchAsync.js";
 import ErrorHandler from "../../middlewares/error.js";
 
-// Get all coupons for admin
 export const getCoupons = catchAsyncError(async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -47,7 +46,7 @@ export const getCoupons = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Get add coupon page
+
 export const getAddCoupon = catchAsyncError(async (req, res, next) => {
   try {
     const categories = await Category.find({ isListed: true }).sort({ name: 1 });
@@ -68,7 +67,7 @@ export const getAddCoupon = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Create new coupon
+
 export const createCoupon = catchAsyncError(async (req, res, next) => {
   try {
     const {
@@ -85,7 +84,7 @@ export const createCoupon = catchAsyncError(async (req, res, next) => {
       applicableProducts
     } = req.body;
 
-    // Validation
+ 
     if (!code || !description || !discountType || !discountValue || !validFrom || !validUntil) {
       return res.status(400).json({
         success: false,
@@ -93,7 +92,7 @@ export const createCoupon = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Validate discount value
+   
     if (discountValue <= 0) {
       return res.status(400).json({
         success: false,
@@ -108,7 +107,7 @@ export const createCoupon = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Validate dates
+   
     const fromDate = new Date(validFrom);
     const toDate = new Date(validUntil);
     const now = new Date();
@@ -127,7 +126,7 @@ export const createCoupon = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Check if coupon code already exists
+    
     const existingCoupon = await Coupon.findOne({ code: code.toUpperCase() });
     if (existingCoupon) {
       return res.status(400).json({
@@ -136,7 +135,7 @@ export const createCoupon = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Create coupon data
+   
     const couponData = {
       code: code.toUpperCase(),
       description,
@@ -151,7 +150,7 @@ export const createCoupon = catchAsyncError(async (req, res, next) => {
       applicableProducts: applicableProducts || []
     };
 
-    console.log('Creating coupon with data:', couponData);
+    console.log('Creating coupon=>', couponData);
 
     const coupon = new Coupon(couponData);
     await coupon.save();
@@ -183,7 +182,7 @@ export const createCoupon = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Get edit coupon page
+
 export const getEditCoupon = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -215,7 +214,7 @@ export const getEditCoupon = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Update coupon
+
 export const updateCoupon = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -242,7 +241,7 @@ export const updateCoupon = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Validation
+    
     if (!code || !description || !discountType || !discountValue || !validFrom || !validUntil) {
       return res.status(400).json({
         success: false,
@@ -250,7 +249,7 @@ export const updateCoupon = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Validate discount value
+   
     if (discountValue <= 0) {
       return res.status(400).json({
         success: false,
@@ -265,7 +264,7 @@ export const updateCoupon = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Validate dates
+  
     const fromDate = new Date(validFrom);
     const toDate = new Date(validUntil);
 
@@ -276,7 +275,7 @@ export const updateCoupon = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Check if coupon code already exists (excluding current coupon)
+   
     if (code.toUpperCase() !== coupon.code) {
       const existingCoupon = await Coupon.findOne({ 
         code: code.toUpperCase(),
@@ -290,7 +289,7 @@ export const updateCoupon = catchAsyncError(async (req, res, next) => {
       }
     }
 
-    // Update coupon
+ 
     coupon.code = code.toUpperCase();
     coupon.description = description;
     coupon.discountType = discountType;
@@ -326,7 +325,7 @@ export const updateCoupon = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Delete coupon
+
 export const deleteCoupon = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -339,7 +338,7 @@ export const deleteCoupon = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Check if coupon has been used
+  
     if (coupon.usedCount > 0) {
       return res.status(400).json({
         success: false,
@@ -362,7 +361,6 @@ export const deleteCoupon = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Toggle coupon status
 export const toggleCouponStatus = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -392,7 +390,7 @@ export const toggleCouponStatus = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Get coupon details
+
 export const getCouponDetails = catchAsyncError(async (req, res, next) => {
   try {
     const { id } = req.params;

@@ -54,11 +54,11 @@ const categoryOfferSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for efficient queries
+
 categoryOfferSchema.index({ category: 1, startDate: 1, endDate: 1 });
 categoryOfferSchema.index({ isActive: 1, startDate: 1, endDate: 1 });
 
-// Virtual to check if offer is currently valid
+
 categoryOfferSchema.virtual('isCurrentlyValid').get(function() {
   const now = new Date();
   return this.isActive && 
@@ -66,16 +66,16 @@ categoryOfferSchema.virtual('isCurrentlyValid').get(function() {
          now <= this.endDate;
 });
 
-// Method to check if offer is valid at a specific date
+
 categoryOfferSchema.methods.isValidAt = function(date = new Date()) {
   return this.isActive && 
          date >= this.startDate && 
          date <= this.endDate;
 };
 
-// Method to calculate discounted price
+
 categoryOfferSchema.methods.calculateDiscountedPrice = function(originalPrice) {
-  // Manual validation instead of relying on virtual
+ 
   const now = new Date();
   const isValid = this.isActive && 
                   now >= this.startDate && 
@@ -86,30 +86,30 @@ categoryOfferSchema.methods.calculateDiscountedPrice = function(originalPrice) {
   }
   
   const discountAmount = (originalPrice * this.discountPercentage) / 100;
-  return Math.round((originalPrice - discountAmount) * 100) / 100; // Round to 2 decimal places
+  return Math.round((originalPrice - discountAmount) * 100) / 100; 
 };
 
-// Static method to find active offers for a category
+
 categoryOfferSchema.statics.findActiveOfferForCategory = async function(categoryId, date = new Date()) {
   return await this.findOne({
     category: categoryId,
     isActive: true,
     startDate: { $lte: date },
     endDate: { $gte: date }
-  }).sort({ discountPercentage: -1 }); // Get the highest discount if multiple offers
+  }).sort({ discountPercentage: -1 }); 
 };
 
-// Static method to check for overlapping offers
+
 categoryOfferSchema.statics.hasOverlappingOffer = async function(categoryId, startDate, endDate, excludeOfferId = null) {
   const query = {
     category: categoryId,
     isActive: true,
     $or: [
-      // New offer starts during existing offer
+     
       { startDate: { $lte: startDate }, endDate: { $gte: startDate } },
-      // New offer ends during existing offer
+     
       { startDate: { $lte: endDate }, endDate: { $gte: endDate } },
-      // New offer completely contains existing offer
+  
       { startDate: { $gte: startDate }, endDate: { $lte: endDate } }
     ]
   };
@@ -122,7 +122,6 @@ categoryOfferSchema.statics.hasOverlappingOffer = async function(categoryId, sta
   return !!overlappingOffer;
 };
 
-// Pre-save middleware to validate no overlapping offers
 categoryOfferSchema.pre('save', async function(next) {
   if (this.isNew || this.isModified('startDate') || this.isModified('endDate') || this.isModified('category')) {
     const hasOverlap = await this.constructor.hasOverlappingOffer(
@@ -141,7 +140,7 @@ categoryOfferSchema.pre('save', async function(next) {
   next();
 });
 
-// Static method to auto-disable expired offers
+
 categoryOfferSchema.statics.disableExpiredOffers = async function() {
   const now = new Date();
   const result = await this.updateMany(

@@ -173,7 +173,7 @@ router.delete('/coupons/:id', isAdminAuthenticated, deleteCoupon);
 router.patch('/coupons/:id/toggle', isAdminAuthenticated, toggleCouponStatus);
 router.get('/coupons/:id/details', isAdminAuthenticated, getCouponDetails);
 
-// Quick fix route to update coupon validity dates
+//update coupon validaity dates
 router.post('/coupons/:code/fix-dates', isAdminAuthenticated, async (req, res) => {
   try {
     const { Coupon } = await import("../../model/couponModel.js");

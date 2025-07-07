@@ -253,7 +253,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
       // Test the endpoint immediately
       setTimeout(() => {
-        console.log('UserStatusChecker: Running initial test...');
         window.userStatusChecker.checkNow();
       }, 1000);
 

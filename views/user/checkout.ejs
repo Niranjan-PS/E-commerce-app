@@ -334,6 +334,181 @@
       color: #666;
     }
 
+    /* Referral Coupons Section */
+    .referral-coupons-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .gift-box-coupon {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 15px;
+      margin-bottom: 1rem;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .gift-box-coupon:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+    }
+
+    .gift-box-header {
+      position: relative;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    .gift-icon {
+      position: absolute;
+      top: -10px;
+      right: 15px;
+      font-size: 2rem;
+      color: #ffd700;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+      }
+      40% {
+        transform: translateY(-10px);
+      }
+      60% {
+        transform: translateY(-5px);
+      }
+    }
+
+    .gift-ribbon {
+      background: #ff6b6b;
+      color: white;
+      padding: 0.3rem 1rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: inline-block;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .gift-ribbon::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    .gift-box-content {
+      padding: 1.5rem;
+      background: white;
+      color: #333;
+    }
+
+    .coupon-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+
+    .coupon-description {
+      font-size: 1rem;
+      color: #666;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .coupon-details {
+      margin-bottom: 1.5rem;
+    }
+
+    .discount-info {
+      text-align: center;
+      margin-bottom: 0.8rem;
+    }
+
+    .discount-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #28a745;
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    .max-discount {
+      font-size: 0.9rem;
+      color: #666;
+      background: #f8f9fa;
+      padding: 0.2rem 0.5rem;
+      border-radius: 12px;
+      display: inline-block;
+    }
+
+    .min-amount {
+      font-size: 0.9rem;
+      color: #666;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .expiry-date {
+      font-size: 0.85rem;
+      color: #999;
+      text-align: center;
+    }
+
+    .apply-gift-coupon-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 25px;
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .apply-gift-coupon-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .apply-gift-coupon-btn:active {
+      transform: translateY(0);
+    }
+
+    .apply-gift-coupon-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .apply-gift-coupon-btn:hover::before {
+      left: 100%;
+    }
+
     /* Coupon Section */
     .coupon-section {
       background: #f8f9fa;
@@ -779,9 +954,54 @@
           <i class="fas fa-receipt me-2"></i>Order Summary
         </div>
         <div class="section-content">
-          <!-- Coupon Section -->
+          <!-- Referral Coupons Section -->
+          <% if (availableCoupons && availableCoupons.length > 0) { %>
+            <div class="referral-coupons-section mb-3">
+              <h6 class="mb-3"><i class="fas fa-gift me-2"></i>Your Referral Rewards</h6>
+              <% availableCoupons.forEach(coupon => { %>
+                <div class="gift-box-coupon" data-coupon-id="<%= coupon._id %>">
+                  <div class="gift-box-header">
+                    <div class="gift-icon">
+                      <i class="fas fa-gift"></i>
+                    </div>
+                    <div class="gift-ribbon">
+                      <span>REFERRAL BONUS</span>
+                    </div>
+                  </div>
+                  <div class="gift-box-content">
+                    <div class="coupon-title"><%= coupon.code %></div>
+                    <div class="coupon-description"><%= coupon.description %></div>
+                    <div class="coupon-details">
+                      <div class="discount-info">
+                        <% if (coupon.discountType === 'percentage') { %>
+                          <span class="discount-value"><%= coupon.discountValue %>% OFF</span>
+                        <% } else { %>
+                          <span class="discount-value">₹<%= coupon.discountValue %> OFF</span>
+                        <% } %>
+                        <% if (coupon.maximumDiscount) { %>
+                          <span class="max-discount">Max ₹<%= coupon.maximumDiscount %></span>
+                        <% } %>
+                      </div>
+                      <% if (coupon.minimumAmount > 0) { %>
+                        <div class="min-amount">Min order: ₹<%= coupon.minimumAmount %></div>
+                      <% } %>
+                      <div class="expiry-date">
+                        <i class="fas fa-clock me-1"></i>
+                        Valid till <%= new Date(coupon.validUntil).toLocaleDateString() %>
+                      </div>
+                    </div>
+                    <button class="apply-gift-coupon-btn" onclick="applyReferralCoupon('<%= coupon._id %>')">
+                      <i class="fas fa-magic me-2"></i>Apply Coupon
+                    </button>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
+
+          <!-- Regular Coupon Section -->
           <div class="coupon-section">
-            <h6 class="mb-2"><i class="fas fa-tag me-2"></i>Apply Coupon</h6>
+            <h6 class="mb-2"><i class="fas fa-tag me-2"></i>Apply Coupon Code</h6>
             <div id="couponInputSection" style="display: <%= appliedCoupon ? 'none' : 'block' %>;">
               <div class="coupon-input-group">
                 <input type="text" id="couponCode" class="coupon-input" placeholder="Enter coupon code" maxlength="20">
@@ -866,13 +1086,13 @@
                   </div>
                 </label>
               </div>
-              <div class="payment-option disabled">
-                <input type="radio" id="online" name="paymentMethod" value="Online" disabled>
+              <div class="payment-option">
+                <input type="radio" id="online" name="paymentMethod" value="Online">
                 <label for="online" class="payment-label">
                   <i class="fas fa-credit-card me-2"></i>
                   <div>
                     <strong>Online Payment</strong>
-                    <div class="payment-desc">Coming Soon</div>
+                    <div class="payment-desc">Pay securely with Razorpay (UPI, Cards, Net Banking)</div>
                   </div>
                 </label>
               </div>
@@ -1025,6 +1245,7 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script>
     let selectedAddressId = '<%= defaultAddress ? defaultAddress._id : "" %>';
     let appliedCouponCode = '<%= appliedCoupon ? appliedCoupon.code : "" %>';
@@ -1164,6 +1385,55 @@
       }
     }
 
+    // Apply referral coupon
+    async function applyReferralCoupon(couponId) {
+      try {
+        const response = await fetch('/checkout/apply-referral-coupon', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ couponId })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          appliedCouponCode = result.orderSummary.couponCode || 'REFERRAL';
+          updateOrderSummary(result.orderSummary);
+          showAppliedCoupon(appliedCouponCode);
+
+          // Hide all gift box coupons
+          document.querySelectorAll('.gift-box-coupon').forEach(box => {
+            box.style.display = 'none';
+          });
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Referral Coupon Applied!',
+            text: result.message,
+            confirmButtonColor: '#6200ea',
+            timer: 2000,
+            timerProgressBar: true
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Cannot Apply Coupon',
+            text: result.message,
+            confirmButtonColor: '#6200ea'
+          });
+        }
+      } catch (error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to apply referral coupon',
+          confirmButtonColor: '#6200ea'
+        });
+      }
+    }
+
     // Remove coupon
     async function removeCoupon() {
       try {
@@ -1180,6 +1450,11 @@
           appliedCouponCode = null;
           updateOrderSummary(result.orderSummary);
           hideAppliedCoupon();
+
+          // Show gift box coupons again
+          document.querySelectorAll('.gift-box-coupon').forEach(box => {
+            box.style.display = 'block';
+          });
 
           Swal.fire({
             icon: 'success',
@@ -1253,6 +1528,7 @@
 
     // Place order
     async function placeOrder() {
+      // Client-side validation
       if (!selectedAddressId) {
         Swal.fire({
           icon: 'warning',
@@ -1273,6 +1549,24 @@
           confirmButtonColor: '#6200ea'
         });
         return;
+      }
+
+      // Additional validation for online payment
+      if (paymentMethod === 'Online') {
+        const confirmed = await Swal.fire({
+          icon: 'info',
+          title: 'Online Payment',
+          text: 'You will be redirected to Razorpay for secure payment. Continue?',
+          showCancelButton: true,
+          confirmButtonColor: '#6200ea',
+          cancelButtonColor: '#d33',
+          confirmButtonText: 'Yes, Continue',
+          cancelButtonText: 'Cancel'
+        });
+
+        if (!confirmed.isConfirmed) {
+          return;
+        }
       }
 
       // Disable place order button
@@ -1300,8 +1594,13 @@
         const result = await response.json();
 
         if (result.success) {
-          // Redirect to order success page
-          window.location.href = result.redirectUrl;
+          if (result.requiresPayment) {
+            // Handle online payment
+            await initiateRazorpayPayment(result.order);
+          } else {
+            // COD order - redirect to success page
+            window.location.href = result.redirectUrl;
+          }
         } else {
           Swal.fire({
             icon: 'error',
@@ -1327,6 +1626,169 @@
         placeOrderBtn.disabled = false;
         placeOrderBtn.innerHTML = originalText;
       }
+    }
+
+    // Initiate Razorpay payment
+    async function initiateRazorpayPayment(order) {
+      try {
+        // Create Razorpay order
+        const response = await fetch('/payment/create-order', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ orderId: order.id })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.message || 'Failed to create payment order');
+        }
+
+        // Configure Razorpay options
+        const options = {
+          key: result.razorpayKeyId,
+          amount: result.razorpayOrder.amount,
+          currency: result.razorpayOrder.currency,
+          name: 'Luxe Scents',
+          description: `Order #${result.order.orderNumber}`,
+          order_id: result.razorpayOrder.id,
+          prefill: {
+            name: result.user.name,
+            email: result.user.email,
+            contact: result.user.phone
+          },
+          theme: {
+            color: '#6200ea'
+          },
+          modal: {
+            ondismiss: function() {
+              // Re-enable place order button if payment modal is closed
+              const placeOrderBtn = document.getElementById('placeOrderBtn');
+              placeOrderBtn.disabled = false;
+              placeOrderBtn.innerHTML = '<i class="fas fa-credit-card me-2"></i>Place Order';
+            }
+          },
+          handler: async function(response) {
+            // Payment successful - verify on server
+            await verifyPayment(response, order.id);
+          }
+        };
+
+        // Open Razorpay checkout
+        const rzp = new Razorpay(options);
+        
+        rzp.on('payment.failed', async function(response) {
+          // Handle payment failure
+          await handlePaymentFailure(order.id, response.error);
+        });
+
+        rzp.open();
+
+      } catch (error) {
+        console.error('Error initiating payment:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Payment Error',
+          text: error.message || 'Failed to initiate payment',
+          confirmButtonColor: '#6200ea'
+        });
+
+        // Re-enable place order button
+        const placeOrderBtn = document.getElementById('placeOrderBtn');
+        placeOrderBtn.disabled = false;
+        placeOrderBtn.innerHTML = '<i class="fas fa-credit-card me-2"></i>Place Order';
+      }
+    }
+
+    // Verify payment on server
+    async function verifyPayment(razorpayResponse, orderId) {
+      try {
+        const response = await fetch('/payment/verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            razorpay_order_id: razorpayResponse.razorpay_order_id,
+            razorpay_payment_id: razorpayResponse.razorpay_payment_id,
+            razorpay_signature: razorpayResponse.razorpay_signature,
+            orderId: orderId
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Payment verified successfully
+          Swal.fire({
+            icon: 'success',
+            title: 'Payment Successful!',
+            text: 'Your order has been confirmed.',
+            confirmButtonColor: '#6200ea',
+            timer: 2000,
+            timerProgressBar: true
+          }).then(() => {
+            window.location.href = result.redirectUrl;
+          });
+        } else {
+          // Payment verification failed
+          window.location.href = result.redirectUrl;
+        }
+
+      } catch (error) {
+        console.error('Error verifying payment:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Verification Error',
+          text: 'Payment verification failed. Please contact support.',
+          confirmButtonColor: '#6200ea'
+        });
+      }
+    }
+
+    // Handle payment failure
+    async function handlePaymentFailure(orderId, error) {
+      try {
+        const response = await fetch('/payment/failure', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            orderId: orderId,
+            error: error
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          window.location.href = result.redirectUrl;
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Payment Failed',
+            text: error.description || 'Payment was not completed',
+            confirmButtonColor: '#6200ea'
+          });
+        }
+
+      } catch (err) {
+        console.error('Error handling payment failure:', err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Payment Failed',
+          text: error.description || 'Payment was not completed',
+          confirmButtonColor: '#6200ea'
+        });
+      }
+
+      // Re-enable place order button
+      const placeOrderBtn = document.getElementById('placeOrderBtn');
+      placeOrderBtn.disabled = false;
+      placeOrderBtn.innerHTML = '<i class="fas fa-credit-card me-2"></i>Place Order';
     }
 
     // Initialize page

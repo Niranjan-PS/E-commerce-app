@@ -304,7 +304,7 @@ async function validateCartItems(cart) {
       }
     }
 
-    // Recalculate offer prices
+    
     const offerCalculation = await calculateBestOfferPrice(product);
     
     // Update prices and offer information

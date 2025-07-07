@@ -54,11 +54,10 @@ const productOfferSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for efficient queries
+
 productOfferSchema.index({ product: 1, startDate: 1, endDate: 1 });
 productOfferSchema.index({ isActive: 1, startDate: 1, endDate: 1 });
 
-// Virtual to check if offer is currently valid
 productOfferSchema.virtual('isCurrentlyValid').get(function() {
   const now = new Date();
   return this.isActive && 
@@ -66,16 +65,16 @@ productOfferSchema.virtual('isCurrentlyValid').get(function() {
          now <= this.endDate;
 });
 
-// Method to check if offer is valid at a specific date
+
 productOfferSchema.methods.isValidAt = function(date = new Date()) {
   return this.isActive && 
          date >= this.startDate && 
          date <= this.endDate;
 };
 
-// Method to calculate discounted price
+
 productOfferSchema.methods.calculateDiscountedPrice = function(originalPrice) {
-  // Manual validation instead of relying on virtual
+
   const now = new Date();
   const isValid = this.isActive && 
                   now >= this.startDate && 
@@ -86,20 +85,20 @@ productOfferSchema.methods.calculateDiscountedPrice = function(originalPrice) {
   }
   
   const discountAmount = (originalPrice * this.discountPercentage) / 100;
-  return Math.round((originalPrice - discountAmount) * 100) / 100; // Round to 2 decimal places
+  return Math.round((originalPrice - discountAmount) * 100) / 100; 
 };
 
-// Static method to find active offers for a product
+
 productOfferSchema.statics.findActiveOfferForProduct = async function(productId, date = new Date()) {
   return await this.findOne({
     product: productId,
     isActive: true,
     startDate: { $lte: date },
     endDate: { $gte: date }
-  }).sort({ discountPercentage: -1 }); // Get the highest discount if multiple offers
+  }).sort({ discountPercentage: -1 }); 
 };
 
-// Static method to check for overlapping offers
+
 productOfferSchema.statics.hasOverlappingOffer = async function(productId, startDate, endDate, excludeOfferId = null) {
   const query = {
     product: productId,
@@ -122,7 +121,7 @@ productOfferSchema.statics.hasOverlappingOffer = async function(productId, start
   return !!overlappingOffer;
 };
 
-// Pre-save middleware to validate no overlapping offers
+
 productOfferSchema.pre('save', async function(next) {
   if (this.isNew || this.isModified('startDate') || this.isModified('endDate') || this.isModified('product')) {
     const hasOverlap = await this.constructor.hasOverlappingOffer(
@@ -141,7 +140,7 @@ productOfferSchema.pre('save', async function(next) {
   next();
 });
 
-// Static method to auto-disable expired offers
+
 productOfferSchema.statics.disableExpiredOffers = async function() {
   const now = new Date();
   const result = await this.updateMany(

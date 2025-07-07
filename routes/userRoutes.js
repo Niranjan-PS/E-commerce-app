@@ -62,10 +62,17 @@ import {
 import {
   getCheckout,
   applyCoupon,
+  applyReferralCoupon,
   removeCoupon,
   placeOrder,
   getOrderSuccess
 } from "../controllers/user/checkoutController.js";
+import {
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+  handlePaymentFailure,
+  getPaymentStatus
+} from "../controllers/user/paymentController.js";
 import {
   getOrderDetails,
   getUserOrders,
@@ -225,9 +232,22 @@ router.post("/wishlist/move-to-cart/:productId", isAuthenticated, moveToCart);
 // Checkout routes
 router.get("/checkout", isAuthenticated, getCheckout);
 router.post("/checkout/apply-coupon", isAuthenticated, applyCoupon);
+router.post("/checkout/apply-referral-coupon", isAuthenticated, applyReferralCoupon);
 router.post("/checkout/remove-coupon", isAuthenticated, removeCoupon);
 router.post("/checkout/place-order", isAuthenticated, placeOrder);
 router.get("/order-success/:orderId", isAuthenticated, getOrderSuccess);
+
+// Payment routes
+router.post("/payment/create-order", isAuthenticated, createRazorpayOrder);
+router.post("/payment/verify", isAuthenticated, verifyRazorpayPayment);
+router.post("/payment/failure", isAuthenticated, handlePaymentFailure);
+router.get("/payment/status/:orderId", isAuthenticated, getPaymentStatus);
+router.get("/payment-success/:orderId", isAuthenticated, (req, res) => {
+  res.render("user/payment-success", { orderId: req.params.orderId });
+});
+router.get("/payment-failed/:orderId", isAuthenticated, (req, res) => {
+  res.render("user/payment-failed", { orderId: req.params.orderId });
+});
 
 // Coupon validation route
 router.post("/checkout/validate-coupon", isAuthenticated, async (req, res) => {
@@ -293,41 +313,6 @@ router.post("/checkout/validate-coupon", isAuthenticated, async (req, res) => {
   }
 });
 
-// Debug route for testing coupon application
-router.post("/debug/test-coupon", isAuthenticated, async (req, res) => {
-  try {
-    const { Cart } = await import("../model/cartModel.js");
-    const { Coupon } = await import("../model/couponModel.js");
-    
-    const cart = await Cart.findOne({ user: req.user._id }).populate({
-      path: 'items.product',
-      populate: {
-        path: 'category'
-      }
-    });
-    
-    const coupons = await Coupon.find({ isActive: true }).populate('applicableCategories applicableProducts');
-    
-    res.json({
-      cart: cart ? {
-        itemCount: cart.items.length,
-        items: cart.items.map(item => ({
-          productId: item.product._id,
-          productName: item.product.productName,
-          categoryId: item.product.category ? item.product.category._id : null,
-          categoryName: item.product.category ? item.product.category.name : null
-        }))
-      } : null,
-      coupons: coupons.map(c => ({
-        code: c.code,
-        applicableCategories: c.applicableCategories.map(cat => ({ id: cat._id, name: cat.name })),
-        applicableProducts: c.applicableProducts.map(prod => ({ id: prod._id, name: prod.productName }))
-      }))
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // Order routes
 router.get("/orders", isAuthenticated, getUserOrders);
@@ -349,35 +334,6 @@ router.get("/api/referrals/stats", isAuthenticated, getReferralStats);
 router.get("/api/referrals/link", isAuthenticated, generateShareableLink);
 router.post("/api/referrals/validate", validateReferralCode);
 
-// Debug route to manually create referral record
-router.post("/api/referrals/create-record", isAuthenticated, async (req, res) => {
-  try {
-    const { ensureReferralRecord } = await import("../utils/ensureReferralRecord.js");
-    const userId = req.user._id;
-    const userName = req.user.name;
-    
-    console.log('Manual referral record creation for:', userId, userName);
-    
-    const referralRecord = await ensureReferralRecord(userId, userName);
-    
-    res.json({
-      success: true,
-      message: 'Referral record created/verified successfully',
-      data: {
-        referralCode: referralRecord.referralCode,
-        referralToken: referralRecord.referralToken,
-        userId: referralRecord.userId
-      }
-    });
-  } catch (error) {
-    console.error('Error creating referral record:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create referral record',
-      error: error.message
-    });
-  }
-});
 
 router.get("/pageNotFound", pagenotFound);
 
