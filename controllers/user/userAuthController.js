@@ -293,9 +293,9 @@ export const verifyOtp = catchAsyncError(async(req,res,next) => {
       })
     }
 
-  
+  let user
     if(userAllEntries.length>1){
-       var user=userAllEntries[0]
+        user=userAllEntries[0]
       await User.deleteOne({_id: {$ne : user._id},
         $or:[
           {phone, accountverified:false},
