@@ -65,6 +65,7 @@ export const getCheckout = catchAsyncError(async (req, res, next) => {
       appliedCoupon,
       availableCoupons,
       taxConfig: TAX_CONFIG,
+      user: req.user,
       message: req.query.message || null,
       error: req.query.error || null
     });

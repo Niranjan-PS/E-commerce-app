@@ -78,6 +78,13 @@ import {
   exportSalesReportExcel
 } from "../controllers/admin/salesReportController.js";
 
+import {
+  getSalesAnalytics,
+  getTopProducts,
+  getTopCategories,
+  getDashboardStats
+} from "../controllers/admin/analyticsController.js";
+
 
 //admin
 router.get('/admin-login',loadLogin)
@@ -85,7 +92,7 @@ router.post('/admin-login',adminLogin)
 router.get('/logout', isAdminAuthenticated, adminLogout)
 router.get('/', isAdminAuthenticated, loadAdminDashboard)
 router.get('/dashboard', isAdminAuthenticated, (req, res) => {
-  res.render('dashboard');
+  res.render('admin/dashboard');
 });
 
 //customers or users
@@ -234,7 +241,12 @@ router.get('/api/sales-data', isAdminAuthenticated, getSalesData);
 router.get('/export-sales-report-pdf', isAdminAuthenticated, exportSalesReportPDF);
 router.get('/export-sales-report-excel', isAdminAuthenticated, exportSalesReportExcel);
 
-export default router;
+// Analytics API routes
+router.get('/api/analytics/sales', isAdminAuthenticated, getSalesAnalytics);
+router.get('/api/analytics/top-products', isAdminAuthenticated, getTopProducts);
+router.get('/api/analytics/top-categories', isAdminAuthenticated, getTopCategories);
+router.get('/api/analytics/dashboard-stats', isAdminAuthenticated, getDashboardStats);
 
+export default router;
 
 

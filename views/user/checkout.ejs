@@ -567,6 +567,48 @@
       font-size: 0.9rem;
     }
 
+    /* Wallet Section */
+    .wallet-section {
+      background: linear-gradient(135deg, #28a745, #20c997);
+      border-radius: 8px;
+      padding: 1rem;
+      color: white;
+      margin-bottom: 1rem;
+    }
+
+    .wallet-info {
+      margin-top: 0.5rem;
+    }
+
+    .wallet-balance {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding: 0.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+    }
+
+    .balance-label {
+      font-weight: 500;
+    }
+
+    .balance-amount {
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .wallet-option .form-check-label {
+      color: white;
+      font-weight: 500;
+    }
+
+    .wallet-option .form-check-input:checked {
+      background-color: #fff;
+      border-color: #fff;
+    }
+
     /* Payment Method Section */
     .payment-section {
       background: #f8f9fa;
@@ -1069,6 +1111,32 @@
             <div class="summary-row">
               <span class="summary-label">Total Amount</span>
               <span class="summary-value" id="finalTotal">₹<%= orderSummary.total.toFixed(2) %></span>
+            </div>
+          </div>
+
+          <!-- Wallet Section -->
+          <div class="wallet-section mb-3">
+            <h6 class="mb-2"><i class="fas fa-wallet me-2"></i>Wallet Balance</h6>
+            <div class="wallet-info">
+              <div class="wallet-balance">
+                <span class="balance-label">Available Balance:</span>
+                <span class="balance-amount">₹<span id="walletBalance"><%= user.wallet || 0 %></span></span>
+              </div>
+              <div class="wallet-option">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="useWallet" onchange="toggleWalletUsage()">
+                  <label class="form-check-label" for="useWallet">
+                    Use wallet balance for this order
+                  </label>
+                </div>
+                <div id="walletUsageInfo" style="display: none;" class="mt-2">
+                  <small class="text-muted">
+                    Wallet amount to be used: ₹<span id="walletAmountUsed">0</span>
+                    <br>
+                    Remaining to pay: ₹<span id="remainingAmount">0</span>
+                  </small>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1789,6 +1857,37 @@
       const placeOrderBtn = document.getElementById('placeOrderBtn');
       placeOrderBtn.disabled = false;
       placeOrderBtn.innerHTML = '<i class="fas fa-credit-card me-2"></i>Place Order';
+    }
+
+    // Toggle wallet usage
+    function toggleWalletUsage() {
+      const useWalletCheckbox = document.getElementById('useWallet');
+      const walletUsageInfo = document.getElementById('walletUsageInfo');
+      const walletBalance = parseFloat(document.getElementById('walletBalance').textContent);
+      const finalTotal = parseFloat(document.getElementById('finalTotal').textContent.replace('₹', '').replace(',', ''));
+
+      if (useWalletCheckbox.checked) {
+        // Calculate wallet usage
+        const walletAmountToUse = Math.min(walletBalance, finalTotal);
+        const remainingAmount = Math.max(0, finalTotal - walletAmountToUse);
+
+        // Update display
+        document.getElementById('walletAmountUsed').textContent = walletAmountToUse.toFixed(2);
+        document.getElementById('remainingAmount').textContent = remainingAmount.toFixed(2);
+        walletUsageInfo.style.display = 'block';
+
+        // If wallet covers full amount, disable online payment
+        if (remainingAmount === 0) {
+          document.getElementById('online').disabled = true;
+          document.getElementById('cod').checked = true;
+        }
+      } else {
+        // Hide wallet usage info
+        walletUsageInfo.style.display = 'none';
+        
+        // Re-enable online payment
+        document.getElementById('online').disabled = false;
+      }
     }
 
     // Initialize page

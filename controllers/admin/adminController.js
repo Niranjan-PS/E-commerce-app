@@ -43,7 +43,7 @@ export const adminLogin = catchAsyncError(async (req, res, next) => {
 export const loadAdminDashboard= catchAsyncError(async (req, res, next) => {
     if(req.admin){
         try {
-            res.render('dashboard')
+            res.render('admin/dashboard')
         } catch (err) {
             res.redirect('/pageNotFound')
         }

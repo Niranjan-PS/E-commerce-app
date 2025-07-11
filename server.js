@@ -14,7 +14,7 @@ setInterval(async () => {
   } catch (error) {
     console.error('Error auto-disabling expired offers:', error);
   }
-}, 60 * 60 * 1000); // Run every hour
+}, 60 * 60 * 1000); 
 
 // Initial check on server start
 (async () => {

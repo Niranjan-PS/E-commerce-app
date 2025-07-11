@@ -531,21 +531,20 @@
             <div class="summary-title">Order Summary</div>
 
             <div class="summary-row">
-  <span>Total</span>
-  <span id="grandTotal">₹<%= cart.totalSalePrice.toLocaleString() %></span>
-</div>
-
+              <span>Subtotal (<%= cart.totalItems %> items)</span>
+              <span>₹<%= cart.totalPrice.toLocaleString() %></span>
+            </div>
 
             <% if (cart.totalSavings > 0) { %>
               <div class="summary-row">
-                <span>Discount</span>
+                <span>Product Savings</span>
                 <span class="text-success">-₹<%= cart.totalSavings.toLocaleString() %></span>
               </div>
             <% } %>
 
             <div class="summary-row">
-              <span>Total</span>
-              <span>₹<%= cart.totalSalePrice.toLocaleString() %></span>
+              <span>Final Total</span>
+              <span id="grandTotal">₹<%= cart.totalSalePrice.toLocaleString() %></span>
             </div>
 
             <%

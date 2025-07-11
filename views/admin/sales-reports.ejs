@@ -201,22 +201,101 @@
       overflow: hidden;
     }
 
+    .table {
+      margin-bottom: 0;
+      font-size: 0.9rem;
+    }
+
     .table thead th {
       background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
       color: white;
       border: none;
       font-weight: 600;
-      padding: 1rem;
+      padding: 1rem 0.75rem;
+      text-align: center;
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
 
     .table tbody td {
-      padding: 1rem;
+      padding: 0.75rem;
       vertical-align: middle;
-      border-color: #f1f3f4;
+      border-color: #e9ecef;
+      text-align: center;
+      white-space: nowrap;
     }
 
     .table tbody tr:hover {
       background-color: #f8f9fa;
+      transform: scale(1.01);
+      transition: all 0.2s ease;
+    }
+
+    .table tbody tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    .table-responsive {
+      max-height: 600px;
+      overflow-y: auto;
+      border: 1px solid #dee2e6;
+      border-radius: 10px;
+    }
+
+    .customer-info {
+      text-align: left !important;
+    }
+
+    .customer-name {
+      font-weight: 600;
+      color: var(--dark-color);
+    }
+
+    .customer-email {
+      font-size: 0.8rem;
+      color: #666;
+    }
+
+    .amount-cell {
+      font-weight: 600;
+      color: var(--success-color);
+    }
+
+    .status-badge {
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-delivered {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    .status-completed {
+      background-color: #cce7ff;
+      color: #004085;
+    }
+
+    .discount-info {
+      text-align: left !important;
+    }
+
+    .discount-row {
+      margin-bottom: 0.25rem;
+      font-size: 0.8rem;
+    }
+
+    .offer-discount {
+      color: #e67e22;
+    }
+
+    .coupon-discount {
+      color: #8e44ad;
     }
 
     .loading-overlay {
@@ -699,23 +778,51 @@
 
       orders.forEach(order => {
         const row = document.createElement('tr');
+        
+        // Format date nicely
+        const orderDate = new Date(order.orderDate);
+        const formattedDate = orderDate.toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        });
+        const formattedTime = orderDate.toLocaleTimeString('en-IN', {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        // Status badge color
+        const statusClass = order.orderStatus === 'Delivered' ? 'status-delivered' : 'status-completed';
+        
+        // Total discount
+        const totalDiscount = order.offerDiscount + order.couponDiscount;
+
         row.innerHTML = `
           <td><strong>${order.orderNumber}</strong></td>
-          <td>${new Date(order.orderDate).toLocaleDateString()}</td>
           <td>
-            <div>${order.customerName}</div>
-            <small class="text-muted">${order.customerEmail}</small>
+            <div>${formattedDate}</div>
+            <small class="text-muted">${formattedTime}</small>
           </td>
-          <td><strong>₹${order.totalAmount.toFixed(2)}</strong></td>
+          <td class="customer-info">
+            <div class="customer-name">${order.customerName}</div>
+            <div class="customer-email">${order.customerEmail}</div>
+          </td>
+          <td class="amount-cell">₹${order.totalAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
           <td>
-            <span class="badge bg-success">${order.orderStatus}</span>
+            <span class="status-badge ${statusClass}">${order.orderStatus}</span>
           </td>
-          <td>${order.paymentMethod}</td>
           <td>
-            <div>Offer: ₹${order.offerDiscount.toFixed(2)}</div>
-            <div>Coupon: ₹${order.couponDiscount.toFixed(2)}</div>
+            <i class="fas fa-${order.paymentMethod === 'COD' ? 'money-bill-wave' : 'credit-card'} me-1"></i>
+            ${order.paymentMethod}
           </td>
-          <td>${order.itemCount}</td>
+          <td class="discount-info">
+            ${order.offerDiscount > 0 ? `<div class="discount-row offer-discount"><i class="fas fa-tag me-1"></i>Offer: ₹${order.offerDiscount.toFixed(2)}</div>` : ''}
+            ${order.couponDiscount > 0 ? `<div class="discount-row coupon-discount"><i class="fas fa-ticket-alt me-1"></i>Coupon: ₹${order.couponDiscount.toFixed(2)}</div>` : ''}
+            ${totalDiscount === 0 ? '<span class="text-muted">No discounts</span>' : `<div class="fw-bold">Total: ₹${totalDiscount.toFixed(2)}</div>`}
+          </td>
+          <td>
+            <span class="badge bg-primary">${order.itemCount}</span>
+          </td>
         `;
         tbody.appendChild(row);
       });

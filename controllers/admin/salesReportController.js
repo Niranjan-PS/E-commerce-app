@@ -2,6 +2,7 @@ import { catchAsyncError } from '../../middlewares/catchAsync.js';
 import { Order } from '../../model/orderModel.js';
 import { User } from '../../model/userModel.js';
 import PDFDocument from 'pdfkit';
+import ExcelJS from 'exceljs';
 
 // Date utility functions
 const formatDate = (date, format = 'YYYY-MM-DD') => {
@@ -170,7 +171,19 @@ export const getSalesData = catchAsyncError(async (req, res, next) => {
         if (startDate && endDate) {
           const start = new Date(startDate);
           const end = new Date(endDate);
-          end.setHours(23, 59, 59, 999); 
+          
+          // Validate date range
+          if (start > end) {
+            return res.status(400).json({
+              success: false,
+              message: 'Start date cannot be after end date'
+            });
+          }
+          
+          // Set proper time boundaries
+          start.setHours(0, 0, 0, 0);
+          end.setHours(23, 59, 59, 999);
+          
           dateFilter = {
             orderDate: {
               $gte: start,
@@ -397,7 +410,6 @@ export const exportSalesReportExcel = catchAsyncError(async (req, res, next) => 
   try {
     const { filterType, startDate, endDate, selectedDate, selectedWeek, selectedMonth } = req.query;
     
-   
     const salesDataResponse = await getSalesDataInternal({
       filterType, startDate, endDate, selectedDate, selectedWeek, selectedMonth
     });
@@ -408,48 +420,130 @@ export const exportSalesReportExcel = catchAsyncError(async (req, res, next) => 
 
     const { data } = salesDataResponse;
 
-   
-    let csvContent = '';
-    
-   
-    csvContent += 'LUXE SCENTS - Sales Report\n';
-    csvContent += `${data.reportTitle}\n`;
-    csvContent += `Generated on: ${formatDate(new Date(), 'MMMM DD, YYYY')} ${new Date().toLocaleTimeString()}\n`;
-    csvContent += '\n'; 
+    // Create a new workbook and worksheet
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Sales Report');
 
-    
-    csvContent += 'SUMMARY\n';
-    csvContent += `Total Sales Count,${data.metrics.totalSalesCount}\n`;
-    csvContent += `Total Sales Amount,₹${data.metrics.totalSalesAmount.toFixed(2)}\n`;
-    csvContent += `Total Offer Discounts,₹${data.metrics.totalOfferDiscounts.toFixed(2)}\n`;
-    csvContent += `Total Coupon Deductions,₹${data.metrics.totalCouponDeductions.toFixed(2)}\n`;
-    csvContent += `Average Order Value,₹${data.metrics.averageOrderValue.toFixed(2)}\n`;
-    csvContent += '\n'; 
+    // Set worksheet properties
+    worksheet.properties.defaultRowHeight = 20;
 
-   
+    // Add title and metadata
+    worksheet.addRow(['LUXE SCENTS - Sales Report']);
+    worksheet.addRow([data.reportTitle]);
+    worksheet.addRow([`Generated on: ${formatDate(new Date(), 'MMMM DD, YYYY')} ${new Date().toLocaleTimeString()}`]);
+    worksheet.addRow([]); // Empty row
+
+    // Style the title
+    worksheet.getCell('A1').font = { size: 16, bold: true };
+    worksheet.getCell('A2').font = { size: 14, bold: true };
+    worksheet.getCell('A3').font = { size: 12 };
+
+    // Add summary section
+    worksheet.addRow(['SUMMARY']);
+    worksheet.addRow(['Total Sales Count', data.metrics.totalSalesCount]);
+    worksheet.addRow(['Total Sales Amount', data.metrics.totalSalesAmount.toFixed(2)]);
+    worksheet.addRow(['Total Offer Discounts', data.metrics.totalOfferDiscounts.toFixed(2)]);
+    worksheet.addRow(['Total Coupon Deductions', data.metrics.totalCouponDeductions.toFixed(2)]);
+    worksheet.addRow(['Average Order Value', data.metrics.averageOrderValue.toFixed(2)]);
+    worksheet.addRow([]); // Empty row
+
+    // Style summary section
+    const summaryRow = worksheet.getRow(5);
+    summaryRow.font = { bold: true };
+    summaryRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE7E6E6' }
+    };
+
+    // Add order details if available
     if (data.orders.length > 0) {
-      csvContent += 'ORDER DETAILS\n';
+      worksheet.addRow(['ORDER DETAILS']);
       
-     
-      csvContent += 'Order Number,Order Date,Customer Name,Customer Email,Total Amount,Order Status,Payment Method,Offer Discount,Coupon Discount,Total Discount,Item Count\n';
+      // Add headers
+      const headerRow = worksheet.addRow([
+        'Order Number',
+        'Order Date',
+        'Customer Name',
+        'Customer Email',
+        'Total Amount',
+        'Order Status',
+        'Payment Method',
+        'Offer Discount',
+        'Coupon Discount',
+        'Total Discount',
+        'Item Count'
+      ]);
 
-     
+      // Style header row
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF4472C4' }
+      };
+
+      // Add order data rows
       data.orders.forEach(order => {
-        csvContent += `${order.orderNumber},${formatDate(order.orderDate, 'YYYY-MM-DD HH:mm')},${order.customerName},${order.customerEmail},${order.totalAmount},${order.orderStatus},${order.paymentMethod},${order.offerDiscount},${order.couponDiscount},${order.offerDiscount + order.couponDiscount},${order.itemCount}\n`;
+        worksheet.addRow([
+          order.orderNumber,
+          formatDate(order.orderDate, 'YYYY-MM-DD HH:mm'),
+          order.customerName,
+          order.customerEmail,
+          order.totalAmount.toFixed(2),
+          order.orderStatus,
+          order.paymentMethod,
+          order.offerDiscount.toFixed(2),
+          order.couponDiscount.toFixed(2),
+          (order.offerDiscount + order.couponDiscount).toFixed(2),
+          order.itemCount
+        ]);
       });
+
+      // Auto-fit columns
+      worksheet.columns.forEach(column => {
+        let maxLength = 0;
+        column.eachCell({ includeEmpty: true }, (cell) => {
+          const columnLength = cell.value ? cell.value.toString().length : 10;
+          if (columnLength > maxLength) {
+            maxLength = columnLength;
+          }
+        });
+        column.width = maxLength < 10 ? 10 : maxLength + 2;
+      });
+
+      // Add borders to data table
+      const dataStartRow = worksheet.rowCount - data.orders.length;
+      const dataEndRow = worksheet.rowCount;
+      const dataStartCol = 1;
+      const dataEndCol = 11;
+
+      for (let row = dataStartRow - 1; row <= dataEndRow; row++) {
+        for (let col = dataStartCol; col <= dataEndCol; col++) {
+          const cell = worksheet.getCell(row, col);
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        }
+      }
     }
 
-   
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="sales-report-${formatDate(new Date(), 'YYYY-MM-DD')}.csv"`);
+    // Set response headers for Excel file
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="sales-report-${formatDate(new Date(), 'YYYY-MM-DD')}.xlsx"`);
 
-    res.send(csvContent);
+    // Write to response
+    await workbook.xlsx.write(res);
+    res.end();
 
   } catch (error) {
-    console.error('Error exporting CSV:', error);
+    console.error('Error exporting Excel:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to export CSV report'
+      message: 'Failed to export Excel report'
     });
   }
 });

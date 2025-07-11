@@ -60,7 +60,15 @@ export const isAdminAuthenticated = catchAsyncError(async(req,res,next)=>{
     const token= req.cookies.adminToken
     console.log("Admin cookies:",req.cookies)
     if(!token){
-       return res.redirect('/admin/admin-login')
+        // Check if this is an API request
+        if(req.path.startsWith('/admin/api/') || req.headers['x-requested-with'] === 'XMLHttpRequest' || req.headers.accept?.includes('application/json')) {
+            return res.status(401).json({
+                success: false,
+                message: 'Admin authentication required',
+                redirect: '/admin/admin-login'
+            });
+        }
+        return res.redirect('/admin/admin-login')
     }
 
     try {
@@ -71,6 +79,14 @@ export const isAdminAuthenticated = catchAsyncError(async(req,res,next)=>{
 
         if(!admin || !admin.isAdmin) {
             res.clearCookie('adminToken');
+            // Check if this is an API request
+            if(req.path.startsWith('/admin/api/') || req.headers['x-requested-with'] === 'XMLHttpRequest' || req.headers.accept?.includes('application/json')) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Admin authentication required',
+                    redirect: '/admin/admin-login'
+                });
+            }
             return res.redirect('/admin/admin-login')
         }
 
@@ -79,6 +95,14 @@ export const isAdminAuthenticated = catchAsyncError(async(req,res,next)=>{
         next()
     } catch (error) {
         res.clearCookie('adminToken');
+        // Check if this is an API request
+        if(req.path.startsWith('/admin/api/') || req.headers['x-requested-with'] === 'XMLHttpRequest' || req.headers.accept?.includes('application/json')) {
+            return res.status(401).json({
+                success: false,
+                message: 'Admin authentication required',
+                redirect: '/admin/admin-login'
+            });
+        }
         return res.redirect('/admin/admin-login')
     }
 })
