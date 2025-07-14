@@ -90,7 +90,7 @@ export const getSalesData = catchAsyncError(async (req, res, next) => {
             orderDate: {
               $gte: startOfDay,
               $lte: endOfDay
-            }
+            } 
           };
           reportTitle = `Daily Report - ${formatDate(selectedDate, 'MMMM DD, YYYY')}`;
         } else {

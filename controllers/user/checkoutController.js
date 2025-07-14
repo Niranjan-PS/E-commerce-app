@@ -528,6 +528,23 @@ export const placeOrder = catchAsyncError(async (req, res, next) => {
       });
     }
 
+     const OrderNotAllowed = await Order.aggregate([
+       {
+         $match: {
+           paymentMethod: 'COD',
+           totalAmount: { $gt: 1000 }
+         }
+       }
+     ]);
+     if(!OrderNotAllowed){
+      return res.status(401).json({
+        success:false,
+        message: 'You Cannot order items above totalAmount 1000 on COD'
+      })
+     }
+     
+    
+
    
     const cart = await Cart.getOrCreateCart(req.user._id);
 
@@ -601,6 +618,14 @@ export const placeOrder = catchAsyncError(async (req, res, next) => {
     }
 
     const orderSummary = calculateOrderSummary(cart, couponDiscount);
+    
+//Disallow COD if amount > 1000
+if (paymentMethod === 'COD' && orderSummary.finalTotal > 1000) {
+  return res.status(400).json({
+    success: false,
+    message: 'COD is not allowed for orders above ₹1000. Please choose Online Payment.'
+  });
+}
 
     const orderItems = cart.items.map(item => ({
       product: item.product._id,
