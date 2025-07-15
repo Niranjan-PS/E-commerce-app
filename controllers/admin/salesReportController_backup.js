@@ -330,6 +330,7 @@ export const exportSalesReportPDF = catchAsyncError(async (req, res, next) => {
   try {
     const { filterType, startDate, endDate, selectedDate, selectedWeek, selectedMonth } = req.query;
     
+   
     const salesDataResponse = await getSalesDataInternal({
       filterType, startDate, endDate, selectedDate, selectedWeek, selectedMonth
     });
@@ -340,119 +341,70 @@ export const exportSalesReportPDF = catchAsyncError(async (req, res, next) => {
 
     const { data } = salesDataResponse;
 
-    const doc = new PDFDocument({ margin: 40, size: 'A4' });
+  
+    const doc = new PDFDocument({ margin: 50 });
+    
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="sales-report-${formatDate(new Date(), 'YYYY-MM-DD')}.pdf"`);
     
+   
     doc.pipe(res);
 
-    // Header with styling
-    doc.fontSize(24).fillColor('#6f42c1').text('LUXE SCENTS', 40, 40);
-    doc.fontSize(18).fillColor('#333').text('Sales Report', 40, 70);
-    doc.fontSize(12).fillColor('#666').text(data.reportTitle, 40, 100);
-    doc.text(`Generated on: ${formatDate(new Date(), 'MMMM DD, YYYY')} at ${new Date().toLocaleTimeString()}`, 40, 120);
+   
+    doc.fontSize(20).text('LUXE SCENTS', 50, 50);
+    doc.fontSize(16).text('Sales Report', 50, 80);
+    doc.fontSize(12).text(data.reportTitle, 50, 110);
+    doc.text(`Generated on: ${formatDate(new Date(), 'MMMM DD, YYYY')} ${new Date().toLocaleTimeString()}`, 50, 130);
 
-    // Add a line separator
-    doc.strokeColor('#6f42c1').lineWidth(2);
-    doc.moveTo(40, 145).lineTo(555, 145).stroke();
-
-    // Summary section with better styling
-    doc.fontSize(16).fillColor('#333').text('Summary', 40, 160);
-    
-    // Summary box
-    doc.rect(40, 180, 515, 80).stroke('#ddd');
-    doc.fontSize(10).fillColor('#333');
-    
-    // Two column layout for summary
+   
+    doc.fontSize(14).text('Summary', 50, 170);
+    doc.fontSize(10);
     doc.text(`Total Sales Count: ${data.metrics.totalSalesCount}`, 50, 195);
-    doc.text(`Total Sales Amount: ₹${data.metrics.totalSalesAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, 300, 195);
-    doc.text(`Total Offer Discounts: ₹${data.metrics.totalOfferDiscounts.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, 50, 215);
-    doc.text(`Total Coupon Deductions: ₹${data.metrics.totalCouponDeductions.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, 300, 215);
-    doc.text(`Average Order Value: ₹${data.metrics.averageOrderValue.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, 50, 235);
+    doc.text(`Total Sales Amount: ₹${data.metrics.totalSalesAmount.toFixed(2)}`, 50, 210);
+    doc.text(`Total Offer Discounts: ₹${data.metrics.totalOfferDiscounts.toFixed(2)}`, 50, 225);
+    doc.text(`Total Coupon Deductions: ₹${data.metrics.totalCouponDeductions.toFixed(2)}`, 50, 240);
+    doc.text(`Average Order Value: ₹${data.metrics.averageOrderValue.toFixed(2)}`, 50, 255);
 
-    // Order details table
+   
     if (data.orders.length > 0) {
-      doc.fontSize(16).fillColor('#333').text('Order Details', 40, 280);
+      doc.fontSize(12).text('Order Details', 50, 290);
       
-      let yPosition = 310;
-      const pageHeight = doc.page.height - 80;
+      let yPosition = 320;
+      const pageHeight = doc.page.height - 100;
 
-      // Table header with background
-      doc.rect(40, yPosition, 515, 25).fill('#6f42c1');
       
-      // Header text in white
-      doc.fontSize(9).fillColor('white');
-      doc.text('Order Number', 45, yPosition + 8);
-      doc.text('Date', 170, yPosition + 8);
-      doc.text('Customer', 230, yPosition + 8);
-      doc.text('Amount', 330, yPosition + 8);
-      doc.text('Payment', 390, yPosition + 8);
-      doc.text('Status', 450, yPosition + 8);
-      doc.text('Discount', 510, yPosition + 8);
+      doc.fontSize(8);
+      doc.text('Order #', 50, yPosition);
+      doc.text('Date', 130, yPosition);
+      doc.text('Customer', 200, yPosition);
+      doc.text('Amount', 300, yPosition);
+      doc.text('Payment', 360, yPosition);
+      doc.text('Status', 420, yPosition);
+      doc.text('Discount', 480, yPosition);
       
-      yPosition += 25;
+      yPosition += 20;
 
-      // Reset text color for data rows
-      doc.fillColor('#333');
      
       data.orders.forEach((order, index) => {
         if (yPosition > pageHeight) {
           doc.addPage();
           yPosition = 50;
-          
-          // Redraw header on new page
-          doc.rect(40, yPosition, 515, 25).fill('#6f42c1');
-          doc.fontSize(9).fillColor('white');
-          doc.text('Order Number', 45, yPosition + 8);
-          doc.text('Date', 170, yPosition + 8);
-          doc.text('Customer', 230, yPosition + 8);
-          doc.text('Amount', 330, yPosition + 8);
-          doc.text('Payment', 390, yPosition + 8);
-          doc.text('Status', 450, yPosition + 8);
-          doc.text('Discount', 510, yPosition + 8);
-          yPosition += 25;
-          doc.fillColor('#333');
         }
 
-        // Alternate row background
-        if (index % 2 === 0) {
-          doc.rect(40, yPosition, 515, 20).fill('#f8f9fa');
-        }
-
-        // Data text with proper spacing
-        doc.fontSize(8).fillColor('#333');
+        doc.text(order.orderNumber, 50, yPosition);
+        doc.text(formatDate(order.orderDate, 'MM/DD/YY'), 130, yPosition);
+        doc.text(order.customerName.substring(0, 15), 200, yPosition);
+        doc.text(`₹${order.totalAmount.toFixed(2)}`, 300, yPosition);
+        doc.text(order.paymentMethod, 360, yPosition);
+        doc.text(order.orderStatus, 420, yPosition);
+        doc.text(`₹${(order.offerDiscount + order.couponDiscount).toFixed(2)}`, 480, yPosition);
         
-        // Truncate long order numbers to prevent overlap
-        const orderNum = order.orderNumber.length > 20 ? 
-          order.orderNumber.substring(0, 20) + '...' : order.orderNumber;
-        
-        doc.text(orderNum, 45, yPosition + 6);
-        doc.text(formatDate(order.orderDate, 'MM/DD/YY'), 170, yPosition + 6);
-        doc.text(order.customerName.substring(0, 14), 230, yPosition + 6);
-        doc.text(`₹${order.totalAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, 330, yPosition + 6);
-        doc.text(order.paymentMethod.substring(0, 8), 390, yPosition + 6);
-        doc.text(order.orderStatus.substring(0, 10), 450, yPosition + 6);
-        doc.text(`₹${(order.offerDiscount + order.couponDiscount).toLocaleString('en-IN', {minimumFractionDigits: 2})}`, 510, yPosition + 6);
-        
-        // Add subtle row border
-        doc.strokeColor('#e9ecef').lineWidth(0.5);
-        doc.moveTo(40, yPosition + 20).lineTo(555, yPosition + 20).stroke();
-        
-        yPosition += 20;
+        yPosition += 15;
       });
-      
-      // Final table border
-      doc.strokeColor('#6f42c1').lineWidth(1);
-      doc.rect(40, 310, 515, yPosition - 310).stroke();
     }
 
-    // Footer
-    const footerY = doc.page.height - 60;
-    doc.fontSize(8).fillColor('#666');
-    doc.text('This report was generated automatically by Luxe Scents Sales Management System', 40, footerY);
-    doc.text(`Page generated on ${new Date().toISOString()}`, 40, footerY + 15);
-
+    
     doc.end();
 
   } catch (error) {
@@ -612,6 +564,7 @@ async function getSalesDataInternal(params) {
   try {
     const { filterType, startDate, endDate, selectedDate, selectedWeek, selectedMonth } = params;
     
+  
     let dateFilter = {};
     let reportTitle = '';
     

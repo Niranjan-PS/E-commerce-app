@@ -121,7 +121,7 @@ export const getAdminOrderDetails = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Update order status with invoice generation trigger
+// Update 
 export const updateOrderStatus = catchAsyncError(async (req, res, next) => {
   try {
     const { orderId } = req.params;
@@ -145,32 +145,20 @@ export const updateOrderStatus = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Update order status
+   
     order.orderStatus = status;
 
-    // Handle delivery status change
+   
     if (status === 'Delivered') {
       order.deliveredAt = new Date();
       order.paymentStatus = 'Paid';
-      
-      // Save the order first to ensure the status is updated
-      await order.save();
-      
-      // Check if invoice can now be generated (for COD orders)
-      try {
-        const { generateInvoiceAfterStatusChange } = await import('../user/orderController.js');
-        await generateInvoiceAfterStatusChange(order);
-        console.log(`Invoice eligibility checked for order: ${order.orderNumber} after delivery status update`);
-      } catch (error) {
-        console.error('Error checking invoice eligibility after delivery:', error);
-      }
     }
 
-    // Handle cancellation
+   
     if (status === 'Cancelled') {
       order.cancelledAt = new Date();
 
-      // Restore stock for cancelled items
+      
       for (const item of order.items) {
         await Product.findByIdAndUpdate(
           item.product,

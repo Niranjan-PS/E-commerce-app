@@ -338,39 +338,101 @@ const editProduct = async (req, res) => {
     const existingImages = Array.isArray(product.productImage) ? [...product.productImage] : [];
     console.log("Existing images:", existingImages);
 
+    let updatedImages = [...existingImages];
 
-    const imageFields = ['image1', 'image2', 'image3', 'image4'];
-    const updatedImages = [...existingImages];
+    // Handle cropped images data if provided
+    if (productData.croppedImagesData) {
+      try {
+        const croppedImagesArray = JSON.parse(productData.croppedImagesData);
+        console.log('Processing cropped images:', croppedImagesArray.length);
 
-    for (let i = 0; i < imageFields.length; i++) {
-      const fieldName = imageFields[i];
-      const files = req.files && req.files[fieldName];
-      const file = files && files[0];
-
-      if (file) {
-        console.log(`Processing new image for ${fieldName}:`, file.filename);
-
-
-        if (i < existingImages.length) {
-
-          try {
-            const oldImagePath = path.join(__dirname, "../../public/uploads/product-images", existingImages[i]);
-            await fs.promises.unlink(oldImagePath).catch(err => {
-              console.warn(`Failed to delete old image ${oldImagePath}: ${err.message}`);
-            });
-          } catch (err) {
-            console.warn(`Error deleting old image: ${err.message}`);
+        if (croppedImagesArray.length > 0) {
+          // Delete old images that will be replaced
+          for (let i = 0; i < Math.min(croppedImagesArray.length, existingImages.length); i++) {
+            try {
+              const oldImagePath = path.join(__dirname, "../../public/uploads/product-images", existingImages[i]);
+              await fs.promises.unlink(oldImagePath).catch(err => {
+                console.warn(`Failed to delete old image ${oldImagePath}: ${err.message}`);
+              });
+            } catch (err) {
+              console.warn(`Error deleting old image: ${err.message}`);
+            }
           }
 
+          // Process cropped images
+          const newImageFilenames = [];
+          for (let i = 0; i < croppedImagesArray.length; i++) {
+            const base64Data = croppedImagesArray[i];
+            const base64Image = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
+            const imageBuffer = Buffer.from(base64Image, 'base64');
 
-          updatedImages[i] = file.filename;
-        } else {
+            const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+            const filename = `cropped-edit-${uniqueSuffix}.jpg`;
 
-          updatedImages.push(file.filename);
+            const uploadPath = path.join(__dirname, "../../public/uploads/product-images");
+            const filePath = path.join(uploadPath, filename);
+
+            if (!fs.existsSync(uploadPath)) {
+              fs.mkdirSync(uploadPath, { recursive: true });
+            }
+
+            await sharp(imageBuffer)
+              .resize(800, 800, {
+                fit: 'cover',
+                position: 'center'
+              })
+              .jpeg({ quality: 90 })
+              .toFile(filePath);
+
+            newImageFilenames.push(filename);
+          }
+
+          // Replace the beginning of the array with new cropped images
+          updatedImages = [...newImageFilenames];
+          
+          // Add any remaining existing images if we have fewer cropped images than existing ones
+          if (croppedImagesArray.length < existingImages.length) {
+            for (let i = croppedImagesArray.length; i < existingImages.length; i++) {
+              updatedImages.push(existingImages[i]);
+            }
+          }
+
+          console.log('Updated images after cropping:', updatedImages);
+        }
+      } catch (error) {
+        console.error('Error processing cropped images:', error);
+        return res.redirect(`/admin/edit-product/${productId}?error=Error+processing+cropped+images`);
+      }
+    } else {
+      // Handle regular file uploads if no cropped images
+      const imageFields = ['image1', 'image2', 'image3', 'image4'];
+
+      for (let i = 0; i < imageFields.length; i++) {
+        const fieldName = imageFields[i];
+        const files = req.files && req.files[fieldName];
+        const file = files && files[0];
+
+        if (file) {
+          console.log(`Processing new image for ${fieldName}:`, file.filename);
+
+          if (i < existingImages.length) {
+            // Delete old image
+            try {
+              const oldImagePath = path.join(__dirname, "../../public/uploads/product-images", existingImages[i]);
+              await fs.promises.unlink(oldImagePath).catch(err => {
+                console.warn(`Failed to delete old image ${oldImagePath}: ${err.message}`);
+              });
+            } catch (err) {
+              console.warn(`Error deleting old image: ${err.message}`);
+            }
+
+            updatedImages[i] = file.filename;
+          } else {
+            updatedImages.push(file.filename);
+          }
         }
       }
     }
-
 
     if (updatedImages.length < 3) {
       return res.redirect(`/admin/edit-product/${productId}?error=Product+must+have+at+least+3+images`);

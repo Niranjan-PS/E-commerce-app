@@ -580,9 +580,16 @@
               <i class="fas fa-eye me-1"></i>View Details
             </a>
 
-            <a href="/orders/<%= order._id %>/invoice" class="btn-action btn-success-custom">
-              <i class="fas fa-download me-1"></i>Download Invoice
-            </a>
+            <% if (order.canGenerateInvoice) { %>
+              <a href="/orders/<%= order._id %>/invoice" class="btn-action btn-success-custom">
+                <i class="fas fa-download me-1"></i>Download Invoice
+              </a>
+            <% } else { %>
+              <button class="btn-action" style="background: #cccccc; color: #666666; cursor: not-allowed;" disabled
+                      title="Invoice not available - <%= order.paymentStatus === 'Pending' ? 'Payment pending' : 'Payment required' %>">
+                <i class="fas fa-download me-1"></i>Download Invoice
+              </button>
+            <% } %>
 
             <% if (order.canBeCancelled) { %>
               <button class="btn-action btn-danger-custom" onclick="showCancelModal('<%= order._id %>', '<%= order.orderNumber %>')">

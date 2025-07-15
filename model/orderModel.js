@@ -336,6 +336,16 @@ const orderSchema = new mongoose.Schema({
   adminReturnNotes: {
     type: String,
     default: null
+  },
+
+  // Invoice generation fields
+  invoiceGenerated: {
+    type: Boolean,
+    default: false
+  },
+  invoiceGeneratedAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

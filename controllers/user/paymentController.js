@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { Order } from "../../model/orderModel.js";
 import { catchAsyncError } from "../../middlewares/catchAsync.js";
 import ErrorHandler from "../../middlewares/error.js";
+import { generateInvoiceAfterStatusChange } from './orderController.js';
 
 
 const razorpay = new Razorpay({
@@ -50,14 +51,21 @@ export const createRazorpayOrder = catchAsyncError(async (req, res, next) => {
       });
     }
 
+    // For retry payments, reset payment failure reason
+    if (order.paymentStatus === 'Failed') {
+      order.paymentFailureReason = null;
+      order.paymentStatus = 'Pending';
+    }
+
     const razorpayOrderOptions = {
       amount: Math.round(order.totalAmount * 100), 
       currency: 'INR',
-      receipt: `order_${order.orderNumber}`,
+      receipt: `retry_${order.orderNumber}_${Date.now()}`,
       notes: {
         orderId: order._id.toString(),
         orderNumber: order.orderNumber,
-        userId: req.user._id.toString()
+        userId: req.user._id.toString(),
+        isRetry: order.razorpayOrderId ? 'true' : 'false'
       }
     };
 
@@ -159,6 +167,15 @@ export const verifyRazorpayPayment = catchAsyncError(async (req, res, next) => {
     order.razorpaySignature = razorpay_signature;
     order.paidAt = new Date();
     await order.save();
+
+    // Trigger invoice generation after successful payment
+    try {
+      await generateInvoiceAfterStatusChange(order);
+      console.log(`Invoice eligibility checked for order: ${order.orderNumber} after payment completion`);
+    } catch (error) {
+      console.error('Error checking invoice eligibility after payment:', error);
+      // Don't fail the payment verification if invoice check fails
+    }
 
     res.status(200).json({
       success: true,

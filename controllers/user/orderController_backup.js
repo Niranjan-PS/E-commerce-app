@@ -7,108 +7,6 @@ import { Address } from "../../model/addressModel.js";
 import { updateStockOnOrder } from "../admin/inventoryController.js";
 import { addReturnAmountToWallet } from './walletController.js'; // Add this import
 
-// Helper function to check if invoice can be generated
-const checkInvoiceEligibility = (order) => {
-  // First check if payment status is pending for any payment method
-  if (order.paymentStatus === 'Pending') {
-    return {
-      eligible: false,
-      reason: 'Invoice cannot be generated while payment is pending. Please complete the payment first.'
-    };
-  }
-
-  // Check for failed payments
-  if (order.paymentStatus === 'Failed') {
-    return {
-      eligible: false,
-      reason: 'Invoice cannot be generated for failed payments. Please retry payment or contact support.'
-    };
-  }
-
-  // For Online payments: Check if payment is completed
-  if (order.paymentMethod === 'Online') {
-    if (order.paymentStatus !== 'Paid') {
-      return {
-        eligible: false,
-        reason: 'Invoice can only be generated after payment completion for online orders'
-      };
-    }
-  }
-  
-  // For COD payments: Check if order is delivered AND payment is marked as paid
-  if (order.paymentMethod === 'COD') {
-    if (order.orderStatus !== 'Delivered') {
-      return {
-        eligible: false,
-        reason: 'Invoice can only be generated after delivery for COD orders'
-      };
-    }
-    // Additional check for COD - payment should be marked as paid after delivery
-    if (order.paymentStatus !== 'Paid') {
-      return {
-        eligible: false,
-        reason: 'Invoice can only be generated after payment is confirmed for COD orders'
-      };
-    }
-  }
-
-  // For Wallet payments: Check if payment is completed
-  if (order.paymentMethod === 'Wallet') {
-    if (order.paymentStatus !== 'Paid') {
-      return {
-        eligible: false,
-        reason: 'Invoice can only be generated after payment completion for wallet orders'
-      };
-    }
-  }
-
-  // Additional checks for cancelled orders
-  if (order.orderStatus === 'Cancelled') {
-    return {
-      eligible: false,
-      reason: 'Invoice cannot be generated for cancelled orders'
-    };
-  }
-
-  // Final check - ensure payment status is 'Paid' for all cases
-  if (order.paymentStatus !== 'Paid') {
-    return {
-      eligible: false,
-      reason: 'Invoice can only be generated when payment status is "Paid"'
-    };
-  }
-
-  return {
-    eligible: true,
-    reason: null
-  };
-};
-
-// Helper function to generate invoice after status change
-const generateInvoiceAfterStatusChange = async (order) => {
-  try {
-    const canGenerate = checkInvoiceEligibility(order);
-    if (canGenerate.eligible) {
-      // Invoice is now eligible to be generated
-      console.log(`Invoice is now available for order: ${order.orderNumber}`);
-      
-      // Update order to mark that invoice is available
-      if (!order.invoiceGenerated) {
-        order.invoiceGenerated = true;
-        order.invoiceGeneratedAt = new Date();
-        await order.save();
-        console.log(`Invoice generation marked for order: ${order.orderNumber}`);
-      }
-      
-      // You can add any additional logic here like sending email notifications
-      return true;
-    }
-    return false;
-  } catch (error) {
-    console.error('Error checking invoice eligibility:', error);
-    return false;
-  }
-};
 
 export const getOrderDetails = catchAsyncError(async (req, res, next) => {
   try {
@@ -131,12 +29,6 @@ export const getOrderDetails = catchAsyncError(async (req, res, next) => {
     const orderObj = order.toObject();
     orderObj.canBeCancelled = canBeCancelled;
     orderObj.canRequestReturn = canRequestReturn;
-    
-    // Check if invoice can be generated
-    const invoiceEligibility = checkInvoiceEligibility(order);
-    orderObj.canGenerateInvoice = invoiceEligibility.eligible;
-    orderObj.invoiceMessage = invoiceEligibility.reason;
-    
     const displayAddress= order.shippingAddress
     if(!displayAddress){
       return res.status(400).json({"message":"addres not found"})
@@ -198,12 +90,10 @@ export const getUserOrders = catchAsyncError(async (req, res, next) => {
     const ordersWithEligibility = orders.map(order => {
       const canBeCancelled = order.canBeCancelled();
       const canRequestReturn = order.canRequestReturn();
-      const invoiceEligibility = checkInvoiceEligibility(order);
 
       const orderObj = order.toObject();
       orderObj.canBeCancelled = canBeCancelled;
       orderObj.canRequestReturn = canRequestReturn;
-      orderObj.canGenerateInvoice = invoiceEligibility.eligible;
       return orderObj;
     });
 
@@ -480,7 +370,7 @@ export const returnOrder = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// download invoice PDF - UPDATED WITH ELIGIBILITY CHECK
+// download invoice PDF
 export const downloadInvoice = catchAsyncError(async (req, res, next) => {
   try {
     const { orderId } = req.params;
@@ -495,16 +385,6 @@ export const downloadInvoice = catchAsyncError(async (req, res, next) => {
       return res.status(404).json({
         success: false,
         message: 'Order not found'
-      });
-    }
-
-    // Check if invoice can be generated based on payment method and status
-    const canGenerateInvoice = checkInvoiceEligibility(order);
-    
-    if (!canGenerateInvoice.eligible) {
-      return res.status(400).json({
-        success: false,
-        message: canGenerateInvoice.reason
       });
     }
 
@@ -650,9 +530,6 @@ export const markOrderDelivered = catchAsyncError(async (req, res, next) => {
     order.deliveredAt = new Date();
     order.paymentStatus = 'Paid';
     await order.save();
-
-    // Check if invoice can now be generated (for COD orders)
-    await generateInvoiceAfterStatusChange(order);
 
     res.status(200).json({
       success: true,
@@ -1019,6 +896,3 @@ export const completeReturnAndCreditWallet = catchAsyncError(async (req, res, ne
         refundAmount: totalRefundAmount
     });
 });
-
-// Export the helper functions for use in other controllers
-export { checkInvoiceEligibility, generateInvoiceAfterStatusChange };

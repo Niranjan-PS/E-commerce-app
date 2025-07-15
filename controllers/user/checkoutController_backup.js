@@ -3,7 +3,6 @@ import { Address } from "../../model/addressModel.js";
 import { Product } from "../../model/productModel.js";
 import { Order } from "../../model/orderModel.js";
 import { Coupon } from "../../model/couponModel.js";
-import { Wallet } from "../../model/walletModel.js";
 import { catchAsyncError } from "../../middlewares/catchAsync.js";
 import ErrorHandler from "../../middlewares/error.js";
 import { calculateBestOfferPrice } from "../../utils/offerCalculator.js";
@@ -58,16 +57,6 @@ export const getCheckout = catchAsyncError(async (req, res, next) => {
 
     const orderSummary = calculateOrderSummary(cart, couponDiscount);
 
-    // Get user's wallet balance from Wallet model
-    const userWallet = await Wallet.findOne({ userId: req.user._id });
-    const walletBalance = userWallet ? userWallet.balance : 0;
-
-    // Create user object with correct wallet balance
-    const userWithWallet = {
-      ...req.user.toObject(),
-      wallet: walletBalance
-    };
-
     res.render("user/checkout", {
       cart,
       addresses,
@@ -76,7 +65,7 @@ export const getCheckout = catchAsyncError(async (req, res, next) => {
       appliedCoupon,
       availableCoupons,
       taxConfig: TAX_CONFIG,
-      user: userWithWallet,
+      user: req.user,
       message: req.query.message || null,
       error: req.query.error || null
     });
@@ -728,11 +717,10 @@ if (paymentMethod === 'COD' && orderSummary.finalTotal > 1000) {
         }
       });
     } else if (paymentMethod === 'Wallet') {
-      // Handle wallet payment - get wallet balance from Wallet model
-      const userWallet = await Wallet.findOne({ userId: req.user._id });
-      const walletBalance = userWallet ? userWallet.balance : 0;
+      // Handle wallet payment
+      const user = await req.user.constructor.findById(req.user._id);
       
-      if (walletBalance < orderSummary.finalTotal) {
+      if (!user.wallet || user.wallet < orderSummary.finalTotal) {
         return res.status(400).json({
           success: false,
           message: 'Insufficient wallet balance'
@@ -740,16 +728,8 @@ if (paymentMethod === 'COD' && orderSummary.finalTotal > 1000) {
       }
 
       // Deduct amount from wallet
-      if (userWallet) {
-        userWallet.balance -= orderSummary.finalTotal;
-        userWallet.transactions.push({
-          transactionId: `TRN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          description: `Payment for Order #${order.orderNumber}`,
-          amount: -orderSummary.finalTotal,
-          date: new Date()
-        });
-        await userWallet.save();
-      }
+      user.wallet -= orderSummary.finalTotal;
+      await user.save();
 
       // Update order status
       order.paymentStatus = 'Paid';
