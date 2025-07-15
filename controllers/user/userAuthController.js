@@ -1,5 +1,3 @@
-import dotenv from 'dotenv';
-dotenv.config();
 import crypto from "crypto"
 import jwt from "jsonwebtoken";
 
@@ -308,8 +306,6 @@ export const verifyOtp = catchAsyncError(async(req,res,next) => {
 
     const currentTime = Date.now();
     const verificationCodeExpire = new Date(user.verificationCodeExpire).getTime()
-    console.log(currentTime,"this is the current time")
-    console.log(verificationCodeExpire,"OTP expiration time")
 
 
     if(currentTime > verificationCodeExpire){

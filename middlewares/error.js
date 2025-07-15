@@ -11,7 +11,6 @@ export const errorMiddleware=(err,req,res,next)=>{
     err.statusCode=err.statusCode || HttpStatus.INTERNAL_SERVER_ERROR
     err.message = err.message
 
-    console.log(err.message,"this is the err")
     if(err.name ==="CastError"){
         const message=`invalid ${err.path}`
         err= new ErrorHandler(message,HttpStatus.BAD_REQUEST);

@@ -70,10 +70,6 @@ app.use("/", userRoutes);
 app.use('/api/v1/user', userRoutes);
 app.use('/admin', adminRoutes);
 
-console.log("SMTP Email:", process.env.SMTP_MAIL);
-console.log("SMTP Password:", process.env.SMTP_PASSWORD);
-
-
 app.use((err, req, res, next) => {
   res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
   res.set("Pragma", "no-cache");

@@ -741,6 +741,47 @@ if (paymentMethod === 'COD' && orderSummary.finalTotal > 1000) {
   }
 });
 
+// Get all active coupons for modal
+export const getActiveCoupons = catchAsyncError(async (req, res, next) => {
+  try {
+    const now = new Date();
+    
+    // Get all active coupons that are currently valid
+    const coupons = await Coupon.find({
+      isActive: true,
+      validFrom: { $lte: now },
+      validUntil: { $gte: now },
+      $or: [
+        { usageLimit: null },
+        { $expr: { $lt: ['$usedCount', '$usageLimit'] } }
+      ]
+    })
+    .populate('applicableCategories', 'name')
+    .populate('applicableProducts', 'productName')
+    .sort({ discountValue: -1 }); // Sort by discount value descending
+
+    // Filter out coupons already used by this user
+    const availableCoupons = coupons.filter(coupon => {
+      const hasUsedCoupon = coupon.usedBy.some(usage => 
+        usage.user.toString() === req.user._id.toString()
+      );
+      return !hasUsedCoupon;
+    });
+
+    res.status(200).json({
+      success: true,
+      coupons: availableCoupons
+    });
+
+  } catch (error) {
+    console.error("Error fetching active coupons:", error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch coupons'
+    });
+  }
+});
+
 export const getOrderSuccess = catchAsyncError(async (req, res, next) => {
   try {
     const { orderId } = req.params;

@@ -562,7 +562,6 @@
     }
     
       const data = await res.json();
-      console.log("----this is  the live data----",data)
 
       if (!data.authenticated || data.blocked) {
         alert("You have been blocked by the admin. You will be logged out.");

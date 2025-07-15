@@ -231,6 +231,42 @@ router.post("/wishlist/move-to-cart/:productId", isAuthenticated, moveToCart);
 
 // Checkout routes
 router.get("/checkout", isAuthenticated, getCheckout);
+router.get("/checkout/available-coupons", isAuthenticated, async (req, res) => {
+  try {
+    const { Coupon } = await import("../model/couponModel.js");
+    
+    // Get all active coupons that are currently valid
+    const now = new Date();
+    const availableCoupons = await Coupon.find({
+      isActive: true,
+      validFrom: { $lte: now },
+      validUntil: { $gte: now },
+      $or: [
+        { usageLimit: null },
+        { $expr: { $lt: ["$usedCount", "$usageLimit"] } }
+      ]
+    }).select('code description discountType discountValue minimumAmount maximumDiscount validUntil applicableCategories applicableProducts usedBy')
+    .populate('applicableCategories', 'name')
+    .populate('applicableProducts', 'productName')
+    .sort({ discountValue: -1 });
+
+    // Filter out coupons already used by this user
+    const userAvailableCoupons = availableCoupons.filter(coupon => {
+      return !coupon.usedBy.some(usage => usage.user.toString() === req.user._id.toString());
+    });
+
+    res.json({
+      success: true,
+      coupons: userAvailableCoupons
+    });
+  } catch (error) {
+    console.error("Error fetching available coupons:", error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch available coupons'
+    });
+  }
+});
 router.post("/checkout/apply-coupon", isAuthenticated, applyCoupon);
 router.post("/checkout/apply-referral-coupon", isAuthenticated, applyReferralCoupon);
 router.post("/checkout/remove-coupon", isAuthenticated, removeCoupon);
