@@ -235,7 +235,7 @@ router.get("/checkout/available-coupons", isAuthenticated, async (req, res) => {
   try {
     const { Coupon } = await import("../model/couponModel.js");
     
-    // Get all active coupons that are currently valid
+  
     const now = new Date();
     const availableCoupons = await Coupon.find({
       isActive: true,
@@ -250,7 +250,7 @@ router.get("/checkout/available-coupons", isAuthenticated, async (req, res) => {
     .populate('applicableProducts', 'productName')
     .sort({ discountValue: -1 });
 
-    // Filter out coupons already used by this user
+    
     const userAvailableCoupons = availableCoupons.filter(coupon => {
       return !coupon.usedBy.some(usage => usage.user.toString() === req.user._id.toString());
     });

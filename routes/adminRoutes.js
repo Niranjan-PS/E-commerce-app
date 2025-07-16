@@ -125,7 +125,7 @@ router.post('/deleteCategory', isAdminAuthenticated, deleteCategory);
 
 //product
 router.get('/add-products', isAdminAuthenticated, async (req, res) => {
-  try {
+  try {  
     const cat = await Category.find({});
     res.render('product-add', {
       cat,

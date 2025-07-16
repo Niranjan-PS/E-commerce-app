@@ -289,7 +289,7 @@
                                         </p>
                                         <% if (offer.isCurrentlyValid) { %>
                                             <p class="text-success mb-0">
-                                                <strong>Offer Price: ₹<%= offer.calculateDiscountedPrice(offer.product.salePrice || offer.product.price).toFixed(2) %></strong>
+                                                <strong>Offer Price: ₹<%= offer.calculateDiscountedPrice(offer.product.price).toFixed(2) %></strong>
                                             </p>
                                         <% } %>
                                     </div>

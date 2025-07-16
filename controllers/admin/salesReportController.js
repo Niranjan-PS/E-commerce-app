@@ -347,41 +347,41 @@ export const exportSalesReportPDF = catchAsyncError(async (req, res, next) => {
     
     doc.pipe(res);
 
-    // Header with styling
+    
     doc.fontSize(24).fillColor('#6f42c1').text('LUXE SCENTS', 40, 40);
     doc.fontSize(18).fillColor('#333').text('Sales Report', 40, 70);
     doc.fontSize(12).fillColor('#666').text(data.reportTitle, 40, 100);
     doc.text(`Generated on: ${formatDate(new Date(), 'MMMM DD, YYYY')} at ${new Date().toLocaleTimeString()}`, 40, 120);
 
-    // Add a line separator
+    
     doc.strokeColor('#6f42c1').lineWidth(2);
     doc.moveTo(40, 145).lineTo(555, 145).stroke();
 
-    // Summary section with better styling
+    
     doc.fontSize(16).fillColor('#333').text('Summary', 40, 160);
     
-    // Summary box
+   
     doc.rect(40, 180, 515, 80).stroke('#ddd');
     doc.fontSize(10).fillColor('#333');
     
-    // Two column layout for summary
+   
     doc.text(`Total Sales Count: ${data.metrics.totalSalesCount}`, 50, 195);
     doc.text(`Total Sales Amount: ₹${data.metrics.totalSalesAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, 300, 195);
     doc.text(`Total Offer Discounts: ₹${data.metrics.totalOfferDiscounts.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, 50, 215);
     doc.text(`Total Coupon Deductions: ₹${data.metrics.totalCouponDeductions.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, 300, 215);
     doc.text(`Average Order Value: ₹${data.metrics.averageOrderValue.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, 50, 235);
 
-    // Order details table
+    
     if (data.orders.length > 0) {
       doc.fontSize(16).fillColor('#333').text('Order Details', 40, 280);
       
       let yPosition = 310;
       const pageHeight = doc.page.height - 80;
 
-      // Table header with background
+    
       doc.rect(40, yPosition, 515, 25).fill('#6f42c1');
       
-      // Header text in white
+      
       doc.fontSize(9).fillColor('white');
       doc.text('Order Number', 45, yPosition + 8);
       doc.text('Date', 170, yPosition + 8);
@@ -393,7 +393,7 @@ export const exportSalesReportPDF = catchAsyncError(async (req, res, next) => {
       
       yPosition += 25;
 
-      // Reset text color for data rows
+      
       doc.fillColor('#333');
      
       data.orders.forEach((order, index) => {
@@ -401,7 +401,7 @@ export const exportSalesReportPDF = catchAsyncError(async (req, res, next) => {
           doc.addPage();
           yPosition = 50;
           
-          // Redraw header on new page
+         
           doc.rect(40, yPosition, 515, 25).fill('#6f42c1');
           doc.fontSize(9).fillColor('white');
           doc.text('Order Number', 45, yPosition + 8);
@@ -415,15 +415,15 @@ export const exportSalesReportPDF = catchAsyncError(async (req, res, next) => {
           doc.fillColor('#333');
         }
 
-        // Alternate row background
+        
         if (index % 2 === 0) {
           doc.rect(40, yPosition, 515, 20).fill('#f8f9fa');
         }
 
-        // Data text with proper spacing
+       
         doc.fontSize(8).fillColor('#333');
         
-        // Truncate long order numbers to prevent overlap
+       
         const orderNum = order.orderNumber.length > 20 ? 
           order.orderNumber.substring(0, 20) + '...' : order.orderNumber;
         
@@ -435,19 +435,19 @@ export const exportSalesReportPDF = catchAsyncError(async (req, res, next) => {
         doc.text(order.orderStatus.substring(0, 10), 450, yPosition + 6);
         doc.text(`₹${(order.offerDiscount + order.couponDiscount).toLocaleString('en-IN', {minimumFractionDigits: 2})}`, 510, yPosition + 6);
         
-        // Add subtle row border
+       
         doc.strokeColor('#e9ecef').lineWidth(0.5);
         doc.moveTo(40, yPosition + 20).lineTo(555, yPosition + 20).stroke();
         
         yPosition += 20;
       });
       
-      // Final table border
+      
       doc.strokeColor('#6f42c1').lineWidth(1);
       doc.rect(40, 310, 515, yPosition - 310).stroke();
     }
 
-    // Footer
+
     const footerY = doc.page.height - 60;
     doc.fontSize(8).fillColor('#666');
     doc.text('This report was generated automatically by Luxe Scents Sales Management System', 40, footerY);
@@ -479,34 +479,34 @@ export const exportSalesReportExcel = catchAsyncError(async (req, res, next) => 
 
     const { data } = salesDataResponse;
 
-    // Create a new workbook and worksheet
+    
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Sales Report');
 
-    // Set worksheet properties
+   
     worksheet.properties.defaultRowHeight = 20;
 
-    // Add title and metadata
+   
     worksheet.addRow(['LUXE SCENTS - Sales Report']);
     worksheet.addRow([data.reportTitle]);
     worksheet.addRow([`Generated on: ${formatDate(new Date(), 'MMMM DD, YYYY')} ${new Date().toLocaleTimeString()}`]);
-    worksheet.addRow([]); // Empty row
+    worksheet.addRow([]);
 
-    // Style the title
+   
     worksheet.getCell('A1').font = { size: 16, bold: true };
     worksheet.getCell('A2').font = { size: 14, bold: true };
     worksheet.getCell('A3').font = { size: 12 };
 
-    // Add summary section
+   
     worksheet.addRow(['SUMMARY']);
     worksheet.addRow(['Total Sales Count', data.metrics.totalSalesCount]);
     worksheet.addRow(['Total Sales Amount', data.metrics.totalSalesAmount.toFixed(2)]);
     worksheet.addRow(['Total Offer Discounts', data.metrics.totalOfferDiscounts.toFixed(2)]);
     worksheet.addRow(['Total Coupon Deductions', data.metrics.totalCouponDeductions.toFixed(2)]);
     worksheet.addRow(['Average Order Value', data.metrics.averageOrderValue.toFixed(2)]);
-    worksheet.addRow([]); // Empty row
+    worksheet.addRow([]); 
 
-    // Style summary section
+    
     const summaryRow = worksheet.getRow(5);
     summaryRow.font = { bold: true };
     summaryRow.fill = {
@@ -515,11 +515,11 @@ export const exportSalesReportExcel = catchAsyncError(async (req, res, next) => 
       fgColor: { argb: 'FFE7E6E6' }
     };
 
-    // Add order details if available
+   
     if (data.orders.length > 0) {
       worksheet.addRow(['ORDER DETAILS']);
       
-      // Add headers
+    
       const headerRow = worksheet.addRow([
         'Order Number',
         'Order Date',

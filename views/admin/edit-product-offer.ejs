@@ -391,7 +391,7 @@
                                     <% if (offer.product.salePrice) { %>
                                         | Sale: ₹<%= offer.product.salePrice.toFixed(2) %>
                                     <% } %>
-                                    | Offer: ₹<%= offer.calculateDiscountedPrice(offer.product.salePrice || offer.product.price).toFixed(2) %>
+                                    | Offer: ₹<%= offer.calculateDiscountedPrice(offer.product.price).toFixed(2) %>
                                 </p>
                                 <p id="previewDuration" class="mb-0 text-muted">
                                     <%= new Date(offer.startDate).toLocaleDateString() %> - 

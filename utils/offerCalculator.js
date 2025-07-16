@@ -55,15 +55,19 @@ export const calculateBestOfferPrice = async (product, date = new Date()) => {
     }
 
    
-    let discountedPrice = originalPrice;
+    const salePrice = product.salePrice;
+    let discountedPrice;
     let savings = 0;
     let offerDetails = null;
     let appliedOfferInfo = null;
+    let hasOffer = false;
 
     if (bestOffer && bestDiscountPercentage > 0) {
+      // Apply offer discount to regular price
       const discountAmount = (originalPrice * bestDiscountPercentage) / 100;
       discountedPrice = Math.round((originalPrice - discountAmount) * 100) / 100;
       savings = Math.round((originalPrice - discountedPrice) * 100) / 100;
+      hasOffer = true;
       
       offerDetails = {
         id: bestOffer._id,
@@ -88,13 +92,22 @@ export const calculateBestOfferPrice = async (product, date = new Date()) => {
             : `Applied ${offerType} offer (${bestDiscountPercentage}%)`
         }
       };
+    } else {
+      // No active offer - use sale price if available, otherwise regular price
+      if (salePrice && salePrice < originalPrice) {
+        discountedPrice = salePrice;
+        savings = Math.round((originalPrice - salePrice) * 100) / 100;
+      } else {
+        discountedPrice = originalPrice;
+        savings = 0;
+      }
     }
 
     return {
       originalPrice,
       discountedPrice,
       savings,
-      hasOffer: !!bestOffer,
+      hasOffer,
       offerDetails,
       appliedOfferInfo,
       availableOffers
@@ -105,8 +118,8 @@ export const calculateBestOfferPrice = async (product, date = new Date()) => {
    
     return {
       originalPrice: product.price,
-      discountedPrice: product.price,
-      savings: 0,
+      discountedPrice: product.salePrice && product.salePrice < product.price ? product.salePrice : product.price,
+      savings: product.salePrice && product.salePrice < product.price ? product.price - product.salePrice : 0,
       hasOffer: false,
       offerDetails: null,
       appliedOfferInfo: null,

@@ -18,6 +18,9 @@
       background-color: #000000;
       padding: 1rem 2rem;
       border-bottom: 1px solid #090909;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
     }
     .navbar-brand {
       font-weight: 700;
@@ -111,6 +114,11 @@
       border-radius: 8px;
       margin-bottom: 2rem;
       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      position: sticky;
+      top: 20px;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      z-index: 100;
     }
     .filter-title {
       font-size: 1.2rem;
@@ -488,20 +496,33 @@
                       </div>
 
                       <div class="price-section">
-                        <% if (product.salePrice && product.salePrice < product.price) { %>
+                        <% if (product.hasOffer && product.offerPrice < product.price) { %>
+                          <!-- Product has an active offer -->
                           <div class="d-flex align-items-center flex-wrap">
-                            <span class="sale-price text-success fw-bold fs-5">₹<%= product.salePrice.toFixed(2) %></span>
+                            <span class="offer-price text-success fw-bold fs-5">₹<%= product.offerPrice.toFixed(2) %></span>
                             <span class="original-price text-muted text-decoration-line-through ms-2">₹<%= product.price.toFixed(2) %></span>
                           </div>
-                          <% if (product.discount > 0) { %>
+                          <% if (product.offerDetails) { %>
                             <div class="mt-1">
-                              <span class="discount-badge bg-danger text-white px-2 py-1 rounded" style="font-size: 0.75rem; font-weight: bold;">-<%= product.discount %>% OFF</span>
+                              <span class="discount-badge bg-danger text-white px-2 py-1 rounded" style="font-size: 0.75rem; font-weight: bold;">-<%= product.offerDetails.discountPercentage %>% OFF</span>
                             </div>
                           <% } %>
                           <div class="savings-text mt-1">
-                            <small class="text-success fw-bold">Save ₹<%= (product.price - product.salePrice).toFixed(2) %></small>
+                            <small class="text-success fw-bold">Save ₹<%= product.savings.toFixed(2) %></small>
                           </div>
+                        <% } else if (product.offerPrice < product.price) { %>
+                          <!-- Product has sale price (no active offer but sale price applied) -->
+                          <div class="d-flex align-items-center flex-wrap">
+                            <span class="sale-price text-success fw-bold fs-5">₹<%= product.offerPrice.toFixed(2) %></span>
+                            <span class="original-price text-muted text-decoration-line-through ms-2">₹<%= product.price.toFixed(2) %></span>
+                          </div>
+                          <% if (product.savings > 0) { %>
+                            <div class="savings-text mt-1">
+                              <small class="text-success fw-bold">Save ₹<%= product.savings.toFixed(2) %></small>
+                            </div>
+                          <% } %>
                         <% } else { %>
+                          <!-- Regular price -->
                           <span class="product-price text-primary fw-bold fs-5">₹<%= product.price.toFixed(2) %></span>
                         <% } %>
                       </div>
