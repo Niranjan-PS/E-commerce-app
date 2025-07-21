@@ -694,8 +694,8 @@
           </button>
         <% } %>
 
-        <!-- Retry Payment Button for Failed Online Payments -->
-        <% if (order.paymentMethod === 'Online' && order.paymentStatus === 'Failed') { %>
+        <!-- Retry Payment Button for Failed/Pending Online Payments -->
+        <% if (order.paymentMethod === 'Online' && (order.paymentStatus === 'Failed' || order.paymentStatus === 'Pending')) { %>
           <button class="back-button" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24);" onclick="retryPayment('<%= order._id %>')">
             <i class="fas fa-redo"></i>
             Retry Payment
@@ -1491,13 +1491,39 @@ document.addEventListener('DOMContentLoaded', () => {
             color: '#6200ea'
           },
           modal: {
-            ondismiss: function() {
+            ondismiss: async function() {
               // Payment modal was closed without completing payment
+              console.log('Razorpay modal dismissed - marking order as failed');
+              
+              // Mark order as failed when modal is closed
+              await handlePaymentFailure(orderId, {
+                code: 'PAYMENT_CANCELLED',
+                description: 'Payment was cancelled by user',
+                source: 'customer',
+                step: 'payment_authentication',
+                reason: 'payment_cancelled'
+              });
+              
+              // Show user-friendly message
               Swal.fire({
-                icon: 'info',
+                icon: 'warning',
                 title: 'Payment Cancelled',
-                text: 'Payment was cancelled. You can retry payment anytime from the order details.',
-                confirmButtonColor: '#6200ea'
+                html: `
+                  <div class="text-center">
+                    <p>Payment was cancelled. Your order payment status has been updated.</p>
+                    <div class="mt-3">
+                      <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        You can retry payment anytime from the order details page.
+                      </small>
+                    </div>
+                  </div>
+                `,
+                confirmButtonColor: '#6200ea',
+                confirmButtonText: 'Understood'
+              }).then(() => {
+                // Reload page to show updated order status
+                location.reload();
               });
             }
           },
@@ -1512,8 +1538,27 @@ document.addEventListener('DOMContentLoaded', () => {
         
         rzp.on('payment.failed', async function(response) {
           // Handle payment failure
+          console.log('Razorpay payment failed:', response.error);
           await handlePaymentFailure(orderId, response.error);
         });
+
+        // Track if payment was completed to avoid double failure handling
+        let paymentCompleted = false;
+        
+        // Override the original handler to track completion
+        const originalHandler = options.handler;
+        options.handler = async function(response) {
+          paymentCompleted = true;
+          await originalHandler(response);
+        };
+
+        // Override the original ondismiss to check if payment was completed
+        const originalOnDismiss = options.modal.ondismiss;
+        options.modal.ondismiss = async function() {
+          if (!paymentCompleted) {
+            await originalOnDismiss();
+          }
+        };
 
         rzp.open();
 

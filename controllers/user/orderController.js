@@ -5,11 +5,11 @@ import ErrorHandler from "../../middlewares/error.js";
 import PDFDocument from 'pdfkit';
 import { Address } from "../../model/addressModel.js";
 import { updateStockOnOrder } from "../admin/inventoryController.js";
-import { addReturnAmountToWallet } from './walletController.js'; // Add this import
+import { addReturnAmountToWallet } from './walletController.js'; 
 
-// Helper function to check if invoice can be generated
+
 const checkInvoiceEligibility = (order) => {
-  // First check if payment status is pending for any payment method
+  
   if (order.paymentStatus === 'Pending') {
     return {
       eligible: false,
@@ -17,7 +17,7 @@ const checkInvoiceEligibility = (order) => {
     };
   }
 
-  // Check for failed payments
+ 
   if (order.paymentStatus === 'Failed') {
     return {
       eligible: false,
@@ -25,7 +25,7 @@ const checkInvoiceEligibility = (order) => {
     };
   }
 
-  // For Online payments: Check if payment is completed
+  
   if (order.paymentMethod === 'Online') {
     if (order.paymentStatus !== 'Paid') {
       return {
@@ -35,7 +35,7 @@ const checkInvoiceEligibility = (order) => {
     }
   }
   
-  // For COD payments: Check if order is delivered AND payment is marked as paid
+  
   if (order.paymentMethod === 'COD') {
     if (order.orderStatus !== 'Delivered') {
       return {
@@ -43,7 +43,7 @@ const checkInvoiceEligibility = (order) => {
         reason: 'Invoice can only be generated after delivery for COD orders'
       };
     }
-    // Additional check for COD - payment should be marked as paid after delivery
+    
     if (order.paymentStatus !== 'Paid') {
       return {
         eligible: false,
@@ -52,7 +52,7 @@ const checkInvoiceEligibility = (order) => {
     }
   }
 
-  // For Wallet payments: Check if payment is completed
+  
   if (order.paymentMethod === 'Wallet') {
     if (order.paymentStatus !== 'Paid') {
       return {
@@ -62,7 +62,7 @@ const checkInvoiceEligibility = (order) => {
     }
   }
 
-  // Additional checks for cancelled orders
+  
   if (order.orderStatus === 'Cancelled') {
     return {
       eligible: false,
@@ -70,7 +70,7 @@ const checkInvoiceEligibility = (order) => {
     };
   }
 
-  // Final check - ensure payment status is 'Paid' for all cases
+ 
   if (order.paymentStatus !== 'Paid') {
     return {
       eligible: false,
@@ -84,15 +84,14 @@ const checkInvoiceEligibility = (order) => {
   };
 };
 
-// Helper function to generate invoice after status change
 const generateInvoiceAfterStatusChange = async (order) => {
   try {
     const canGenerate = checkInvoiceEligibility(order);
     if (canGenerate.eligible) {
-      // Invoice is now eligible to be generated
+      
       console.log(`Invoice is now available for order: ${order.orderNumber}`);
       
-      // Update order to mark that invoice is available
+     
       if (!order.invoiceGenerated) {
         order.invoiceGenerated = true;
         order.invoiceGeneratedAt = new Date();
@@ -100,7 +99,7 @@ const generateInvoiceAfterStatusChange = async (order) => {
         console.log(`Invoice generation marked for order: ${order.orderNumber}`);
       }
       
-      // You can add any additional logic here like sending email notifications
+      
       return true;
     }
     return false;
@@ -132,7 +131,7 @@ export const getOrderDetails = catchAsyncError(async (req, res, next) => {
     orderObj.canBeCancelled = canBeCancelled;
     orderObj.canRequestReturn = canRequestReturn;
     
-    // Check if invoice can be generated
+    
     const invoiceEligibility = checkInvoiceEligibility(order);
     orderObj.canGenerateInvoice = invoiceEligibility.eligible;
     orderObj.invoiceMessage = invoiceEligibility.reason;
@@ -480,7 +479,7 @@ export const returnOrder = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// download invoice PDF - UPDATED WITH ELIGIBILITY CHECK
+// download invoice PDF -
 export const downloadInvoice = catchAsyncError(async (req, res, next) => {
   try {
     const { orderId } = req.params;
@@ -498,7 +497,7 @@ export const downloadInvoice = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Check if invoice can be generated based on payment method and status
+   
     const canGenerateInvoice = checkInvoiceEligibility(order);
     
     if (!canGenerateInvoice.eligible) {
@@ -566,7 +565,7 @@ export const downloadInvoice = catchAsyncError(async (req, res, next) => {
 
    
     order.items.forEach(item => {
-      // Use offer price 
+     
       const itemPrice = item.discountedPrice || item.salePrice || item.price;
       const itemTotal = itemPrice * item.quantity;
 
@@ -577,7 +576,7 @@ export const downloadInvoice = catchAsyncError(async (req, res, next) => {
       yPosition += 20;
     });
 
-    // Add totals
+    
     yPosition += 20;
     doc.moveTo(300, yPosition).lineTo(550, yPosition).stroke();
     yPosition += 15;
@@ -651,7 +650,7 @@ export const markOrderDelivered = catchAsyncError(async (req, res, next) => {
     order.paymentStatus = 'Paid';
     await order.save();
 
-    // Check if invoice can now be generated (for COD orders)
+   
     await generateInvoiceAfterStatusChange(order);
 
     res.status(200).json({
@@ -1020,5 +1019,5 @@ export const completeReturnAndCreditWallet = catchAsyncError(async (req, res, ne
     });
 });
 
-// Export the helper functions for use in other controllers
+
 export { checkInvoiceEligibility, generateInvoiceAfterStatusChange };

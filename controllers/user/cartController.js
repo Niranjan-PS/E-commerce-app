@@ -151,7 +151,7 @@ export const updateCartQuantity = catchAsyncError(async (req, res, next) => {
     cart.updateItemQuantity(productId, parseInt(quantity));
     await cart.save();
 
-   // Calculate offer price for updated quantity
+   // Calculate offer price 
     const offerCalculation = await calculateBestOfferPrice(product);
     const effectivePrice = offerCalculation.discountedPrice;
 

@@ -369,10 +369,8 @@ export const verifyOtp = catchAsyncError(async(req,res,next) => {
 
       } catch (error) {
         console.error('[Referral] Error processing referral rewards:', error);
-        console.error('[Referral] Error stack:', error.stack);
-        // Don't fail registration if referral processing fails, but log the error
+        
       } finally {
-        // Always clear temporary referral data regardless of success/failure
         user.tempReferralData = null;
         console.log('[Referral] Cleared tempReferralData');
       }

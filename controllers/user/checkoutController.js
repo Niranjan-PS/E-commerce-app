@@ -443,7 +443,6 @@ export const applyReferralCoupon = catchAsyncError(async (req, res, next) => {
       });
     }
 
-  
     const cartTotal = cart.totalSalePrice || 0;
     if (cartTotal < assignedCoupon.minimumAmount) {
       return res.status(400).json({
@@ -630,7 +629,7 @@ export const placeOrder = catchAsyncError(async (req, res, next) => {
 
     const orderSummary = calculateOrderSummary(cart, couponDiscount);
     
-//Disallow COD if amount > 1000
+
 if (paymentMethod === 'COD' && orderSummary.finalTotal > 1000) {
   return res.status(400).json({
     success: false,
@@ -701,21 +700,21 @@ if (paymentMethod === 'COD' && orderSummary.finalTotal > 1000) {
       delete req.session.appliedCoupon;
     }
 
-    for (const item of cart.items) {
-      await Product.findByIdAndUpdate(
-        item.product._id,
-        { $inc: { quantity: -item.quantity } }
-      );
-    }
-
-
-
-    cart.items = [];
-    cart.calculateTotals();
-    await cart.save();
-
-   
+  
     if (paymentMethod === 'COD') {
+      
+      for (const item of cart.items) {
+        await Product.findByIdAndUpdate(
+          item.product._id,
+          { $inc: { quantity: -item.quantity } }
+        );
+      }
+
+      
+      cart.items = [];
+      cart.calculateTotals();
+      await cart.save();
+
       res.status(201).json({
         success: true,
         message: 'Order placed successfully',
@@ -728,7 +727,7 @@ if (paymentMethod === 'COD' && orderSummary.finalTotal > 1000) {
         }
       });
     } else if (paymentMethod === 'Wallet') {
-      // Handle wallet payment - get wallet balance from Wallet model
+      
       const userWallet = await Wallet.findOne({ userId: req.user._id });
       const walletBalance = userWallet ? userWallet.balance : 0;
       
@@ -737,6 +736,14 @@ if (paymentMethod === 'COD' && orderSummary.finalTotal > 1000) {
           success: false,
           message: 'Insufficient wallet balance'
         });
+      }
+
+      
+      for (const item of cart.items) {
+        await Product.findByIdAndUpdate(
+          item.product._id,
+          { $inc: { quantity: -item.quantity } }
+        );
       }
 
       // Deduct amount from wallet
@@ -751,20 +758,25 @@ if (paymentMethod === 'COD' && orderSummary.finalTotal > 1000) {
         await userWallet.save();
       }
 
-      // Update order status
+      
       order.paymentStatus = 'Paid';
       order.orderStatus = 'Confirmed';
       order.paidAt = new Date();
       await order.save();
 
-      // Trigger invoice generation after successful wallet payment
+      
+      cart.items = [];
+      cart.calculateTotals();
+      await cart.save();
+
+     
       try {
         const { generateInvoiceAfterStatusChange } = await import('./orderController.js');
         await generateInvoiceAfterStatusChange(order);
         console.log(`Invoice eligibility checked for order: ${order.orderNumber} after wallet payment completion`);
       } catch (error) {
         console.error('Error checking invoice eligibility after wallet payment:', error);
-        // Don't fail the order placement if invoice check fails
+        
       }
 
       res.status(201).json({
@@ -779,7 +791,6 @@ if (paymentMethod === 'COD' && orderSummary.finalTotal > 1000) {
         }
       });
     } else {
-      // Online payment
       res.status(201).json({
         success: true,
         message: 'Order created successfully. Proceed to payment.',
@@ -808,7 +819,7 @@ export const getActiveCoupons = catchAsyncError(async (req, res, next) => {
   try {
     const now = new Date();
     
-    // Get all active coupons that are currently valid
+   
     const coupons = await Coupon.find({
       isActive: true,
       validFrom: { $lte: now },
@@ -820,9 +831,9 @@ export const getActiveCoupons = catchAsyncError(async (req, res, next) => {
     })
     .populate('applicableCategories', 'name')
     .populate('applicableProducts', 'productName')
-    .sort({ discountValue: -1 }); // Sort by discount value descending
+    .sort({ discountValue: -1 }); 
 
-    // Filter out coupons already used by this user
+    
     const availableCoupons = coupons.filter(coupon => {
       const hasUsedCoupon = coupon.usedBy.some(usage => 
         usage.user.toString() === req.user._id.toString()
@@ -869,3 +880,33 @@ export const getOrderSuccess = catchAsyncError(async (req, res, next) => {
     return res.redirect('/');
   }
 });
+
+
+export const clearCartAfterPayment = async (userId, orderItems) => {
+  try {
+    // Get user's cart
+    const cart = await Cart.findOne({ user: userId });
+    if (!cart) {
+      console.log('Cart not found for user:', userId);
+      return;
+    }
+
+    // Update product quantities
+    for (const item of orderItems) {
+      await Product.findByIdAndUpdate(
+        item.product,
+        { $inc: { quantity: -item.quantity } }
+      );
+    }
+
+   
+    cart.items = [];
+    cart.calculateTotals();
+    await cart.save();
+
+    console.log('Cart cleared and stock updated for user:', userId);
+  } catch (error) {
+    console.error('Error clearing cart after payment:', error);
+    throw error;
+  }
+};

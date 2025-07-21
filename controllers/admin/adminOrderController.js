@@ -156,7 +156,7 @@ export const updateOrderStatus = catchAsyncError(async (req, res, next) => {
        
       await order.save();
       
-      // Check if invoice can now be generated (for COD orders)
+      // Check if invoice can now be generated
       try {
         const { generateInvoiceAfterStatusChange } = await import('../user/orderController.js');
         await generateInvoiceAfterStatusChange(order);

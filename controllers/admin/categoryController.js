@@ -278,14 +278,6 @@ export const deleteCategory = async (req, res) => {
 
 
 
-    // // Example: Delete products with quantity < 5 and price < 1000
-    // await Product.deleteMany({
-    //   $and: [
-    //     { quantity: { $lt: 5 } },
-    //     { price: { $lt: 1000 } }
-    //   ]
-    // });
-
 
     res.redirect('/admin/category?message=Category+deleted+successfully');
   } catch (error) {

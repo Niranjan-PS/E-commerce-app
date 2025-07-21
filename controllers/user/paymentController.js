@@ -23,7 +23,6 @@ export const createRazorpayOrder = catchAsyncError(async (req, res, next) => {
       });
     }
 
-  
     const order = await Order.findOne({
       _id: orderId,
       user: req.user._id
@@ -36,7 +35,7 @@ export const createRazorpayOrder = catchAsyncError(async (req, res, next) => {
       });
     }
 
-   
+    
     if (order.paymentStatus === 'Paid') {
       return res.status(400).json({
         success: false,
@@ -44,6 +43,7 @@ export const createRazorpayOrder = catchAsyncError(async (req, res, next) => {
       });
     }
 
+    
     if (order.orderStatus === 'Cancelled') {
       return res.status(400).json({
         success: false,
@@ -51,8 +51,8 @@ export const createRazorpayOrder = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // For retry payments, reset payment failure reason
-    if (order.paymentStatus === 'Failed') {
+    
+    if (order.paymentStatus === 'Failed' || order.paymentStatus === 'Pending') {
       order.paymentFailureReason = null;
       order.paymentStatus = 'Pending';
     }
@@ -65,13 +65,14 @@ export const createRazorpayOrder = catchAsyncError(async (req, res, next) => {
         orderId: order._id.toString(),
         orderNumber: order.orderNumber,
         userId: req.user._id.toString(),
-        isRetry: order.razorpayOrderId ? 'true' : 'false'
+        isRetry: order.razorpayOrderId ? 'true' : 'false',
+        retryAttempt: Date.now().toString()
       }
     };
 
     const razorpayOrder = await razorpay.orders.create(razorpayOrderOptions);
 
-    
+    // Update order with new Razorpay order ID
     order.razorpayOrderId = razorpayOrder.id;
     await order.save();
 
@@ -115,7 +116,6 @@ export const verifyRazorpayPayment = catchAsyncError(async (req, res, next) => {
       orderId
     } = req.body;
 
-  
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !orderId) {
       return res.status(400).json({
         success: false,
@@ -123,7 +123,6 @@ export const verifyRazorpayPayment = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    
     const order = await Order.findOne({
       _id: orderId,
       user: req.user._id,
@@ -137,7 +136,7 @@ export const verifyRazorpayPayment = catchAsyncError(async (req, res, next) => {
       });
     }
 
-  
+    
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_SECRET_CODE)
@@ -160,21 +159,32 @@ export const verifyRazorpayPayment = catchAsyncError(async (req, res, next) => {
       });
     }
 
-   
+    // Payment successful - update order
     order.paymentStatus = 'Paid';
     order.orderStatus = 'Confirmed';
     order.razorpayPaymentId = razorpay_payment_id;
     order.razorpaySignature = razorpay_signature;
     order.paidAt = new Date();
+    order.paymentFailureReason = null; 
     await order.save();
 
-    // Trigger invoice generation after successful payment
+    
+    try {
+      const { clearCartAfterPayment } = await import('./checkoutController.js');
+      await clearCartAfterPayment(req.user._id, order.items);
+      console.log(`Cart cleared and stock updated for order: ${order.orderNumber}`);
+    } catch (error) {
+      console.error('Error clearing cart after payment:', error);
+      
+    }
+
+   
     try {
       await generateInvoiceAfterStatusChange(order);
       console.log(`Invoice eligibility checked for order: ${order.orderNumber} after payment completion`);
     } catch (error) {
       console.error('Error checking invoice eligibility after payment:', error);
-      // Don't fail the payment verification if invoice check fails
+      return res.status(400).json({message:'couldnt complete payment'})
     }
 
     res.status(200).json({
@@ -222,14 +232,28 @@ export const handlePaymentFailure = catchAsyncError(async (req, res, next) => {
       });
     }
 
-   
+    
     order.paymentStatus = 'Failed';
-    order.paymentFailureReason = error?.description || 'Payment failed';
+    
+    // Handle different types of payment failures
+    if (error?.code === 'PAYMENT_CANCELLED') {
+      order.paymentFailureReason = 'Payment cancelled by user';
+    } else if (error?.description) {
+      order.paymentFailureReason = error.description;
+    } else if (error?.reason) {
+      order.paymentFailureReason = error.reason;
+    } else {
+      order.paymentFailureReason = 'Payment failed';
+    }
+
     await order.save();
+
+    console.log(`Payment failed for order ${order.orderNumber}: ${order.paymentFailureReason}`);
 
     res.status(200).json({
       success: true,
       message: 'Payment failure recorded',
+      paymentFailureReason: order.paymentFailureReason,
       redirectUrl: `/payment-failed/${order._id}`
     });
 
@@ -264,7 +288,8 @@ export const getPaymentStatus = catchAsyncError(async (req, res, next) => {
       paymentStatus: order.paymentStatus,
       orderStatus: order.orderStatus,
       razorpayOrderId: order.razorpayOrderId,
-      razorpayPaymentId: order.razorpayPaymentId
+      razorpayPaymentId: order.razorpayPaymentId,
+      paymentFailureReason: order.paymentFailureReason
     });
 
   } catch (error) {
@@ -274,4 +299,4 @@ export const getPaymentStatus = catchAsyncError(async (req, res, next) => {
       message: 'Failed to get payment status'
     });
   }
-});
+}); 

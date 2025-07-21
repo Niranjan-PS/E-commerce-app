@@ -721,22 +721,6 @@
               </div>
             </div>
           </div>
-
-          <!-- Top Brands -->
-          <div class="top-list-card">
-            <div class="top-list-header">
-              <h5 class="top-list-title">
-                <i class="fas fa-star" style="color: #8b5cf6;"></i>
-                Top 5 Brands
-              </h5>
-            </div>
-            <div class="top-list-body" id="topBrandsList">
-              <div class="loading-container">
-                <div class="loading-spinner"></div>
-                <span>Loading...</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -763,17 +747,6 @@
             <canvas id="topCategoriesChart" class="chart-canvas"></canvas>
           </div>
         </div>
-
-        <!-- Top Brands Chart -->
-        <div class="chart-card">
-          <div class="chart-header">
-            <h4 class="chart-title">Top 10 Brands</h4>
-            <p class="chart-subtitle">Brand performance by revenue</p>
-          </div>
-          <div class="chart-body">
-            <canvas id="topBrandsChart" class="chart-canvas"></canvas>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -788,7 +761,6 @@
     let salesAnalyticsChart;
     let topProductsChart;
     let topCategoriesChart;
-    let topBrandsChart;
 
     // Chart.js default configuration
     Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
@@ -803,7 +775,6 @@
         loadSalesAnalytics();
         loadTopProducts();
         loadTopCategories();
-        loadTopBrands();
       }, 100);
     });
 
@@ -1207,100 +1178,6 @@
       });
     }
 
-    // Load top brands
-    async function loadTopBrands() {
-      try {
-        const result = await makeAuthenticatedRequest('/admin/api/analytics/top-brands');
-        updateTopBrandsList(result.data.slice(0, 5));
-        updateTopBrandsChart(result.data.slice(0, 10));
-      } catch (error) {
-        console.error('Error loading top brands:', error);
-        showError('topBrandsList');
-      }
-    }
-
-    // Update top brands list
-    function updateTopBrandsList(data) {
-      const container = document.getElementById('topBrandsList');
-      if (data.length === 0) {
-        container.innerHTML = '<div class="text-center text-muted py-3">No data available</div>';
-        return;
-      }
-      
-      container.innerHTML = data.map((item, index) => `
-        <div class="list-item">
-          <div class="d-flex align-items-center">
-            <span class="badge bg-secondary me-2">${index + 1}</span>
-            <span class="item-name">${item.brandName}</span>
-          </div>
-          <span class="item-value">₹${item.totalRevenue.toLocaleString()}</span>
-        </div>
-      `).join('');
-    }
-
-    // Update top brands chart
-    function updateTopBrandsChart(data) {
-      const ctx = document.getElementById('topBrandsChart').getContext('2d');
-      
-      if (topBrandsChart) {
-        topBrandsChart.destroy();
-      }
-      
-      topBrandsChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: data.map(item => item.brandName),
-          datasets: [{
-            label: 'Revenue (₹)',
-            data: data.map(item => item.totalRevenue),
-            backgroundColor: 'rgba(139, 92, 246, 0.8)',
-            borderColor: '#8b5cf6',
-            borderWidth: 1,
-            borderRadius: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          indexAxis: 'y',
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-              cornerRadius: 8,
-              callbacks: {
-                label: function(context) {
-                  return `Revenue: ₹${context.parsed.x.toLocaleString()}`;
-                }
-              }
-            }
-          },
-          scales: {
-            x: {
-              beginAtZero: true,
-              title: {
-                display: true,
-                text: 'Revenue (₹)',
-                font: {
-                  weight: 'bold'
-                }
-              },
-              grid: {
-                color: 'rgba(0, 0, 0, 0.05)'
-              }
-            },
-            y: {
-              grid: {
-                display: false
-              }
-            }
-          }
-        }
-      });
-    }
-
     // Event listeners
     document.getElementById('periodSelect').addEventListener('change', loadSalesAnalytics);
     
@@ -1315,7 +1192,6 @@
         loadSalesAnalytics(),
         loadTopProducts(),
         loadTopCategories(),
-        loadTopBrands(),
         loadDashboardStats()
       ]).finally(() => {
         btn.innerHTML = originalContent;

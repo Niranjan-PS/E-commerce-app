@@ -127,10 +127,13 @@ cartSchema.methods.calculateTotals = function() {
 
   this.items.forEach(item => {
     totalItems += item.quantity;
+
     // Use original price for total calculation
     totalPrice += item.originalPrice * item.quantity;
+
     // Use discounted price for sale price calculation
     totalSalePrice += item.discountedPrice * item.quantity;
+    
     // Add offer savings
     totalOfferSavings += item.offerSavings * item.quantity;
   });
