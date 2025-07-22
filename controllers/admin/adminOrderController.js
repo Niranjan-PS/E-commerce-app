@@ -121,7 +121,7 @@ export const getAdminOrderDetails = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Update order status with invoice generation trigger
+
 export const updateOrderStatus = catchAsyncError(async (req, res, next) => {
   try {
     const { orderId } = req.params;
@@ -156,7 +156,7 @@ export const updateOrderStatus = catchAsyncError(async (req, res, next) => {
        
       await order.save();
       
-      // Check if invoice can now be generated
+      
       try {
         const { generateInvoiceAfterStatusChange } = await import('../user/orderController.js');
         await generateInvoiceAfterStatusChange(order);
@@ -248,7 +248,10 @@ export const handleReturnRequest = catchAsyncError(async (req, res, next) => {
 
           if (returnQuantity > 0) {
             const itemPrice = orderItem.salePrice || orderItem.price;
-            refundAmount += itemPrice * returnQuantity;
+            // Calculate proportional tax for this item
+            const itemTax = (itemPrice * returnQuantity * order.taxRate) / 100;
+            const itemRefundWithTax = (itemPrice * returnQuantity) + itemTax;
+            refundAmount += itemRefundWithTax;
 
             orderItem.returnedQuantity += returnQuantity;
 
@@ -267,18 +270,21 @@ export const handleReturnRequest = catchAsyncError(async (req, res, next) => {
           }
         }
       } else {
-        // Process all eligible items (full return)
+       
         for (const item of order.items) {
           const activeQuantity = item.quantity - item.cancelledQuantity - item.returnedQuantity;
           if (activeQuantity > 0) {
             const itemPrice = item.salePrice || item.price;
-            refundAmount += itemPrice * activeQuantity;
+            
+            const itemTax = (itemPrice * activeQuantity * order.taxRate) / 100;
+            const itemRefundWithTax = (itemPrice * activeQuantity) + itemTax;
+            refundAmount += itemRefundWithTax;
 
-            // Update returned quantity
+           
             item.returnedQuantity += activeQuantity;
             item.itemStatus = 'Returned';
 
-            // Restore stock
+            
             await Product.findByIdAndUpdate(
               item.product,
               { $inc: { quantity: activeQuantity } }
@@ -382,7 +388,9 @@ export const handleIndividualItemReturn = catchAsyncError(async (req, res, next)
       
       const availableQuantity = orderItem.quantity - orderItem.cancelledQuantity - orderItem.returnedQuantity;
       const itemPrice = orderItem.salePrice || orderItem.price;
-      const refundAmount = itemPrice * availableQuantity;
+      // Calculate proportional tax for this item
+      const itemTax = (itemPrice * availableQuantity * order.taxRate) / 100;
+      const refundAmount = (itemPrice * availableQuantity) + itemTax;
 
       
       orderItem.returnedQuantity += availableQuantity;
@@ -500,7 +508,7 @@ export const getReturnRequests = catchAsyncError(async (req, res, next) => {
         });
       }
 
-      // Check for individual item returns
+     
       order.items.forEach(item => {
         if (item.itemReturnStatus === 'Requested') {
           returnRequests.push({

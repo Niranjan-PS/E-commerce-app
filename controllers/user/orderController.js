@@ -300,7 +300,10 @@ export const cancelOrder = catchAsyncError(async (req, res, next) => {
         }
 
         const itemPrice = orderItem.discountedPrice || orderItem.salePrice || orderItem.price;
-        totalRefundAmount += itemPrice * cancelQuantity;
+        // Calculate proportional tax for this item
+        const itemTax = (itemPrice * cancelQuantity * order.taxRate) / 100;
+        const itemRefundWithTax = (itemPrice * cancelQuantity) + itemTax;
+        totalRefundAmount += itemRefundWithTax;
 
         await Product.findByIdAndUpdate(
           orderItem.product._id,
@@ -447,7 +450,10 @@ export const returnOrder = catchAsyncError(async (req, res, next) => {
       if (returnQuantity > 0) {
         hasValidItems = true;
         const itemPrice = orderItem.discountedPrice || orderItem.salePrice || orderItem.price;
-        totalRefundAmount += itemPrice * returnQuantity;
+        
+        const itemTax = (itemPrice * returnQuantity * order.taxRate) / 100;
+        const itemRefundWithTax = (itemPrice * returnQuantity) + itemTax;
+        totalRefundAmount += itemRefundWithTax;
       }
     }
 
@@ -1000,7 +1006,10 @@ export const completeReturnAndCreditWallet = catchAsyncError(async (req, res, ne
         const activeQuantity = item.quantity - item.cancelledQuantity - item.returnedQuantity;
         if (activeQuantity > 0) {
             const itemPrice = item.discountedPrice || item.salePrice || item.price;
-            totalRefundAmount += itemPrice * activeQuantity;
+            // Calculate proportional tax for this item
+            const itemTax = (itemPrice * activeQuantity * order.taxRate) / 100;
+            const itemRefundWithTax = (itemPrice * activeQuantity) + itemTax;
+            totalRefundAmount += itemRefundWithTax;
         }
     }
 

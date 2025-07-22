@@ -159,11 +159,11 @@ export const verifyRazorpayPayment = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // 🔥 CRITICAL FIX: Validate and reserve stock atomically before confirming payment
+    
     try {
       const { validateAndReserveStock } = await import('./checkoutController.js');
       
-      // Create cart-like items structure for validation
+     
       const cartItems = order.items.map(item => ({
         product: {
           _id: item.product._id || item.product,
@@ -175,7 +175,7 @@ export const verifyRazorpayPayment = catchAsyncError(async (req, res, next) => {
       const stockValidation = await validateAndReserveStock(cartItems, order._id);
       
       if (!stockValidation.success) {
-        // Stock validation failed - mark payment as failed and order as cancelled
+       
         order.paymentStatus = 'Failed';
         order.orderStatus = 'Cancelled';
         order.paymentFailureReason = 'Insufficient stock at time of payment confirmation';
@@ -199,7 +199,7 @@ export const verifyRazorpayPayment = catchAsyncError(async (req, res, next) => {
     } catch (stockError) {
       console.error('Error validating stock during payment:', stockError);
       
-      // If stock validation fails due to system error, mark payment as failed
+      
       order.paymentStatus = 'Failed';
       order.orderStatus = 'Cancelled';
       order.paymentFailureReason = 'Stock validation error during payment processing';

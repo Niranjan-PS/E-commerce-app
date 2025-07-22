@@ -517,7 +517,7 @@ export const removeCoupon = catchAsyncError(async (req, res, next) => {
   }
 });
 
-// Helper function to validate and reserve stock atomically
+
 export async function validateAndReserveStock(cartItems, orderId) {
   const session = await Product.startSession();
   session.startTransaction();
@@ -526,7 +526,7 @@ export async function validateAndReserveStock(cartItems, orderId) {
     const stockValidationErrors = [];
     
     for (const item of cartItems) {
-      // Re-fetch latest product data with session for consistency
+      
       const product = await Product.findById(item.product._id).session(session);
       
       if (!product) {
@@ -537,7 +537,7 @@ export async function validateAndReserveStock(cartItems, orderId) {
         continue;
       }
       
-      // Check if product is still available
+     
       if (product.isBlocked || product.isDeleted || product.status !== 'Available') {
         stockValidationErrors.push({
           name: product.productName,
@@ -546,7 +546,7 @@ export async function validateAndReserveStock(cartItems, orderId) {
         continue;
       }
       
-      // Critical: Check real-time stock availability
+      
       if (product.quantity < item.quantity) {
         stockValidationErrors.push({
           name: product.productName,
@@ -557,7 +557,7 @@ export async function validateAndReserveStock(cartItems, orderId) {
         continue;
       }
       
-      // Atomically reserve stock by decrementing quantity
+      
       const updateResult = await Product.findByIdAndUpdate(
         product._id,
         { 
@@ -770,11 +770,11 @@ if (paymentMethod === 'COD' && orderSummary.finalTotal > 1000) {
 
   
     if (paymentMethod === 'COD') {
-      // 🔥 CRITICAL FIX: Validate and reserve stock atomically before confirming order
+      
       const stockValidation = await validateAndReserveStock(cart.items, order._id);
       
       if (!stockValidation.success) {
-        // Stock validation failed - cancel the order
+        
         await Order.findByIdAndUpdate(order._id, { 
           orderStatus: 'Cancelled',
           paymentStatus: 'Failed',
@@ -822,11 +822,11 @@ if (paymentMethod === 'COD' && orderSummary.finalTotal > 1000) {
         });
       }
 
-      // 🔥 CRITICAL FIX: Validate and reserve stock atomically before confirming order
+     
       const stockValidation = await validateAndReserveStock(cart.items, order._id);
       
       if (!stockValidation.success) {
-        // Stock validation failed - cancel the order
+        
         await Order.findByIdAndUpdate(order._id, { 
           orderStatus: 'Cancelled',
           paymentStatus: 'Failed',
@@ -891,7 +891,7 @@ if (paymentMethod === 'COD' && orderSummary.finalTotal > 1000) {
         }
       });
     } else {
-      // For online payment, we don't reserve stock yet - it will be done after payment verification
+      
       res.status(201).json({
         success: true,
         message: 'Order created successfully. Proceed to payment.',
@@ -985,15 +985,14 @@ export const getOrderSuccess = catchAsyncError(async (req, res, next) => {
 
 export const clearCartAfterPayment = async (userId, orderItems) => {
   try {
-    // Get user's cart
+   
     const cart = await Cart.findOne({ user: userId });
     if (!cart) {
       console.log('Cart not found for user:', userId);
       return;
     }
 
-    // Note: Stock is already deducted by validateAndReserveStock function
-    // Only clear the cart here
+   
     cart.items = [];
     cart.calculateTotals();
     await cart.save();
