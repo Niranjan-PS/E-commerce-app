@@ -76,7 +76,7 @@ console.log("Cleaned phone:", phone);
       });
     }
 
-    // Validate referral if provided
+    // Validate referral if has
     let referralData = null;
     const ipAddress = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
     
@@ -108,7 +108,7 @@ console.log("Cleaned phone:", phone);
     console.log(`Generated verification code: ${verificationCode} for user: ${name || email}`);
 
 
-    // Store referral data in user session or temporary storage for OTP verification
+    
     if (referralData) {
       user.tempReferralData = JSON.stringify({
         referralId: referralData.referral._id,

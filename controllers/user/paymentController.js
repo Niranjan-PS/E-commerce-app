@@ -127,7 +127,7 @@ export const verifyRazorpayPayment = catchAsyncError(async (req, res, next) => {
       _id: orderId,
       user: req.user._id,
       razorpayOrderId: razorpay_order_id
-    });
+    }).populate('items.product');
 
     if (!order) {
       return res.status(404).json({
@@ -159,7 +159,62 @@ export const verifyRazorpayPayment = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    // Payment successful - update order
+    // 🔥 CRITICAL FIX: Validate and reserve stock atomically before confirming payment
+    try {
+      const { validateAndReserveStock } = await import('./checkoutController.js');
+      
+      // Create cart-like items structure for validation
+      const cartItems = order.items.map(item => ({
+        product: {
+          _id: item.product._id || item.product,
+          productName: item.productName
+        },
+        quantity: item.quantity
+      }));
+      
+      const stockValidation = await validateAndReserveStock(cartItems, order._id);
+      
+      if (!stockValidation.success) {
+        // Stock validation failed - mark payment as failed and order as cancelled
+        order.paymentStatus = 'Failed';
+        order.orderStatus = 'Cancelled';
+        order.paymentFailureReason = 'Insufficient stock at time of payment confirmation';
+        order.cancellationReason = 'Stock unavailable during payment processing';
+        await order.save();
+        
+        const errorMessages = stockValidation.errors.map(err => {
+          if (err.error === 'Insufficient stock') {
+            return `${err.name} (requested: ${err.requested}, available: ${err.available})`;
+          }
+          return `${err.name}: ${err.error}`;
+        }).join(', ');
+        
+        return res.status(400).json({
+          success: false,
+          message: `Payment processed but order cancelled due to stock issues: ${errorMessages}. Your payment will be refunded within 5-7 business days.`,
+          redirectUrl: `/payment-failed/${order._id}`,
+          refundNote: 'Your payment will be automatically refunded due to stock unavailability.'
+        });
+      }
+    } catch (stockError) {
+      console.error('Error validating stock during payment:', stockError);
+      
+      // If stock validation fails due to system error, mark payment as failed
+      order.paymentStatus = 'Failed';
+      order.orderStatus = 'Cancelled';
+      order.paymentFailureReason = 'Stock validation error during payment processing';
+      order.cancellationReason = 'System error during stock validation';
+      await order.save();
+      
+      return res.status(500).json({
+        success: false,
+        message: 'Payment processed but order could not be confirmed due to a system error. Your payment will be refunded within 5-7 business days.',
+        redirectUrl: `/payment-failed/${order._id}`,
+        refundNote: 'Your payment will be automatically refunded due to a system error.'
+      });
+    }
+
+    // Payment successful and stock reserved - update order
     order.paymentStatus = 'Paid';
     order.orderStatus = 'Confirmed';
     order.razorpayPaymentId = razorpay_payment_id;
@@ -172,7 +227,7 @@ export const verifyRazorpayPayment = catchAsyncError(async (req, res, next) => {
     try {
       const { clearCartAfterPayment } = await import('./checkoutController.js');
       await clearCartAfterPayment(req.user._id, order.items);
-      console.log(`Cart cleared and stock updated for order: ${order.orderNumber}`);
+      console.log(`Cart cleared for order: ${order.orderNumber} after successful payment and stock reservation`);
     } catch (error) {
       console.error('Error clearing cart after payment:', error);
       
@@ -184,7 +239,7 @@ export const verifyRazorpayPayment = catchAsyncError(async (req, res, next) => {
       console.log(`Invoice eligibility checked for order: ${order.orderNumber} after payment completion`);
     } catch (error) {
       console.error('Error checking invoice eligibility after payment:', error);
-      return res.status(400).json({message:'couldnt complete payment'})
+      
     }
 
     res.status(200).json({

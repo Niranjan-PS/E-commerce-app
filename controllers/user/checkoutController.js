@@ -517,6 +517,94 @@ export const removeCoupon = catchAsyncError(async (req, res, next) => {
   }
 });
 
+// Helper function to validate and reserve stock atomically
+export async function validateAndReserveStock(cartItems, orderId) {
+  const session = await Product.startSession();
+  session.startTransaction();
+  
+  try {
+    const stockValidationErrors = [];
+    
+    for (const item of cartItems) {
+      // Re-fetch latest product data with session for consistency
+      const product = await Product.findById(item.product._id).session(session);
+      
+      if (!product) {
+        stockValidationErrors.push({
+          name: item.product.productName,
+          error: 'Product not found'
+        });
+        continue;
+      }
+      
+      // Check if product is still available
+      if (product.isBlocked || product.isDeleted || product.status !== 'Available') {
+        stockValidationErrors.push({
+          name: product.productName,
+          error: 'Product is no longer available'
+        });
+        continue;
+      }
+      
+      // Critical: Check real-time stock availability
+      if (product.quantity < item.quantity) {
+        stockValidationErrors.push({
+          name: product.productName,
+          requested: item.quantity,
+          available: product.quantity,
+          error: 'Insufficient stock'
+        });
+        continue;
+      }
+      
+      // Atomically reserve stock by decrementing quantity
+      const updateResult = await Product.findByIdAndUpdate(
+        product._id,
+        { 
+          $inc: { quantity: -item.quantity },
+          $set: { 
+            status: product.quantity - item.quantity === 0 ? 'Out of Stock' : product.status 
+          }
+        },
+        { 
+          session,
+          new: true,
+          runValidators: true
+        }
+      );
+      
+      if (!updateResult) {
+        stockValidationErrors.push({
+          name: product.productName,
+          error: 'Failed to reserve stock'
+        });
+      }
+    }
+    
+    if (stockValidationErrors.length > 0) {
+      // Rollback transaction if any validation fails
+      await session.abortTransaction();
+      return {
+        success: false,
+        errors: stockValidationErrors
+      };
+    }
+    
+    // Commit transaction if all validations pass
+    await session.commitTransaction();
+    return {
+      success: true,
+      message: 'Stock reserved successfully'
+    };
+    
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
+}
+
 export const placeOrder = catchAsyncError(async (req, res, next) => {
   try {
     const { addressId, paymentMethod, couponCode } = req.body;
@@ -567,26 +655,6 @@ export const placeOrder = catchAsyncError(async (req, res, next) => {
 
     
     await validateCartItems(cart);
-
-   
-    const insufficientStockItems = [];
-    for (const item of cart.items) {
-      const product = await Product.findById(item.product._id);
-      if (!product || product.quantity < item.quantity) {
-        insufficientStockItems.push({
-          name: item.product.productName,
-          requested: item.quantity,
-          available: product ? product.quantity : 0
-        });
-      }
-    }
-    if (insufficientStockItems.length > 0) {
-      const names = insufficientStockItems.map(i => `${i.name} (requested: ${i.requested}, available: ${i.available})`).join(', ');
-      return res.status(400).json({
-        success: false,
-        message: `Insufficient stock for: ${names}. Please update your cart.`
-      });
-    }
 
     const address = await Address.findOne({ _id: addressId, user: req.user._id });
     if (!address) {
@@ -702,12 +770,28 @@ if (paymentMethod === 'COD' && orderSummary.finalTotal > 1000) {
 
   
     if (paymentMethod === 'COD') {
+      // 🔥 CRITICAL FIX: Validate and reserve stock atomically before confirming order
+      const stockValidation = await validateAndReserveStock(cart.items, order._id);
       
-      for (const item of cart.items) {
-        await Product.findByIdAndUpdate(
-          item.product._id,
-          { $inc: { quantity: -item.quantity } }
-        );
+      if (!stockValidation.success) {
+        // Stock validation failed - cancel the order
+        await Order.findByIdAndUpdate(order._id, { 
+          orderStatus: 'Cancelled',
+          paymentStatus: 'Failed',
+          cancellationReason: 'Insufficient stock at time of order confirmation'
+        });
+        
+        const errorMessages = stockValidation.errors.map(err => {
+          if (err.error === 'Insufficient stock') {
+            return `${err.name} (requested: ${err.requested}, available: ${err.available})`;
+          }
+          return `${err.name}: ${err.error}`;
+        }).join(', ');
+        
+        return res.status(400).json({
+          success: false,
+          message: `Order cannot be placed due to stock issues: ${errorMessages}. Please update your cart and try again.`
+        });
       }
 
       
@@ -738,12 +822,28 @@ if (paymentMethod === 'COD' && orderSummary.finalTotal > 1000) {
         });
       }
 
+      // 🔥 CRITICAL FIX: Validate and reserve stock atomically before confirming order
+      const stockValidation = await validateAndReserveStock(cart.items, order._id);
       
-      for (const item of cart.items) {
-        await Product.findByIdAndUpdate(
-          item.product._id,
-          { $inc: { quantity: -item.quantity } }
-        );
+      if (!stockValidation.success) {
+        // Stock validation failed - cancel the order
+        await Order.findByIdAndUpdate(order._id, { 
+          orderStatus: 'Cancelled',
+          paymentStatus: 'Failed',
+          cancellationReason: 'Insufficient stock at time of order confirmation'
+        });
+        
+        const errorMessages = stockValidation.errors.map(err => {
+          if (err.error === 'Insufficient stock') {
+            return `${err.name} (requested: ${err.requested}, available: ${err.available})`;
+          }
+          return `${err.name}: ${err.error}`;
+        }).join(', ');
+        
+        return res.status(400).json({
+          success: false,
+          message: `Order cannot be placed due to stock issues: ${errorMessages}. Please update your cart and try again.`
+        });
       }
 
       // Deduct amount from wallet
@@ -791,6 +891,7 @@ if (paymentMethod === 'COD' && orderSummary.finalTotal > 1000) {
         }
       });
     } else {
+      // For online payment, we don't reserve stock yet - it will be done after payment verification
       res.status(201).json({
         success: true,
         message: 'Order created successfully. Proceed to payment.',
@@ -891,20 +992,13 @@ export const clearCartAfterPayment = async (userId, orderItems) => {
       return;
     }
 
-    // Update product quantities
-    for (const item of orderItems) {
-      await Product.findByIdAndUpdate(
-        item.product,
-        { $inc: { quantity: -item.quantity } }
-      );
-    }
-
-   
+    // Note: Stock is already deducted by validateAndReserveStock function
+    // Only clear the cart here
     cart.items = [];
     cart.calculateTotals();
     await cart.save();
 
-    console.log('Cart cleared and stock updated for user:', userId);
+    console.log('Cart cleared for user:', userId);
   } catch (error) {
     console.error('Error clearing cart after payment:', error);
     throw error;
