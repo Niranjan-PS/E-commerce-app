@@ -60,7 +60,7 @@ export const isAdminAuthenticated = catchAsyncError(async(req,res,next)=>{
     const token= req.cookies.adminToken
     console.log("Admin cookies:",req.cookies)
     if(!token){
-        // Check if this is an API request
+        
         if(req.path.startsWith('/admin/api/') || req.headers['x-requested-with'] === 'XMLHttpRequest' || req.headers.accept?.includes('application/json')) {
             return res.status(401).json({
                 success: false,

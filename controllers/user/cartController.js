@@ -81,7 +81,7 @@ export const addToCart = catchAsyncError(async (req, res, next) => {
     }
 
    
-    // Calculate offer price for the product
+    
     const offerCalculation = await calculateBestOfferPrice(productData);
     
     cart.addItem(productData, requestedQuantity, offerCalculation);

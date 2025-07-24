@@ -16,7 +16,7 @@ setInterval(async () => {
   }
 }, 60 * 60 * 1000); 
 
-// Initial check on server start
+
 (async () => {
   try {
     const disabledCount = await ProductOffer.disableExpiredOffers();

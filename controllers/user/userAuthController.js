@@ -376,12 +376,12 @@ export const verifyOtp = catchAsyncError(async(req,res,next) => {
       }
     }
 
-    // Create referral record for the new user
+    
     try {
       await createReferralRecord(user._id, user.name);
     } catch (error) {
       console.error('Error creating referral record:', error);
-      // Don't fail registration if referral record creation fails
+   
     }
 
     await user.save({validateModifiedOnly:true})

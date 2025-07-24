@@ -334,7 +334,7 @@ export const getProductDetails = catchAsyncError(async (req, res, next) => {
     .populate("category")
     .limit(4);
 
-    // Add offer details to related products using the new utility
+    
     const relatedProducts = await calculateOfferPricesForProducts(relatedProductsRaw);
 
     // Ensure rating fields are available

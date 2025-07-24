@@ -3,10 +3,10 @@ const router = express.Router()
 import { User } from '../model/userModel.js'
 import { Category } from '../model/categoryModel.js';
 import { customerInfo } from "../controllers/admin/customerController.js"
-import {categoryInfo,addCategory, getEditCategory,EditCategory,deleteCategory} from "../controllers/admin/categoryController.js"
-import {loadLogin,adminLogin,loadAdminDashboard,adminLogout} from "../controllers/admin/adminController.js"
+import { categoryInfo, addCategory, getEditCategory, EditCategory, deleteCategory } from "../controllers/admin/categoryController.js"
+import { loadLogin, adminLogin, loadAdminDashboard, adminLogout } from "../controllers/admin/adminController.js"
 import { toggleCategoryStatus } from '../controllers/admin/categoryController.js'
-import {upload} from '../helpers/multer.js'
+import { upload } from '../helpers/multer.js'
 import { isAdminAuthenticated } from '../middlewares/auth.js'
 
 import {
@@ -87,8 +87,8 @@ import {
 
 
 //admin
-router.get('/admin-login',loadLogin)
-router.post('/admin-login',adminLogin)
+router.get('/admin-login', loadLogin)
+router.post('/admin-login', adminLogin)
 router.get('/logout', isAdminAuthenticated, adminLogout)
 router.get('/', isAdminAuthenticated, loadAdminDashboard)
 router.get('/dashboard', isAdminAuthenticated, (req, res) => {
@@ -125,7 +125,7 @@ router.post('/deleteCategory', isAdminAuthenticated, deleteCategory);
 
 //product
 router.get('/add-products', isAdminAuthenticated, async (req, res) => {
-  try {  
+  try {
     const cat = await Category.find({});
     res.render('product-add', {
       cat,
@@ -185,19 +185,19 @@ router.post('/coupons/:code/fix-dates', isAdminAuthenticated, async (req, res) =
   try {
     const { Coupon } = await import("../../model/couponModel.js");
     const { code } = req.params;
-    
+
     const coupon = await Coupon.findOne({ code: code.toUpperCase() });
     if (!coupon) {
       return res.status(404).json({ success: false, message: 'Coupon not found' });
     }
-    
+
     const now = new Date();
     const oneWeekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    
+
     coupon.validFrom = now;
     coupon.validUntil = oneWeekFromNow;
     await coupon.save();
-    
+
     res.json({
       success: true,
       message: 'Coupon dates updated',
