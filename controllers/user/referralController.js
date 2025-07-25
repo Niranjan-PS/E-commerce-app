@@ -68,7 +68,7 @@ export const getReferralStats = catchAsyncError(async (req, res, next) => {
     const userId = req.user._id;
     const userName = req.user.name;
     
-    // Ensure referral record exists
+   
     await ensureReferralRecord(userId, userName);
     
     const referral = await Referral.findOne({ userId }).populate('userId', 'name email');

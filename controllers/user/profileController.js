@@ -515,7 +515,7 @@ export const resetPassword = catchAsyncError(async (req, res, next) => {
     }
 
     if (password.length < 8) {
-      return res.redirect(`/reset-password/${token}?error=Password must be at least 8 characters long`);
+      return res.redirect(`/reset-password/${token}?error=Password must be at least 8 included`);
     }
 
     const resetPasswordToken = crypto.createHash("sha256")

@@ -351,7 +351,7 @@ export const getPaymentStatus = catchAsyncError(async (req, res, next) => {
     console.error('Error getting payment status:', error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to get payment status'
+      message: 'Failed to get payment stats'
     });
   }
 }); 
