@@ -371,6 +371,19 @@ router.get("/api/referrals/link", isAuthenticated, generateShareableLink);
 router.post("/api/referrals/validate", validateReferralCode);
 
 
+// About & Contact pages
+router.get('/about', (req, res) => res.render('user/about'));
+router.get('/contact', (req, res) => res.render('user/contact'));
+
 router.get("/pageNotFound", pagenotFound);
+
+// 404 catch-all for non-admin routes only (must be last)
+router.use((req, res, next) => {
+  // Don't catch admin routes - let them pass through to admin router
+  if (req.path.startsWith('/admin')) {
+    return next();
+  }
+  res.status(404).render("user/page-404");
+});
 
 export default router;

@@ -531,8 +531,8 @@
             <div class="summary-title">Order Summary</div>
 
             <div class="summary-row">
-              <span>Subtotal (<%= cart.totalItems %> items)</span>
-              <span>₹<%= cart.totalPrice.toLocaleString() %></span>
+              <span>Subtotal (<span id="cartItemCount"><%= cart.totalItems %></span> items)</span>
+              <span id="cartSubtotal">₹<%= cart.totalPrice.toLocaleString() %></span>
             </div>
 
             <% if (cart.totalSavings > 0) { %>
@@ -662,6 +662,17 @@
         // Update cart count if provided
         if (data.updatedCartCount !== undefined && cartCountElem) {
           cartCountElem.textContent = data.updatedCartCount;
+        }
+        // Update cart subtotal and item count in summary
+        if (data.updatedCartSubtotal !== undefined) {
+          const cartSubtotalElem = document.querySelector('#cartSubtotal');
+          const cartItemCountElem = document.querySelector('#cartItemCount');
+          if (cartSubtotalElem) {
+            cartSubtotalElem.textContent = `₹${data.updatedCartSubtotal.toLocaleString()}`;
+          }
+          if (cartItemCountElem && data.updatedCartCount !== undefined) {
+            cartItemCountElem.textContent = data.updatedCartCount;
+          }
         }
         // Enable/disable buttons based on new quantity
         minusBtn.disabled = quantity <= minQty;

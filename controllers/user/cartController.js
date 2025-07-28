@@ -159,7 +159,10 @@ export const updateCartQuantity = catchAsyncError(async (req, res, next) => {
   success: true,
   message: 'Cart updated successfully',
   updatedSubtotal: quantity > 0 ? effectivePrice * quantity : 0,
-  updatedGrandTotal: cart.totalSalePrice
+  updatedCartSubtotal: cart.totalPrice, // Total subtotal for entire cart
+  updatedGrandTotal: cart.totalSalePrice,
+  updatedCartCount: cart.totalItems,
+  stockLeft: product.quantity
 });
 
 

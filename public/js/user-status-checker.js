@@ -6,8 +6,8 @@
 class UserStatusChecker {
   constructor(options = {}) {
     this.options = {
-      checkInterval: options.checkInterval || 5000, // 5 seconds for faster detection
-      endpoint: options.endpoint || '/api/v1/user/check-status',
+      checkInterval: options.checkInterval || 30000, // 30 seconds to reduce server load
+      endpoint: options.endpoint || '/check-status',
       redirectUrl: options.redirectUrl || '/login?error=Account has been blocked',
       showAlert: options.showAlert !== false,
       ...options
@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     try {
       window.userStatusChecker = new UserStatusChecker({
-        checkInterval: 5000, // 5 seconds for faster blocking detection
+        checkInterval: 30000, // 30 seconds to reduce server load
         showAlert: true
       });
       console.log('UserStatusChecker: Initialized successfully');

@@ -315,7 +315,7 @@
                 <a href="/product/<%= product._id %>" class="text-decoration-none">
                   <div class="product-thumb" style="height: 200px; overflow: hidden;">
                     <% if (product.productImage && product.productImage.length > 0) { %>
-                      <img src="/Uploads/product-images/<%= product.productImage[0] %>" alt="<%= product.productName %>" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;" />
+                      <img src="/uploads/product-images/<%= product.productImage[0] %>" alt="<%= product.productName %>" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;" />
                     <% } else { %>
                       <img src="/images/default-product.jpg" alt="No image" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;" />
                     <% } %>
@@ -417,7 +417,7 @@
                 <a href="/product/<%= product._id %>" class="text-decoration-none">
                   <div class="product-thumb" style="height: 200px; overflow: hidden;">
                     <% if (product.productImage && product.productImage.length > 0) { %>
-                      <img src="/Uploads/product-images/<%= product.productImage[0] %>" alt="<%= product.productName %>" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;" />
+                      <img src="/uploads/product-images/<%= product.productImage[0] %>" alt="<%= product.productName %>" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;" />
                     <% } else { %>
                       <img src="/images/default-product.jpg" alt="No image" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;" />
                     <% } %>
@@ -545,7 +545,7 @@
 
   async function checkUserStatus() {
     try {
-      const res = await fetch('/api/v1/user/check-status',{
+      const res = await fetch('/check-status',{
          headers: {
           'Accept': 'application/json',
           'Cache-Control': 'no-cache'
@@ -572,8 +572,8 @@
     }
   }
 
-  // Check every 15 seconds
-  setInterval(checkUserStatus, 15000);
+  // Check every 30 seconds to reduce server load
+  setInterval(checkUserStatus, 30000);
 
 
 
@@ -834,7 +834,7 @@
             <a href="/product/${product._id}" class="text-decoration-none">
               <div class="product-thumb" style="height: 200px; overflow: hidden;">
                 ${product.productImage && product.productImage.length > 0
-                  ? `<img src="/Uploads/product-images/${product.productImage[0]}" alt="${product.productName}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;" />`
+                  ? `<img src="/uploads/product-images/${product.productImage[0]}" alt="${product.productName}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;" />`
                   : `<img src="/images/default-product.jpg" alt="No image" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;" />`
                 }
               </div>

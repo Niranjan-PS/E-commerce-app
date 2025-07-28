@@ -1,0 +1,58 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow-sm" style="z-index: 1050;">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="/">LUXE SCENTS</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="/shop">Shop</a></li>
+        <li class="nav-item position-relative">
+          <a class="nav-link" href="/wishlist">
+            <i class="fas fa-heart"></i>
+            <span id="wishlistCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.7rem; min-width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center;">0</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/cart"><i class="fas fa-shopping-cart"></i></a>
+        </li>
+        <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+        <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
+      </ul>
+      <div class="dropdown ms-auto">
+        <a href="#" class="nav-link p-0" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="font-size:1.7rem;">
+          <i class="far fa-user-circle"></i>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="profileDropdown" style="min-width:180px;">
+          <li><a class="dropdown-item" href="/profile"><i class="far fa-user me-2"></i>My Profile</a></li>
+          <li><a class="dropdown-item" href="/orders"><i class="fas fa-box me-2"></i>Orders</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item text-danger" href="/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
+<script>
+// Update wishlist count badge
+fetch('/api/wishlist/count').then(r=>r.json()).then(d=>{
+  if(d.success && typeof d.wishlistCount!=="undefined"){
+    document.getElementById('wishlistCount').textContent = d.wishlistCount;
+  }
+});
+</script>
+<style>
+body { padding-top: 64px; }
+#wishlistCount {
+  pointer-events: none;
+  right: 0;
+  top: 2px;
+  min-width: 20px;
+  height: 20px;
+  font-size: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>

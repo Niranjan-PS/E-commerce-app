@@ -1373,7 +1373,7 @@
             <div class="wallet-info">
               <div class="wallet-balance">
                 <span class="balance-label">Available Balance:</span>
-                <span class="balance-amount">₹<span id="walletBalance"><%= user.wallet || 0 %></span></span>
+                <span class="balance-amount">₹<span id="walletBalance"><%= (user.wallet || 0).toFixed(2) %></span></span>
               </div>
               <div class="wallet-option">
                 <div class="form-check">
