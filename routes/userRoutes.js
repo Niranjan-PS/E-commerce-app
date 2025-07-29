@@ -95,6 +95,9 @@ import {
   validateReferralCode,
   renderReferralDashboard
 } from "../controllers/user/referralController.js";
+import {
+  getHomeBannerApi
+} from "../controllers/user/homeBannerApiController.js";
 import passport from "../passport.js";
 
 
@@ -369,6 +372,9 @@ router.get("/api/referrals/dashboard", isAuthenticated, getReferralDashboard);
 router.get("/api/referrals/stats", isAuthenticated, getReferralStats);
 router.get("/api/referrals/link", isAuthenticated, generateShareableLink);
 router.post("/api/referrals/validate", validateReferralCode);
+
+// Home Banner API (public)
+router.get("/api/home-banner", getHomeBannerApi);
 
 
 // About & Contact pages

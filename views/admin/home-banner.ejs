@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <style>
+        .banner-preview {
+            max-width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            background-color: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: #6c757d;
+            background-color: #e9ecef;
+        }
+        .upload-area.dragover {
+            border-color: #0d6efd;
+            background-color: #e7f1ff;
+        }
+        .file-input {
+            display: none;
+        }
+        .upload-btn {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar (you can include your existing admin sidebar here) -->
+            <div class="col-md-2 bg-dark text-white min-vh-100">
+                <div class="p-3">
+                    <h5>Admin Panel</h5>
+                    <hr>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="/admin/dashboard">
+                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white active" href="/admin/home-banner">
+                                <i class="fas fa-image me-2"></i>Home Banner
+                            </a>
+                        </li>
+                        <!-- Add other admin menu items as needed -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-10">
+                <div class="container-fluid p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-image me-2"></i>Home Banner Management</h2>
+                    </div>
+
+                    <div class="row">
+                        <!-- Current Banner Preview -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-eye me-2"></i>Current Banner</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="currentBannerContainer">
+                                        <% if (banner && banner.imageUrl) { %>
+                                            <img src="<%= banner.imageUrl %>" alt="Current Home Banner" class="banner-preview w-100 mb-3">
+                                            <p class="text-muted">
+                                                <i class="fas fa-clock me-1"></i>
+                                                Uploaded: <%= new Date(banner.uploadedAt).toLocaleString() %>
+                                            </p>
+                                        <% } else { %>
+                                            <div class="text-center text-muted py-5">
+                                                <i class="fas fa-image fa-3x mb-3"></i>
+                                                <p>No banner uploaded yet</p>
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upload New Banner -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-upload me-2"></i>Upload New Banner</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="bannerUploadForm" enctype="multipart/form-data">
+                                        <div class="upload-area" id="uploadArea">
+                                            <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                            <h5>Drag & Drop or Click to Upload</h5>
+                                            <p class="text-muted">Supported formats: JPG, PNG, GIF (Max: 5MB)</p>
+                                            <input type="file" id="bannerFile" name="banner" accept="image/*" class="file-input">
+                                            <button type="button" class="btn btn-primary upload-btn" onclick="document.getElementById('bannerFile').click()">
+                                                <i class="fas fa-folder-open me-2"></i>Choose File
+                                            </button>
+                                        </div>
+                                        
+                                        <div id="selectedFileInfo" class="mt-3" style="display: none;">
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-file-image me-2"></i>
+                                                <span id="fileName"></span>
+                                                <button type="button" class="btn-close float-end" onclick="clearSelectedFile()"></button>
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-3">
+                                            <button type="submit" class="btn btn-success w-100" id="uploadBtn" disabled>
+                                                <i class="fas fa-upload me-2"></i>Upload Banner
+                                            </button>
+                                        </div>
+                                    </form>
+
+                                    <div class="mt-3">
+                                        <small class="text-muted">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Uploading a new banner will replace the current one.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('bannerFile');
+        const uploadForm = document.getElementById('bannerUploadForm');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const selectedFileInfo = document.getElementById('selectedFileInfo');
+        const fileName = document.getElementById('fileName');
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelection();
+            }
+        });
+
+        // File input change
+        fileInput.addEventListener('change', handleFileSelection);
+
+        function handleFileSelection() {
+            const file = fileInput.files[0];
+            if (file) {
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid File Type',
+                        text: 'Please select an image file (JPG, PNG, GIF)'
+                    });
+                    clearSelectedFile();
+                    return;
+                }
+
+                // Validate file size (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'File Too Large',
+                        text: 'Please select an image smaller than 5MB'
+                    });
+                    clearSelectedFile();
+                    return;
+                }
+
+                // Show selected file info
+                fileName.textContent = file.name;
+                selectedFileInfo.style.display = 'block';
+                uploadBtn.disabled = false;
+            }
+        }
+
+        function clearSelectedFile() {
+            fileInput.value = '';
+            selectedFileInfo.style.display = 'none';
+            uploadBtn.disabled = true;
+        }
+
+        // Form submission
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No File Selected',
+                    text: 'Please select an image file to upload'
+                });
+                return;
+            }
+
+            formData.append('banner', file);
+
+            // Show loading
+            uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
+            uploadBtn.disabled = true;
+
+            try {
+                const response = await fetch('/admin/home-banner', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Home banner uploaded successfully'
+                    }).then(() => {
+                        // Reload page to show new banner
+                        window.location.reload();
+                    });
+                } else {
+                    throw new Error(result.message || 'Upload failed');
+                }
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Upload Failed',
+                    text: error.message || 'Failed to upload banner'
+                });
+            } finally {
+                // Reset button
+                uploadBtn.innerHTML = '<i class="fas fa-upload me-2"></i>Upload Banner';
+                uploadBtn.disabled = false;
+                clearSelectedFile();
+            }
+        });
+    </script>
+</body>
+</html>

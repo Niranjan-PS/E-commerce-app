@@ -85,6 +85,13 @@ import {
   getDashboardStats
 } from "../controllers/admin/analyticsController.js";
 
+import {
+  upload as bannerUpload,
+  uploadHomeBanner,
+  getHomeBanner,
+  renderHomeBannerPage
+} from "../controllers/admin/homeBannerController.js";
+
 
 //admin
 router.get('/admin-login', loadLogin)
@@ -246,6 +253,11 @@ router.get('/api/analytics/sales', isAdminAuthenticated, getSalesAnalytics);
 router.get('/api/analytics/top-products', isAdminAuthenticated, getTopProducts);
 router.get('/api/analytics/top-categories', isAdminAuthenticated, getTopCategories);
 router.get('/api/analytics/dashboard-stats', isAdminAuthenticated, getDashboardStats);
+
+// Home Banner routes
+router.get('/home-banner', isAdminAuthenticated, renderHomeBannerPage);
+router.post('/home-banner', isAdminAuthenticated, bannerUpload.single('banner'), uploadHomeBanner);
+router.get('/api/home-banner', isAdminAuthenticated, getHomeBanner);
 
 export default router;
 
