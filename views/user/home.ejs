@@ -23,28 +23,16 @@
       text-align: center;
       margin-bottom: 30px;
       overflow: hidden;
+      /* Multiple background image fallbacks */
+      background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), 
+                        url('/uploads/hero-bg.jpg'),
+                        url('/uploads/home-cover-image.jpg'),
+                        url('/assets/home-cover-image.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
       /* Fallback background color if image fails to load */
       background-color: #2c3e50;
-    }
-    
-    .hero-background-img {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      z-index: 1;
-    }
-    
-    .hero-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 2;
     }
     
     .hero-content {
@@ -312,8 +300,6 @@
   </section>
 
   <section class="hero-section">
-    <img src="/uploads/hero-bg.jpg?v=<%= Date.now() %>" alt="Hero Background" class="hero-background-img" onerror="console.log('Image failed to load:', this.src); this.style.display='none';">
-    <div class="hero-overlay"></div>
     <div class="hero-content">
       <h1>Premium Perfumes for Every Occasion</h1>
       <p>Discover our exclusive collection of luxury fragrances</p>
