@@ -156,6 +156,12 @@ router.delete("/reviews/:reviewId", isAuthenticated, deleteReview);
 
 
 
+// Fallback route for old /google links - redirects to /auth/google
+router.get('/google', (req, res) => {
+  console.log('Redirecting from /google to /auth/google');
+  res.redirect('/auth/google');
+});
+
 router.get('/auth/google', (req, res, next) => {
   console.log(' Google OAuth initiated');
   passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
