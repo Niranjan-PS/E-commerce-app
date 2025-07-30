@@ -460,6 +460,17 @@
 
 
 
+        <!-- Coupon Information (if applied) -->
+        <% if (order.couponCode && order.couponDiscount > 0) { %>
+          <div class="info-item">
+            <span class="info-label">Coupon Applied:</span>
+            <span class="info-value">
+              <span class="badge bg-success me-2"><%= order.couponCode %></span>
+              <span class="text-success">-₹<%= order.couponDiscount.toFixed(2) %> saved</span>
+            </span>
+          </div>
+        <% } %>
+        
         <div class="info-item">
           <span class="info-label">Total Amount:</span>
           <span class="info-value">₹<%= order.totalAmount.toFixed(2) %></span>
