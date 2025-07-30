@@ -161,7 +161,7 @@ router.get('/auth/google', (req, res, next) => {
   passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
 });
 
-router.get('auth/google/callback', (req, res, next) => {
+router.get('/auth/google/callback', (req, res, next) => {
   console.log(' Google OAuth callback received');
   passport.authenticate('google', {
     failureRedirect: '/login?error=Google authentication failed',
