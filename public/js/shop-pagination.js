@@ -55,7 +55,7 @@ class ShopPagination extends PaginationUtils {
           <div class="col-md-4">
             <div class="card product-card" style="position: relative;">
               <!-- Wishlist Button -->
-              <button class="btn btn-outline-danger wishlist-btn" onclick="addToWishlist('${product._id}')" style="position: absolute; top: 10px; right: 10px; z-index: 10; border-radius: 50%; width: 40px; height: 40px; padding: 0; background: rgba(255,255,255,0.9); border: 1px solid #dc3545;">
+              <button class="btn btn-outline-danger wishlist-btn" data-product-id="${product._id}" style="position: absolute; top: 10px; right: 10px; z-index: 10; border-radius: 50%; width: 40px; height: 40px; padding: 0; background: rgba(255,255,255,0.9); border: 1px solid #dc3545;">
                 <i class="fas fa-heart" style="color: #dc3545;"></i>
               </button>
 
@@ -109,6 +109,11 @@ class ShopPagination extends PaginationUtils {
       });
 
       productsContainer.innerHTML = productsHTML;
+
+      // Initialize enhanced wishlist for new content
+      if (window.enhancedWishlist) {
+        window.enhancedWishlist.updateAllWishlistButtons();
+      }
 
       // Update results info
       this.updateResultsInfo(data);

@@ -162,6 +162,52 @@ export const getWishlistCount = catchAsyncError(async (req, res, next) => {
   }
 });
 
+// Check if product is in wishlist
+export const checkWishlistStatus = catchAsyncError(async (req, res, next) => {
+  try {
+    const { productId } = req.params;
+    
+    const wishlist = await Wishlist.findOne({ user: req.user._id });
+    const isInWishlist = wishlist ? wishlist.hasProduct(productId) : false;
+
+    res.status(200).json({
+      success: true,
+      isInWishlist,
+      wishlistCount: wishlist ? wishlist.totalItems : 0
+    });
+
+  } catch (error) {
+    console.error("Error checking wishlist status:", error);
+    return res.status(500).json({
+      success: false,
+      isInWishlist: false,
+      wishlistCount: 0
+    });
+  }
+});
+
+// Get wishlist items for a user (returns just product IDs)
+export const getWishlistItems = catchAsyncError(async (req, res, next) => {
+  try {
+    const wishlist = await Wishlist.findOne({ user: req.user._id });
+    const productIds = wishlist ? wishlist.items.map(item => item.product.toString()) : [];
+
+    res.status(200).json({
+      success: true,
+      productIds,
+      wishlistCount: wishlist ? wishlist.totalItems : 0
+    });
+
+  } catch (error) {
+    console.error("Error getting wishlist items:", error);
+    return res.status(500).json({
+      success: false,
+      productIds: [],
+      wishlistCount: 0
+    });
+  }
+});
+
 
 export const moveToCart = catchAsyncError(async (req, res, next) => {
   try {

@@ -57,8 +57,6 @@ import {
   removeFromWishlist,
   clearWishlist,
   getWishlistCount,
-  checkWishlistStatus,
-  getWishlistItems,
   moveToCart
 } from "../controllers/user/wishlistController.js";
 import {
@@ -232,8 +230,6 @@ router.post("/wishlist/add", isAuthenticated, addToWishlist);
 router.delete("/wishlist/remove/:productId", isAuthenticated, removeFromWishlist);
 router.delete("/wishlist/clear", isAuthenticated, clearWishlist);
 router.get("/api/wishlist/count", isAuthenticated, getWishlistCount);
-router.get("/api/wishlist/check/:productId", isAuthenticated, checkWishlistStatus);
-router.get("/api/wishlist/items", isAuthenticated, getWishlistItems);
 router.post("/wishlist/move-to-cart/:productId", isAuthenticated, moveToCart);
 
 // Checkout routes
