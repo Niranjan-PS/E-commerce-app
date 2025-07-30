@@ -156,12 +156,12 @@ router.delete("/reviews/:reviewId", isAuthenticated, deleteReview);
 
 
 
-router.get('/google', (req, res, next) => {
+router.get('/auth/google', (req, res, next) => {
   console.log(' Google OAuth initiated');
   passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
 });
 
-router.get('/google/callback', (req, res, next) => {
+router.get('auth/google/callback', (req, res, next) => {
   console.log(' Google OAuth callback received');
   passport.authenticate('google', {
     failureRedirect: '/login?error=Google authentication failed',
