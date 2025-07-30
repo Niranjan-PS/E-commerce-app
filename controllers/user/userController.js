@@ -130,7 +130,7 @@ export const loadShopPage = async (req, res) => {
   const searchQuery = req.query.search || "";
   const categoryFilter = req.query.category || "";
   const page = parseInt(req.query.page) || 1;
-  const itemsPerPage = 8;
+  const itemsPerPage = 9;
   const sortBy = req.query.sortBy || "";
   const minPrice = parseFloat(req.query.minPrice) || 0;
   const maxPrice = parseFloat(req.query.maxPrice) || Number.MAX_VALUE;
