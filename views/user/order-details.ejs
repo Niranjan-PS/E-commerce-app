@@ -947,14 +947,12 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <% if (order.couponCode && order.couponDiscount > 0) { %>
+          <!-- <% if (order.couponCode && order.couponDiscount > 0) { %> -->
             <div class="coupon-details-container">
               <!-- Coupon Header -->
               <div class="text-center mb-4">
                 <div class="coupon-badge-large">
-                  <span class="badge bg-success fs-4 px-4 py-2">
-                    <i class="fas fa-tag me-2"></i><%= order.couponCode %>
-                  </span>
+                 
                 </div>
                 <h4 class="text-success mt-3 mb-1">
                   <i class="fas fa-check-circle me-2"></i>Coupon Applied Successfully!
@@ -991,7 +989,7 @@
                     <div class="info-group mb-3">
                       <label class="fw-semibold text-muted">Coupon Code:</label>
                       <div class="d-flex align-items-center">
-                        <span class="badge bg-primary me-2"><%= order.couponCode %></span>
+                        
                         <button class="btn btn-sm btn-outline-secondary" onclick="copyCouponCode('<%= order.couponCode %>')">
                           <i class="fas fa-copy"></i>
                         </button>
