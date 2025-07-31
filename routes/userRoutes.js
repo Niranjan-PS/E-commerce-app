@@ -156,7 +156,7 @@ router.delete("/reviews/:reviewId", isAuthenticated, deleteReview);
 
 
 
-// Fallback route for old /google links - redirects to /auth/google
+
 router.get('/google', (req, res) => {
   console.log('Redirecting from /google to /auth/google');
   res.redirect('/auth/google');
