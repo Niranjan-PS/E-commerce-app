@@ -136,6 +136,26 @@ export const getOrderDetails = catchAsyncError(async (req, res, next) => {
     orderObj.canGenerateInvoice = invoiceEligibility.eligible;
     orderObj.invoiceMessage = invoiceEligibility.reason;
     
+    // Fetch detailed coupon information if coupon was applied
+    if (order.couponCode) {
+      try {
+        const { Coupon } = await import("../../model/couponModel.js");
+        const couponDetails = await Coupon.findOne({ code: order.couponCode });
+        if (couponDetails) {
+          orderObj.couponDetails = {
+            name: couponDetails.description,
+            discountType: couponDetails.discountType,
+            discountValue: couponDetails.discountValue,
+            discountPercentage: couponDetails.discountType === 'percentage' ? couponDetails.discountValue : null,
+            maximumDiscount: couponDetails.maximumDiscount
+          };
+        }
+      } catch (couponError) {
+        console.error("Error fetching coupon details:", couponError);
+        // Continue without coupon details if there's an error
+      }
+    }
+    
     const displayAddress= order.shippingAddress
     if(!displayAddress){
       return res.status(400).json({"message":"addres not found"})
